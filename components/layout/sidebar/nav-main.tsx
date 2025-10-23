@@ -86,14 +86,14 @@ export const navItems: NavGroup[] = [
   {
     title: "Dashboards",
     items: [
-      {
-        title: "Default",
-        href: "/dashboard/default",
-        icon: ChartPieIcon
-      },
+      // {
+      //   title: "Default",
+      //   href: "/dashboard/default",
+      //   icon: ChartPieIcon
+      // },
       {
         title: "E-commerce",
-        href: "#",
+        href: "/dashboard/default",
         icon: ShoppingBagIcon,
         items: [
           { title: "Dashboard", href: "/dashboard/ecommerce" },
@@ -105,109 +105,109 @@ export const navItems: NavGroup[] = [
         ]
       },
       { title: "Sales", href: "/dashboard/sales", icon: BadgeDollarSignIcon },
-      { title: "CRM", href: "/dashboard/crm", icon: ChartBarDecreasingIcon },
-      {
-        title: "Website Analytics",
-        href: "/dashboard/website-analytics",
-        icon: GaugeIcon
-      },
-      {
-        title: "Project Management",
-        href: "/dashboard/project-management",
-        icon: FolderDotIcon,
-        items: [
-          { title: "Dashboard", href: "/dashboard/project-management" },
-          { title: "Project List", href: "/dashboard/project-list" }
-        ]
-      },
-      {
-        title: "File Manager",
-        href: "/dashboard/file-manager",
-        icon: FolderIcon
-      },
-      { title: "Crypto", href: "/dashboard/crypto", icon: WalletMinimalIcon },
-      { title: "Academy/School", href: "/dashboard/academy", icon: GraduationCapIcon },
-      { title: "Hospital Management", href: "/dashboard/hospital-management", icon: ActivityIcon },
-      { title: "Hotel Dashboard", href: "/dashboard/hotel", icon: Building2Icon, isComing: true },
-      {
-        title: "Finance Dashboard",
-        href: "/dashboard/finance",
-        icon: WalletMinimalIcon
-      },
-      {
-        title: "Payment Dashboard",
-        href: "/dashboard/payment",
-        icon: CreditCardIcon,
-        items: [
-          { title: "Dashboard", href: "/dashboard/payment" },
-          { title: "Transactions", href: "/dashboard/payment/transactions" }
-        ]
-      }
+      // { title: "CRM", href: "/dashboard/crm", icon: ChartBarDecreasingIcon },
+      // {
+      //   title: "Website Analytics",
+      //   href: "/dashboard/website-analytics",
+      //   icon: GaugeIcon
+      // },
+      // {
+      //   title: "Project Management",
+      //   href: "/dashboard/project-management",
+      //   icon: FolderDotIcon,
+      //   items: [
+      //     { title: "Dashboard", href: "/dashboard/project-management" },
+      //     { title: "Project List", href: "/dashboard/project-list" }
+      //   ]
+      // },
+      // {
+      //   title: "File Manager",
+      //   href: "/dashboard/file-manager",
+      //   icon: FolderIcon
+      // },
+      // { title: "Crypto", href: "/dashboard/crypto", icon: WalletMinimalIcon },
+      // { title: "Academy/School", href: "/dashboard/academy", icon: GraduationCapIcon },
+      // { title: "Hospital Management", href: "/dashboard/hospital-management", icon: ActivityIcon },
+      // { title: "Hotel Dashboard", href: "/dashboard/hotel", icon: Building2Icon, isComing: true },
+      // {
+      //   title: "Finance Dashboard",
+      //   href: "/dashboard/finance",
+      //   icon: WalletMinimalIcon
+      // },
+      // {
+      //   title: "Payment Dashboard",
+      //   href: "/dashboard/payment",
+      //   icon: CreditCardIcon,
+      //   items: [
+      //     { title: "Dashboard", href: "/dashboard/payment" },
+      //     { title: "Transactions", href: "/dashboard/payment/transactions" }
+      //   ]
+      // }
     ]
   },
-  {
-    title: "Apps",
-    items: [
-      {
-        title: "Kanban",
-        href: "/dashboard/apps/kanban",
-        icon: SquareKanbanIcon,
-        isNew: true
-      },
-      { title: "Notes", href: "/dashboard/apps/notes", icon: StickyNoteIcon, isDataBadge: "8" },
-      { title: "Chats", href: "/dashboard/apps/chat", icon: MessageSquareIcon, isDataBadge: "5" },
-      {
-        title: "Social Media",
-        href: "/dashboard/apps/social-media",
-        icon: MessageSquareHeartIcon,
-        isComing: true
-      },
-      { title: "Mail", href: "/dashboard/apps/mail", icon: MailIcon },
-      {
-        title: "Todo List App",
-        href: "/dashboard/apps/todo-list-app",
-        icon: SquareCheckIcon
-      },
-      {
-        title: "Tasks",
-        href: "/dashboard/apps/tasks",
-        icon: ClipboardCheckIcon
-      },
-      { title: "Calendar", href: "/dashboard/apps/calendar", icon: CalendarIcon },
-      {
-        title: "File Manager",
-        href: "/dashboard/apps/file-manager",
-        icon: ArchiveRestoreIcon,
-        isNew: true
-      },
-      { title: "Api Keys", href: "/dashboard/apps/api-keys", icon: KeyIcon },
-      { title: "POS App", href: "/dashboard/apps/pos-system", icon: CookieIcon },
-      { title: "Courses", href: "/dashboard/apps/courses", icon: BookAIcon, isComing: true }
-    ]
-  },
-  {
-    title: "AI Apps",
-    items: [
-      { title: "AI Chat", href: "/dashboard/apps/ai-chat", icon: BrainIcon },
-      {
-        title: "AI Chat V2",
-        href: "/dashboard/apps/ai-chat-v2",
-        icon: BrainCircuitIcon,
-        isNew: true
-      },
-      {
-        title: "Image Generator",
-        href: "/dashboard/apps/ai-image-generator",
-        icon: ImagesIcon
-      },
-      {
-        title: "Text to Speech",
-        href: "/dashboard/apps/text-to-speech",
-        icon: SpeechIcon,
-        isComing: true
-      }
-    ]
-  },
+  // {
+  //   title: "Apps",
+  //   items: [
+  //     {
+  //       title: "Kanban",
+  //       href: "/dashboard/apps/kanban",
+  //       icon: SquareKanbanIcon,
+  //       isNew: true
+  //     },
+  //     { title: "Notes", href: "/dashboard/apps/notes", icon: StickyNoteIcon, isDataBadge: "8" },
+  //     { title: "Chats", href: "/dashboard/apps/chat", icon: MessageSquareIcon, isDataBadge: "5" },
+  //     {
+  //       title: "Social Media",
+  //       href: "/dashboard/apps/social-media",
+  //       icon: MessageSquareHeartIcon,
+  //       isComing: true
+  //     },
+  //     { title: "Mail", href: "/dashboard/apps/mail", icon: MailIcon },
+  //     {
+  //       title: "Todo List App",
+  //       href: "/dashboard/apps/todo-list-app",
+  //       icon: SquareCheckIcon
+  //     },
+  //     {
+  //       title: "Tasks",
+  //       href: "/dashboard/apps/tasks",
+  //       icon: ClipboardCheckIcon
+  //     },
+  //     { title: "Calendar", href: "/dashboard/apps/calendar", icon: CalendarIcon },
+  //     {
+  //       title: "File Manager",
+  //       href: "/dashboard/apps/file-manager",
+  //       icon: ArchiveRestoreIcon,
+  //       isNew: true
+  //     },
+  //     { title: "Api Keys", href: "/dashboard/apps/api-keys", icon: KeyIcon },
+  //     { title: "POS App", href: "/dashboard/apps/pos-system", icon: CookieIcon },
+  //     { title: "Courses", href: "/dashboard/apps/courses", icon: BookAIcon, isComing: true }
+  //   ]
+  // },
+  // {
+  //   title: "AI Apps",
+  //   items: [
+  //     { title: "AI Chat", href: "/dashboard/apps/ai-chat", icon: BrainIcon },
+  //     {
+  //       title: "AI Chat V2",
+  //       href: "/dashboard/apps/ai-chat-v2",
+  //       icon: BrainCircuitIcon,
+  //       isNew: true
+  //     },
+  //     {
+  //       title: "Image Generator",
+  //       href: "/dashboard/apps/ai-image-generator",
+  //       icon: ImagesIcon
+  //     },
+  //     {
+  //       title: "Text to Speech",
+  //       href: "/dashboard/apps/text-to-speech",
+  //       icon: SpeechIcon,
+  //       isComing: true
+  //     }
+  //   ]
+  // },
   {
     title: "Pages",
     items: [
@@ -226,29 +226,29 @@ export const navItems: NavGroup[] = [
         href: "/dashboard/pages/onboarding-flow",
         icon: RedoDotIcon
       },
-      {
-        title: "Empty States",
-        href: "/dashboard/pages/empty-states/01",
-        icon: BrushCleaningIcon,
-        items: [
-          { title: "Empty States 01", href: "/dashboard/pages/empty-states/01" },
-          { title: "Empty States 02", href: "/dashboard/pages/empty-states/02" },
-          { title: "Empty States 03", href: "/dashboard/pages/empty-states/03" }
-        ]
-      },
-      {
-        title: "Settings",
-        href: "/dashboard/pages/settings",
-        icon: SettingsIcon,
-        items: [
-          { title: "Profile", href: "/dashboard/pages/settings" },
-          { title: "Account", href: "/dashboard/pages/settings/account" },
-          { title: "Billing", href: "/dashboard/pages/settings/billing" },
-          { title: "Appearance", href: "/dashboard/pages/settings/appearance" },
-          { title: "Notifications", href: "/dashboard/pages/settings/notifications" },
-          { title: "Display", href: "/dashboard/pages/settings/display" }
-        ]
-      },
+      // {
+      //   title: "Empty States",
+      //   href: "/dashboard/pages/empty-states/01",
+      //   icon: BrushCleaningIcon,
+      //   items: [
+      //     { title: "Empty States 01", href: "/dashboard/pages/empty-states/01" },
+      //     { title: "Empty States 02", href: "/dashboard/pages/empty-states/02" },
+      //     { title: "Empty States 03", href: "/dashboard/pages/empty-states/03" }
+      //   ]
+      // },
+      // {
+      //   title: "Settings",
+      //   href: "/dashboard/pages/settings",
+      //   icon: SettingsIcon,
+      //   items: [
+      //     { title: "Profile", href: "/dashboard/pages/settings" },
+      //     { title: "Account", href: "/dashboard/pages/settings/account" },
+      //     { title: "Billing", href: "/dashboard/pages/settings/billing" },
+      //     { title: "Appearance", href: "/dashboard/pages/settings/appearance" },
+      //     { title: "Notifications", href: "/dashboard/pages/settings/notifications" },
+      //     { title: "Display", href: "/dashboard/pages/settings/display" }
+      //   ]
+      // },
       {
         title: "Pricing",
         href: "#",
@@ -283,41 +283,41 @@ export const navItems: NavGroup[] = [
       }
     ]
   },
-  {
-    title: "Others",
-    items: [
-      {
-        title: "Download Shadcn UI Kit",
-        href: "/pricing",
-        icon: ClipboardMinusIcon,
-        newTab: true
-      },
-      {
-        title: "Components",
-        href: "/components",
-        icon: ComponentIcon,
-        newTab: true
-      },
-      {
-        title: "Blocks",
-        href: "/blocks",
-        icon: ComponentIcon,
-        newTab: true
-      },
-      {
-        title: "Templates",
-        href: "/templates",
-        icon: ProportionsIcon,
-        newTab: true
-      },
-      {
-        title: "Github",
-        href: "https://github.com/bundui",
-        icon: GithubIcon,
-        newTab: true
-      }
-    ]
-  }
+  // {
+  //   title: "Others",
+  //   items: [
+  //     {
+  //       title: "Download Shadcn UI Kit",
+  //       href: "/pricing",
+  //       icon: ClipboardMinusIcon,
+  //       newTab: true
+  //     },
+  //     {
+  //       title: "Components",
+  //       href: "/components",
+  //       icon: ComponentIcon,
+  //       newTab: true
+  //     },
+  //     {
+  //       title: "Blocks",
+  //       href: "/blocks",
+  //       icon: ComponentIcon,
+  //       newTab: true
+  //     },
+  //     {
+  //       title: "Templates",
+  //       href: "/templates",
+  //       icon: ProportionsIcon,
+  //       newTab: true
+  //     },
+  //     {
+  //       title: "Github",
+  //       href: "https://github.com/bundui",
+  //       icon: GithubIcon,
+  //       newTab: true
+  //     }
+  //   ]
+  // }
 ];
 
 export function NavMain() {
