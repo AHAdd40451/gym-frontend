@@ -18,8 +18,6 @@ export const authApi = {
     try {
       const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
       const result = handleApiResponse(response);
-
-
       console.log('Login response: for the user', result);
       return result?.data?.data; // Access the nested data property
     } catch (error) {
