@@ -62,13 +62,20 @@ export const useLogin = () => {
       }
     },
     onSuccess: (data) => {
+      console.log('useLogin onSuccess called with:', data);
+      
+      // The data is already the AuthResponse object
+      console.log('Auth response data:', data);
+      
       // Store tokens
       if (data.token) {
+        console.log('Setting token:', data.token);
         setToken(data.token, data.refreshToken);
       }
       
       // Store user data
       if (data.user) {
+        console.log('Setting user data:', data.user);
         setUser(data.user);
       }
       

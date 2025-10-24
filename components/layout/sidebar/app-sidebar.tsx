@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavMain } from "@/components/layout/sidebar/nav-main";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
+import { RoleBasedNavMain } from "@/lib/navigation/role-based-nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/layout/logo";
 import {
@@ -96,7 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <ScrollArea className="h-full">
-          <NavMain />
+          <RoleBasedNavMain />
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>

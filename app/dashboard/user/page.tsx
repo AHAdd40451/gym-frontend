@@ -14,10 +14,11 @@ import {
   EcommerceTotalRevenueCard,
   EcommerceVisitBySourceCard,
   EcommerceWelcomeCard
-} from "@/app/dashboard/(auth)/ecommerce/components";
+} from "@/app/dashboard/user/components";
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
-import StatCards from "@/app/dashboard/(auth)/ecommerce/components/stat-cards";
+import StatCards from "@/app/dashboard/user/components/stat-cards";
+import { AuthGuard } from "@/lib/middleware/auth-guard";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -28,7 +29,7 @@ export async function generateMetadata() {
   });
 }
 
-export default function Page() {
+const UserDashboardContent = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-row items-center justify-between">
@@ -65,3 +66,15 @@ export default function Page() {
     </div>
   );
 }
+export default function Page() {
+  return (
+    <AuthGuard requiredRole="user">
+      <UserDashboardContent />
+    </AuthGuard>
+  );
+}
+
+
+
+
+
