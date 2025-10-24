@@ -14,10 +14,10 @@ import {
   EcommerceTotalRevenueCard,
   EcommerceVisitBySourceCard,
   EcommerceWelcomeCard
-} from "@/app/dashboard/(auth)/ecommerce/components";
+} from "@/app/dashboard/user/components";
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
-import StatCards from "@/app/dashboard/(auth)/ecommerce/components/stat-cards";
+import StatCards from "@/app/dashboard/user/components/stat-cards";
 
 export async function generateMetadata() {
   return generateMeta({
