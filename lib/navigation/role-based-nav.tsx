@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from '@/lib/hooks';
+import { useAuth } from '../auth/context';
 import { AdminNavMain } from './admin-nav';
 import { StaffNavMain } from './staff-nav';
 import { UserNavMain } from './user-nav';
 import { Loader2 } from 'lucide-react';
 
 export function RoleBasedNavMain() {
-  const { role, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,7 +17,7 @@ export function RoleBasedNavMain() {
     );
   }
 
-  switch (role) {
+  switch (user?.role) {
     case 'admin':
       return <AdminNavMain />;
     case 'staff':

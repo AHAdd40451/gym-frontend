@@ -1,25 +1,29 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Public routes that don't require authentication
+const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+const protectedRoutes = ['/dashboard'];
+
+
 export function middleware(request: NextRequest) {
+
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('auth-token')?.value;
   const userCookie = request.cookies.get('auth-user')?.value;
-  
+
   // Skip middleware for API routes, static files, and other non-page routes
-  if (pathname.startsWith('/api') || 
-      pathname.startsWith('/_next') || 
-      pathname.startsWith('/favicon.ico') ||
-      pathname.includes('.')) {
+  if (pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon.ico') ||
+    pathname.includes('.')) {
     return NextResponse.next();
   }
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   // Check if user is authenticated (just check if cookies exist)
@@ -65,7 +69,7 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute && isAuthenticated) {
     const roleBasedRoutes = {
       '/dashboard/admin': 'admin',
-      '/dashboard/staff': 'staff', 
+      '/dashboard/staff': 'staff',
       '/dashboard/user': 'user'
     };
 
