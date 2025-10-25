@@ -90,7 +90,7 @@ export const staffNavItems: NavGroup[] = [
       },
       {
         title: "New Members",
-        href: "/dashboard/staff/members/new",
+        href: "/dashboard/staff/members/new-memebers",
         icon: UserIcon
       },
       {
