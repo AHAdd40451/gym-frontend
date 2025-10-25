@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SiteHeader } from "@/components/layout/header";
-import { AuthGuard } from "@/lib/middleware/auth-guard";
 
 export default async function AuthLayout({
   children
@@ -17,7 +16,6 @@ export default async function AuthLayout({
     cookieStore.get("sidebar_state") === undefined;
 
   return (
-    <AuthGuard>
       <SidebarProvider
         defaultOpen={defaultOpen}
         style={
@@ -36,6 +34,5 @@ export default async function AuthLayout({
           </div>
         </SidebarInset>
       </SidebarProvider>
-    </AuthGuard>
   );
 }
