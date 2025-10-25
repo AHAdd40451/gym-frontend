@@ -35,11 +35,11 @@ export async function generateMetadata() {
 
 export default async function AdminDashboardPage() {
   const { user, token } = await getServerAuth();
-  const [ordersResult] = await Promise.all([
-    getOrders(1, 10, undefined, token || "") // page 1, limit 10
-  ]);
+  // const [ordersResult] = await Promise.all([
+  //   getOrders(1, 10, undefined, token || "") // page 1, limit 10
+  // ]);
 
-  console.log(ordersResult, "ordersResult");
+  // console.log(ordersResult, "ordersResult");
 
   return (
     <div className="space-y-4">
