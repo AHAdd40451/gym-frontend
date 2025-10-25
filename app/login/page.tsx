@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useLogin } from '@/lib/hooks/useAuth';
+import { useSearchParams } from 'next/navigation';
+import { loginAction } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,49 +16,37 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'user' | 'staff' | 'admin'>('user');
     const [error, setError] = useState('');
-    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
     const searchParams = useSearchParams();
-    const redirect = searchParams.get('redirect') || '/dashboard';
+    const urlError = searchParams.get('error');
 
-    const login = useLogin();
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleLogin = async () => {
         setError('');
+        setIsLoading(true);
+
+        if (!email || !password) {
+            setError('Please fill in all fields');
+            setIsLoading(false);
+            return;
+        }
 
         try {
-            const response = await login.mutateAsync({ email, password });
-            
-            console.log('Login response:', response);
-            
-            // Get the actual user role from the API response
-            const userRole = response.user?.role || role;
-            console.log('User role from API:', userRole);
-            
-            // Redirect based on actual user role
-            const dashboardUrl = getDashboardUrl(userRole);
-            console.log('Redirecting to:', dashboardUrl);
-            
-            // Use router.replace for client-side navigation
-            router.replace(redirect.startsWith('/dashboard') ? redirect : dashboardUrl);
+            await loginAction({ email, password });
+            // Server action will handle redirect
         } catch (err: any) {
             console.error('Login error:', err);
             setError(err.message || 'Login failed');
+            setIsLoading(false);
         }
     };
 
-    const getDashboardUrl = (userRole: string) => {
-        switch (userRole) {
-            case 'admin':
-                return '/dashboard/admin';
-            case 'staff':
-                return '/dashboard/staff';
-            case 'user':
-                return '/dashboard/user';
-            default:
-                return '/dashboard/user';
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleLogin();
         }
     };
+
 
     const getRoleIcon = (roleType: string) => {
         switch (roleType) {
@@ -96,10 +84,10 @@ export default function LoginPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form  onSubmit={handleSubmit} className="space-y-4">
-                        {error && (
+                    <div className="space-y-4">
+                        {(error || urlError) && (
                             <Alert variant="destructive">
-                                <AlertDescription>{error}</AlertDescription>
+                                <AlertDescription>{error || urlError}</AlertDescription>
                             </Alert>
                         )}
 
@@ -149,8 +137,9 @@ export default function LoginPage() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 required
-                                disabled={login.isPending}
+                                disabled={isLoading}
                                 placeholder="Enter your email"
                             />
                         </div>
@@ -162,8 +151,9 @@ export default function LoginPage() {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 required
-                                disabled={login.isPending}
+                                disabled={isLoading}
                                 placeholder="Enter your password"
                             />
                         </div>
@@ -179,14 +169,15 @@ export default function LoginPage() {
                         </div>
 
                         <Button
-                            type="submit"
+                            type="button"
                             className="w-full"
-                            disabled={login.isPending}
+                            disabled={isLoading}
+                            onClick={handleLogin}
                         >
-                            {login.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sign In as {role.charAt(0).toUpperCase() + role.slice(1)}
                         </Button>
-                    </form>
+                    </div>
 
                     <div className="mt-6 text-center">
                         <p className="text-sm text-muted-foreground">

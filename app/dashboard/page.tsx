@@ -1,30 +1,10 @@
-"use client"
-
+import { getServerAuth } from "@/lib/auth/server";
 import { useAuth } from "@/lib/stores/auth";
 import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
 
-    const { user } = useAuth();
-
-
-    console.log(user, "useruseruser");
-
-    if (!user) {
-        return <div>Unauthorized</div>;
-    }
-
-    if (user.role === "admin") {
-        redirect("/dashboard/admin");
-    }
-
-    if (user.role === "staff") {
-        redirect("/dashboard/staff");
-    }
-
-    if (user.role === "user") {
-        redirect("/dashboard/user");
-    }
+    const { user } = await getServerAuth();
 
     return (
         <div>
@@ -33,3 +13,5 @@ export default function DashboardPage() {
         </div>
     );
 }
+
+

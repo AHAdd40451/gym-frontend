@@ -12,6 +12,8 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { AuthProvider } from "@/lib/auth/context";
+import { getServerAuth } from "@/lib/auth/server";
 
 export default async function RootLayout({
   children
@@ -19,6 +21,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
+  const { user } = await getServerAuth();
+
+  console.log('Server Side Auth User:', user);
+  console.log('User authenticated:', !!user);
+
   const themeSettings = {
     preset: (cookieStore.get("theme_preset")?.value ?? DEFAULT_THEME.preset) as any,
     scale: (cookieStore.get("theme_scale")?.value ?? DEFAULT_THEME.scale) as any,
@@ -45,12 +52,14 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange>
           <ActiveThemeProvider initialTheme={themeSettings}>
-            <QueryProvider>
-              {children}
-              <Toaster position="top-center" richColors />
-              <NextTopLoader color="var(--primary)" showSpinner={false} height={2} shadow-sm="none" />
-              {process.env.NODE_ENV === "production" ? <GoogleAnalyticsInit /> : null}
-            </QueryProvider>
+            <AuthProvider initialUser={user}>
+              <QueryProvider>
+                {children}
+                <Toaster position="top-center" richColors />
+                <NextTopLoader color="var(--primary)" showSpinner={false} height={2} shadow-sm="none" />
+                {process.env.NODE_ENV === "production" ? <GoogleAnalyticsInit /> : null}
+              </QueryProvider>
+            </AuthProvider>
           </ActiveThemeProvider>
         </ThemeProvider>
       </body>

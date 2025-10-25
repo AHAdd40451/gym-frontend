@@ -1,7 +1,5 @@
 import { generateMeta } from "@/lib/utils";
-
 import { Button } from "@/components/ui/button";
-
 import {
   EcommerceBestSellingProductsCard,
   EcommerceCustomerReviewsCard,
@@ -18,7 +16,6 @@ import {
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "@/app/dashboard/user/components/stat-cards";
-import { AuthGuard } from "@/lib/middleware/auth-guard";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -68,9 +65,7 @@ const UserDashboardContent = () => {
 }
 export default function Page() {
   return (
-    <AuthGuard requiredRole="user">
       <UserDashboardContent />
-    </AuthGuard>
   );
 }
 

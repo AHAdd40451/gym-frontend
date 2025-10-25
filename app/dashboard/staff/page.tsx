@@ -9,7 +9,7 @@ import { Loader2, Users, Activity, Calendar, Clock, Dumbbell, MessageSquare, Bel
 
 function StaffDashboardContent() {
   const { user } = useAuth();
-  
+
   // Mock data - replace with actual API calls
   const stats = {
     totalMembers: 120,
@@ -235,8 +235,6 @@ function StaffDashboardContent() {
 
 export default function StaffDashboardPage() {
   return (
-    <AuthGuard requiredRole="staff">
-      <StaffDashboardContent />
-    </AuthGuard>
+    <StaffDashboardContent />
   );
 }
