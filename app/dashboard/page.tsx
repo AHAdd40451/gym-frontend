@@ -1,17 +1,16 @@
 import { getServerAuth } from "@/lib/auth/server";
-import { useAuth } from "@/lib/stores/auth";
-import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  const { user } = await getServerAuth();
 
-    const { user } = await getServerAuth();
-
-    return (
-        <div>
-            <h1>Dashboard</h1>
-            <p>Welcome {user?.firstName} {user?.lastName}</p>
-        </div>
-    );
+  return (
+    <div className="space-y-8 p-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Welcome back, {user?.firstName} {user?.lastName}!
+        </p>
+      </div>
+    </div>
+  );
 }
-
-
