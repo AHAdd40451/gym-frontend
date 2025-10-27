@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { setAuthData, clearAuthCookie } from './server';
-import type { LoginCredentials, RegisterData } from '../types/models';
+import type { LoginCredentials, RegisterData } from '../../../types/models';
 
 export async function loginAction(credentials: LoginCredentials) {
   let response;

@@ -1,5 +1,5 @@
-import { serverFetch, buildQueryString } from "./server";
-import { API_ENDPOINTS } from "./constants";
+import { serverFetch, buildQueryString } from "../../api-actions/server";
+import { API_ENDPOINTS } from "../../constants/constants";
 
 export interface Category {
   _id: string;

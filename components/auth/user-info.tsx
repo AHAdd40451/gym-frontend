@@ -5,7 +5,7 @@ import { LogoutButton } from './logout-button';
 import { User, Mail, Shield } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/lib/auth/context';
+import { useAuth } from '@/lib/api/services/auth/context';
 
 export function UserInfo() {
   const { user, isAuthenticated, isAdmin, isStaff, isUser } = useAuth();

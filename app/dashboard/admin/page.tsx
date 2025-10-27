@@ -18,8 +18,8 @@ import {
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "@/app/dashboard/user/components/stat-cards";
-import { getServerAuth } from "@/lib/auth/server";
-import { getAllOrders, transformOrdersToUI } from "@/lib/api/order";
+import { getServerAuth } from "@/lib/api/services/auth/server";
+import { getAllOrders, transformOrdersToUI } from "@/lib/api/services/order/order";
 
 export async function generateMetadata() {
   return generateMeta({

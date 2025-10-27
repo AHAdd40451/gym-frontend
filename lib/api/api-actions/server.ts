@@ -13,12 +13,10 @@ export async function serverFetch<T>(
 
     console.log(options.headers, "options");
     const response = await fetch(url, {
+      method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...options.headers
-      },
-      cache: "default",
-      ...options
+        Authorization: token ? `Bearer ${token}` : ""
+      }
     });
 
     if (!response.ok) {
@@ -44,6 +42,7 @@ export async function serverFetch<T>(
   }
 }
 
+
 // Build query string from parameters
 export function buildQueryString(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
@@ -62,43 +61,3 @@ export function buildQueryString(params: Record<string, any>): string {
   return queryString ? `?${queryString}` : "";
 }
 
-// Order API functions
-export async function getOrders(
-  page: number = 1,
-  limit: number = 10,
-  userId?: string,
-  token?: string
-) {
-  const queryParams = { page, limit, ...(userId && { userId }) };
-  const queryString = buildQueryString(queryParams);
-  const endpoint = `/orders${queryString}`;
-
-  return serverFetch<{
-    data: Array<{
-      _id: string;
-      userId: string;
-      products: Array<{
-        product: {
-          _id: string;
-          name: string;
-          price: number;
-        };
-        quantity: number;
-      }>;
-      totalAmount: number;
-      status: "pending" | "completed" | "cancelled";
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
-    };
-  }>(endpoint, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-}

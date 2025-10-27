@@ -12,8 +12,8 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/providers/query-provider";
-import { AuthProvider } from "@/lib/auth/context";
-import { getServerAuth } from "@/lib/auth/server";
+import { AuthProvider } from "@/lib/api/services/auth/context";
+import { getServerAuth } from "@/lib/api/services/auth/server";
 
 export default async function RootLayout({
   children

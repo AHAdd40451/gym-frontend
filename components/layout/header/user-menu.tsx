@@ -13,8 +13,8 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { Progress } from "@/components/ui/progress";
-import { logoutAction } from "@/lib/auth/actions";
-import { useAuth } from "@/lib/auth/context";
+import { logoutAction } from "@/lib/api/services/auth/actions";
+import { useAuth } from "@/lib/api/services/auth/context";
 
 export default function UserMenu() {
   const { user } = useAuth();

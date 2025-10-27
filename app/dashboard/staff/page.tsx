@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Activity, Calendar, Clock, Dumbbell, MessageSquare, Bell } from 'lucide-react';
-import { useAuth } from '@/lib/auth/context';
+import { useAuth } from '@/lib/api/services/auth/context';
 
 function StaffDashboardContent() {
   const { user } = useAuth();

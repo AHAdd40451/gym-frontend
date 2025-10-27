@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from '../auth/context';
+import { useAuth } from '../api/services/auth/context';
 import { AdminNavMain } from './admin-nav';
 import { StaffNavMain } from './staff-nav';
 import { UserNavMain } from './user-nav';

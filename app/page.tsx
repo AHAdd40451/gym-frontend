@@ -1,6 +1,6 @@
 
 
-import { getServerAuth } from "@/lib/auth/server";
+import { getServerAuth } from "@/lib/api/services/auth/server";
 import { useAuth } from "@/lib/hooks";
 import { redirect } from "next/navigation";
 

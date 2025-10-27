@@ -1,4 +1,4 @@
-import { getServerAuth } from "@/lib/auth/server";
+import { getServerAuth } from "@/lib/api/services/auth/server";
 
 export default async function DashboardPage() {
   const { user } = await getServerAuth();

@@ -1,10 +1,10 @@
 import apiClient from './axios';
-import { API_ENDPOINTS } from './constants';
-import { handleApiResponse, handleApiError, buildQueryString } from './utils';
+import { API_ENDPOINTS } from '../../constants/constants';
+import { handleApiResponse, handleApiError, buildQueryString } from '../../utils';
 import type { 
   User, 
   UserFilters 
-} from '../types/models';
+} from '../../../types/models';
 
 // User API functions
 export const usersApi = {
