@@ -352,7 +352,7 @@ const columns: ColumnDef<Order>[] = [
   }
 ];
 
-export function EcommerceRecentOrdersCard() {
+export function EcommerceRecentOrdersCard({ orders }: { orders: Order[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -371,7 +371,7 @@ export function EcommerceRecentOrdersCard() {
   );
 
   const table = useReactTable({
-    data: orders,
+    data: orders || [],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -389,7 +389,7 @@ export function EcommerceRecentOrdersCard() {
       rowSelection,
       pagination
     },
-    pageCount: Math.ceil(orders.length / pageSize)
+    pageCount: Math.ceil(orders?.length || 0 / pageSize)
   });
 
   return (
@@ -448,7 +448,7 @@ export function EcommerceRecentOrdersCard() {
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">
             Showing {pageIndex * pageSize + 1} to{" "}
-            {Math.min((pageIndex + 1) * pageSize, orders.length)} of {orders.length} entries
+            {Math.min((pageIndex + 1) * pageSize, orders?.length || 0)} of {orders?.length || 0} entries
           </p>
           <div className="space-x-2">
             <Button
