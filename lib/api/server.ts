@@ -4,7 +4,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
 
 // Generic server-side fetch function
-async function serverFetch<T>(
+export async function serverFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<{ data: T | null; error: string | null; status: number }> {
@@ -45,7 +45,7 @@ async function serverFetch<T>(
 }
 
 // Build query string from parameters
-function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

@@ -17,6 +17,24 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: "/users/change-password"
   },
 
+  // Product endpoints
+  PRODUCTS: {
+    BASE: "/products",
+    // SEARCH: "/products/search",
+    // BY_CATEGORY: "/products/category"
+  },
+
+  // Category endpoints
+  CATEGORIES: {
+    BASE: "/categories"
+  },
+
+  // Order endpoints
+  ORDERS: {
+    BASE: "/orders",
+    BY_USER: "/orders/my-orders"
+  },
+
   // Gym/Workout endpoints
   WORKOUTS: {
     BASE: "/workouts",
@@ -67,29 +85,11 @@ export const API_ENDPOINTS = {
     FEEDBACK: "/contact/feedback"
   },
 
-  // Product endpoints
-  PRODUCTS: {
-    BASE: "/products",
-    SEARCH: "/products/search",
-    BY_CATEGORY: "/products/category"
-  },
-
-  // Category endpoints
-  CATEGORIES: {
-    BASE: "/categories"
-  },
-
   // Attendance endpoints
   ATTENDANCE: {
     BASE: "/attendance",
     BY_USER: "/attendance/user",
     BY_DATE: "/attendance/date"
-  },
-
-  // Order endpoints
-  ORDERS: {
-    BASE: "/orders",
-    BY_USER: "/orders/user"
   },
 
   // Card endpoints
