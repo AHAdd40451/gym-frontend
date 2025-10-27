@@ -18,9 +18,8 @@ import {
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "@/app/dashboard/user/components/stat-cards";
-import { getOrders } from "@/lib/api/server";
-import { OrderList } from "@/components/dashboard/OrderList";
 import { getServerAuth } from "@/lib/auth/server";
+import { getAllOrders, transformOrdersToUI } from "@/lib/api/order";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -35,16 +34,16 @@ export async function generateMetadata() {
 
 export default async function AdminDashboardPage() {
   const { user, token } = await getServerAuth();
-  // const [ordersResult] = await Promise.all([
-  //   getOrders(1, 10, undefined, token || "") // page 1, limit 10
-  // ]);
 
-  // console.log(ordersResult, "ordersResult");
+  const ordersResult = await getAllOrders({}, token || "");
+
+  // Transform backend orders to UI component format
+  const transformedOrders = ordersResult.data ? transformOrdersToUI(ordersResult.data) : [];
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <EcommerceRecentOrdersCard />
+        <EcommerceRecentOrdersCard orders={transformedOrders} />
       </div>
     </div>
   );

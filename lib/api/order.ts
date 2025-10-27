@@ -108,3 +108,68 @@ export async function deleteOrder(id: string, token?: string) {
     }
   });
 }
+
+// Transformation utilities for UI components
+
+// Type for UI component compatibility
+export interface UIOrder {
+  id: number;
+  customer: {
+    name: string;
+    image: string;
+  };
+  product: {
+    name: string;
+  };
+  amount: number;
+  status: "processing" | "paid" | "success" | "failed";
+}
+
+/**
+ * Transform backend Order to UI component format
+ */
+export function transformOrderToUI(order: Order, index?: number): UIOrder {
+  // Extract first item's name or use a default
+  const productName =
+    order.items && order.items.length > 0 && order.items[0].title
+      ? order.items[0].title
+      : order.items && order.items.length > 0
+        ? order.items[0].productId || "Unknown Product"
+        : "No Items";
+
+  // Map status from backend to UI status
+  const statusMap: Record<OrderStatus, "processing" | "paid" | "success" | "failed"> = {
+    Pending: "processing",
+    Confirmed: "paid",
+    Cancelled: "failed"
+  };
+
+  // Get customer name or use default
+  const customerName = order.customer?.name || "Unknown Customer";
+
+  // Generate a simple avatar based on name
+  const customerImage = `/images/avatars/${Math.abs(customerName.split("").reduce((hash, char) => (hash << 5) - hash + char.charCodeAt(0), 0)) % 10}.png`;
+
+  // Convert MongoDB ID to a numeric ID (last 6 digits of hex string as number)
+  const numericId = parseInt(order._id.slice(-8), 16) || (index !== undefined ? index + 1000 : 0);
+
+  return {
+    id: numericId,
+    customer: {
+      name: customerName,
+      image: customerImage
+    },
+    product: {
+      name: productName
+    },
+    amount: order.total,
+    status: statusMap[order.status] || "processing"
+  };
+}
+
+/**
+ * Transform array of backend Orders to UI component format
+ */
+export function transformOrdersToUI(orders: Order[]): UIOrder[] {
+  return orders.map(transformOrderToUI);
+}
