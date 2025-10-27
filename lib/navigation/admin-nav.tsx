@@ -94,6 +94,11 @@ export const adminNavItems: NavGroup[] = [
         icon: BarChart3Icon
       },
       {
+        title: "Product",
+        href: "/dashboard/admin/product",
+        icon: BarChart3Icon
+      },
+      {
         title: "System Health",
         href: "/dashboard/admin/system",
         icon: ActivityIcon

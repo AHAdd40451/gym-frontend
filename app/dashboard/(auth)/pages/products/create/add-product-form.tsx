@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { z } from "zod";
@@ -10,6 +11,7 @@ import {
   ChevronLeft,
   CirclePlusIcon,
   ImageIcon,
+  Trash2Icon,
   UploadIcon,
   XIcon
 } from "lucide-react";
@@ -61,17 +63,34 @@ const FormSchema = z.object({
   price: z.string(),
   status: z.string(),
   category: z.string(),
-  sub_category: z.string()
+  sub_category: z.string(),
+  ingredients: z.string().optional(),
+  servingSize: z.string().optional(),
+  stock: z.number().min(0, {
+    message: "Stock must be 0 or greater."
+  })
 });
 
+interface Variant {
+  id: string;
+  option: string;
+  value: string;
+  price: string;
+}
+
 export default function AddProductForm() {
+  const [variants, setVariants] = useState<Variant[]>([]);
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: "",
       sku: "",
       barcode: "",
-      description: ""
+      description: "",
+      ingredients: "",
+      servingSize: "",
+      stock: 0
     }
   });
 
@@ -93,11 +112,36 @@ export default function AddProductForm() {
     maxFiles: 5
   });
 
+  const addVariant = () => {
+    const newVariant: Variant = {
+      id: Math.random().toString(36).substr(2, 9),
+      option: "",
+      value: "",
+      price: ""
+    };
+    setVariants([...variants, newVariant]);
+  };
+
+  const removeVariant = (id: string) => {
+    setVariants(variants.filter(variant => variant.id !== id));
+  };
+
+  const updateVariant = (id: string, field: keyof Variant, value: string) => {
+    setVariants(variants.map(variant => 
+      variant.id === id ? { ...variant, [field]: value } : variant
+    ));
+  };
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    const submitData = {
+      ...data,
+      variants: variants
+    };
+    
     toast("You submitted the following values:", {
       description: (
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+          <code className="text-white">{JSON.stringify(submitData, null, 2)}</code>
         </pre>
       )
     });
@@ -146,7 +190,7 @@ export default function AddProductForm() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid gap-4 lg:grid-cols-2">
+                  {/* <div className="grid gap-4 lg:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="sku"
@@ -173,7 +217,7 @@ export default function AddProductForm() {
                         </FormItem>
                       )}
                     />
-                  </div>
+                  </div> */}
                   <FormField
                     control={form.control}
                     name="description"
@@ -190,6 +234,62 @@ export default function AddProductForm() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="ingredients"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ingredients (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          List the ingredients for this product.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="servingSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Serving Size (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., 100g, 1 scoop" />
+                          </FormControl>
+                          <FormDescription>
+                            Specify the serving size for this product.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="stock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stock</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              value={field.value}
+                              placeholder="0"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enter the available stock quantity.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -306,84 +406,77 @@ export default function AddProductForm() {
                 <CardTitle>Variants</CardTitle>
               </CardHeader>
               <CardContent>
-                <FormField
-                  name="variants"
-                  control={form.control}
-                  render={({ field }) => (
-                    <div className="space-y-4">
-                      <div className="grid gap-4 lg:grid-flow-col">
-                        <FormItem>
-                          <FormLabel>Options</FormLabel>
-                          <Select {...field}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectItem value="size">Size</SelectItem>
-                                <SelectItem value="color">Color</SelectItem>
-                                <SelectItem value="weight">Weight</SelectItem>
-                                <SelectItem value="smell">Smell</SelectItem>
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                        <FormItem>
-                          <FormLabel>Value</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                        <FormItem>
-                          <FormLabel>Price</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                <div className="space-y-4">
+                  {variants.length > 0 ? (
+                    variants.map((variant) => (
+                      <div key={variant.id} className="space-y-4">
+                        <div className="grid gap-4 lg:grid-flow-col">
+                          <FormItem>
+                            <FormLabel>Options</FormLabel>
+                            <Select
+                              value={variant.option}
+                              onValueChange={(value) => updateVariant(variant.id, "option", value)}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select an option" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectItem value="size">Size</SelectItem>
+                                  <SelectItem value="color">Color</SelectItem>
+                                  <SelectItem value="weight">Weight</SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                          <FormItem>
+                            <FormLabel>Value</FormLabel>
+                            <FormControl>
+                              <Input
+                                value={variant.value}
+                                onChange={(e) => updateVariant(variant.id, "value", e.target.value)}
+                                placeholder="Enter value"
+                              />
+                            </FormControl>
+                          </FormItem>
+                          <FormItem>
+                            <FormLabel>Price</FormLabel>
+                            <FormControl>
+                              <Input
+                                value={variant.price}
+                                onChange={(e) => updateVariant(variant.id, "price", e.target.value)}
+                                placeholder="Enter price"
+                                type="number"
+                              />
+                            </FormControl>
+                          </FormItem>
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeVariant(variant.id)}
+                              className="text-destructive hover:text-destructive">
+                              <Trash2Icon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid gap-4 lg:grid-flow-col">
-                        <FormItem>
-                          <Select {...field}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectItem value="size">Size</SelectItem>
-                                <SelectItem value="color">Color</SelectItem>
-                                <SelectItem value="weight">Weight</SelectItem>
-                                <SelectItem value="smell">Smell</SelectItem>
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      </div>
-                    </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm text-center py-4">
+                      No variants added yet. Click "Add Variant" to create one.
+                    </p>
                   )}
-                />
+                </div>
               </CardContent>
               <CardFooter className="justify-center border-t p-0!">
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full rounded-tl-none rounded-tr-none">
-                  <CirclePlusIcon /> Add Variant
+                  className="w-full rounded-tl-none rounded-tr-none"
+                  onClick={addVariant}>
+                  <CirclePlusIcon className="mr-2" /> Add Variant
                 </Button>
               </CardFooter>
             </Card>
