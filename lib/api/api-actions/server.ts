@@ -6,15 +6,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5
 // Generic server-side fetch function
 export async function serverFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  token?: string
 ): Promise<{ data: T | null; error: string | null; status: number }> {
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
 
     console.log(options.headers, "options");
     const response = await fetch(url, {
-      method: "DELETE",
+      ...options,
       headers: {
+        ...(options.headers || {}),
         Authorization: token ? `Bearer ${token}` : ""
       }
     });
@@ -42,7 +44,6 @@ export async function serverFetch<T>(
   }
 }
 
-
 // Build query string from parameters
 export function buildQueryString(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
@@ -60,4 +61,3 @@ export function buildQueryString(params: Record<string, any>): string {
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : "";
 }
-

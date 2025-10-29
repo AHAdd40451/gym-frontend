@@ -60,14 +60,18 @@ export async function createOrder(payload: OrderPayload, token?: string) {
 }
 
 // 2) Get All Orders (Admin)
-export async function getAllOrders(params: { page?: number; limit?: number } = {}, token?: string) {
+export async function getAllOrders(params: { page?: number; limit?: number } = {}, token: string) {
   const { page = 1, limit = 10 } = params;
   const queryString = buildQueryString({ page, limit });
-  return serverFetch<Order[]>(`${API_ENDPOINTS.ORDERS.BASE}${queryString}`, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : ""
-    }
-  });
+  return serverFetch<Order[]>(
+    `${API_ENDPOINTS.ORDERS.BASE}${queryString}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    token
+  );
 }
 
 // 3) Get My Orders (User)
