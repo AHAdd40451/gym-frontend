@@ -396,60 +396,8 @@ export default function ProductList({ data }: { data: Product[] }) {
   };
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Search products..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-            className="max-w-sm"
-          />
-          <div className="hidden gap-2 md:flex">
-            <Filters />
-          </div>
-          {/*filter for mobile*/}
-          <div className="inline md:hidden">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <FilterIcon />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-60 p-4">
-                <div className="grid space-y-2">
-                  <Filters />
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        <div className="ms-auto flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <span className="hidden lg:inline">Columns</span> <ColumnsIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(value)}>
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+    <>
+    <div className="w-full space-y-4"> 
 
       <div className="rounded-lg border">
         <Table>
@@ -512,5 +460,6 @@ export default function ProductList({ data }: { data: Product[] }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
