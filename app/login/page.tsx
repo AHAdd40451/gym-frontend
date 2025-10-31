@@ -20,25 +20,54 @@ export default function LoginPage() {
     const searchParams = useSearchParams();
     const urlError = searchParams.get('error');
 
-    const handleLogin = async () => {
-        setError('');
-        setIsLoading(true);
+    // const handleLogin = async () => {
+    //     setError('');
+    //     setIsLoading(true);
 
-        if (!email || !password) {
-            setError('Please fill in all fields');
-            setIsLoading(false);
-            return;
-        }
+    //     if (!email || !password) {
+    //         setError('Please fill in all fields');
+    //         setIsLoading(false);
+    //         return;
+    //     }
 
-        try {
-            await loginAction({ email, password });
-            // Server action will handle redirect
-        } catch (err: any) {
-            console.error('Login error:', err);
-            setError(err.message || 'Login failed');
-            setIsLoading(false);
-        }
-    };
+    //     try {
+    //         await loginAction({ email, password });
+    //         // Server action will handle redirect
+    //     } catch (err: any) {
+    //         console.error('Login error:', err);
+    //         setError(err.message || 'Login failed');
+    //         setIsLoading(false);
+    //     }
+    // };
+const handleLogin = async () => {
+  setError('');
+  setIsLoading(true);
+
+  if (!email || !password) {
+    setError('Please fill in all fields');
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const result = await loginAction({ email, password });
+
+    if (result?.success) {
+      // ✅ Save to localStorage on client
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('auth-user', JSON.stringify(result.user));
+
+      // ✅ Redirect user
+      window.location.href = `/dashboard/${result.user.role}`;
+    } else {
+      setError(result?.message || 'Login failed');
+    }
+  } catch (err: any) {
+    setError(err.message || 'Login failed');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
