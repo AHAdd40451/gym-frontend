@@ -180,3 +180,39 @@ export function transformSubscriptionToUI(sub: Subscription, index?: number): UI
 export function transformSubscriptionsToUI(subs: Subscription[]): UISubscription[] {
   return subs.map(transformSubscriptionToUI);
 }
+// 3️⃣ Get all transactions of the logged-in user
+export async function getMyTransactions() {
+  let userId: string | null = null;
+
+  // 🔹 Get user ID from localStorage
+  if (typeof window !== "undefined") {
+    const storedUser = localStorage.getItem("auth-user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        userId = parsedUser?.id || null;
+      } catch (err) {
+        console.error("Error parsing auth-user from localStorage:", err);
+      }
+    }
+  }
+
+  if (!userId) {
+    throw new Error("No user ID found in localStorage (auth-user)");
+  }
+
+  // 🔹 Call backend route
+  const response = await serverFetch(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}/transactions`
+  );
+
+  // 🔹 Handle possible data formats
+  const apiData =
+    response?.data?.transactions || response?.transactions || response?.data || [];
+
+  if (!Array.isArray(apiData)) {
+    throw new Error("Invalid transactions data format from API");
+  }
+
+  return apiData;
+}
