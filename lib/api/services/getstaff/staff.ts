@@ -24,7 +24,7 @@ export interface PaginationParams {
   search?: string;
 }
 
-// ===== 1) Get All Users (Admin/Staff) =====
+// ===== 1) Get All Users =====
 export async function getAllUsers(
   params: PaginationParams = {},
   token: string
@@ -44,10 +44,14 @@ export async function getAllUsers(
 
 // ===== 2) Get Single User by ID =====
 export async function getUserById(id: string, token: string) {
+  if (!id) throw new Error("User ID is required.");
+
   return serverFetch<{ user: User }>(
     `${API_ENDPOINTS.USERS.BASE}/${id}`,
     {
+      method: "GET",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     }
@@ -121,42 +125,19 @@ export async function updateUserStatus(
 }
 
 // ===== 7) Get Users by Role =====
-// export async function getUsersByRole(
-//   role: UserRole,
-//   params: PaginationParams = {},
-//   token: string
-// ) {
-//   const { page = 1, limit = 10, sort = "-createdAt" } = params;
-//   const queryString = buildQueryString({ page, limit, sort });
-
-//   return serverFetch<{
-//     users: User[];
-//     pagination: { total: number; page: number; pages: number };
-//   }>(
-//     `${API_ENDPOINTS.USERS.BY_ROLE}/${role}${queryString}`,
-//     {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//       },
-//     }
-//   );
-// }
 export async function getUsersByRole(
   role: UserRole,
   params: PaginationParams = {},
   token?: string
 ) {
-  // ✅ Step 1: Token validate karo
   const authToken = token || localStorage.getItem("authToken");
   if (!authToken) {
     throw new Error("Access denied. No token provided.");
   }
 
-  // ✅ Step 2: Pagination defaults
   const { page = 1, limit = 10, sort = "-createdAt" } = params;
   const queryString = buildQueryString({ page, limit, sort });
 
-  // ✅ Step 3: API call with merged headers
   return serverFetch<{
     users: User[];
     pagination: { total: number; page: number; pages: number };
@@ -170,5 +151,56 @@ export async function getUsersByRole(
       },
     }
   );
+}
+// export async function getTrainerSubscriptions(token?: string, id?: string) {
+//   // 🔹 Token check
+//   const authToken = token || localStorage.getItem("authToken");
+//   if (!authToken) {
+//     throw new Error("Access denied. No token provided.");
+//   }
+
+//   // 🔹 Agar specific trainer id di gayi ho
+//   const url = id
+//     ? `${API_ENDPOINTS.USERS.TRAINER}/${id}`
+//     : `${API_ENDPOINTS.USERS.TRAINER}/subscriptions`;
+
+//   // 🔹 API Call
+//   return serverFetch<{
+//     count?: number;
+//     trainer?: User;
+//     trainers?: User[];
+//     message: string;
+//   }>(url, {
+//     method: "GET",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${authToken}`,
+//     },
+//   });
+// }
+// ===== 8) Buy Trainer =====
+export async function buyTrainer(
+  trainerId: string,
+  token?: string
+) {
+  const authToken = token || localStorage.getItem("authToken");
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  if (!trainerId) {
+    throw new Error("Trainer ID is required.");
+  }
+
+  // ✅ Final URL: /users/trainer/:id/buy
+  const url = `${API_ENDPOINTS.USERS.TRAINER}/${trainerId}/buy`;
+
+  return serverFetch<{ message: string; trainer: User }>(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+  });
 }
 

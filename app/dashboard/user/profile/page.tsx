@@ -69,7 +69,7 @@ import { generateMeta } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardSkills } from "@/app/dashboard/(auth)/pages/profile/card-skills";
-import { LatestActivity } from "@/app/dashboard/(auth)/pages/profile/latest-activity";
+import { LatestActivity } from "./latest-activity";
 import { AboutMe } from "./about-me";
 import { Connections } from "@/app/dashboard/(auth)/pages/profile/connections";
 import { ProfileCard } from "@/app/dashboard/user/profile/profile-card";
