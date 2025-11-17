@@ -83,7 +83,7 @@ export async function getMySubscriptions() {
   let userId: string | null = null;
 
   if (typeof window !== "undefined") {
-    const storedUser = localStorage.getItem("auth-user");
+    const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -95,7 +95,7 @@ export async function getMySubscriptions() {
   }
 
   if (!userId) {
-    throw new Error("No user ID found in localStorage (auth-user)");
+    throw new Error("No user ID found in localStorage (currentUser)");
   }
 
   const response = await serverFetch(`${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}`);
@@ -186,7 +186,7 @@ export async function getMyTransactions() {
 
   // 🔹 Get user ID from localStorage
   if (typeof window !== "undefined") {
-    const storedUser = localStorage.getItem("auth-user");
+    const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);

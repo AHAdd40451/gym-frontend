@@ -1,6 +1,6 @@
-import apiClient from './axios';
+import apiClient from '../../axios';
 import { API_ENDPOINTS } from '../../constants/constants';
-import { handleApiResponse, handleApiError, buildQueryString } from '../../utils';
+import { handleApiResponse, handleApiError, buildQueryString } from '../../../utils';
 import type { 
   User, 
   UserFilters 
@@ -185,4 +185,30 @@ export const usersApi = {
       throw handleApiError(error);
     }
   },
+
+
+  getProfileCompleteness: async (
+  currentUser: User,
+  authToken: string
+): Promise<{ completeness: number; missingFields: string[] }> => {
+  try {
+    const userId = currentUser?._id || currentUser?.id; // ✅ support both
+
+    if (!userId) throw new Error("User ID not found");
+
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.USERS.BASE}/${userId}/completeness`,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+
+    return handleApiResponse(response);
+  } catch (error) {
+    throw handleApiError(error);
+  }
+},
+
 };

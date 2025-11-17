@@ -1,67 +1,81 @@
-// import { Link2Icon, Mail, MapPin, PhoneCall } from "lucide-react";
-
+// import { Mail, MapPin, PhoneCall, Link2Icon } from "lucide-react";
 // import { Card, CardContent } from "@/components/ui/card";
 // import { Badge } from "@/components/ui/badge";
 // import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import { getServerAuth } from "@/lib/api/services/auth/server";
 
-// export function ProfileCard() {
+// export async function ProfileCard() {
+//   // 👇 Fetch user from server-side cookies
+//   const { user } = await getServerAuth();
+
+//   if (!user) {
+//     return (
+//       <Card className="p-6 text-center">
+//         <p className="text-muted-foreground">Please log in to view your profile.</p>
+//       </Card>
+//     );
+//   }
+
 //   return (
 //     <Card className="relative">
 //       <CardContent>
 //         <div className="space-y-12">
+//           {/* Avatar + Name */}
 //           <div className="flex flex-col items-center space-y-4">
 //             <Avatar className="size-20">
-//               <AvatarImage src={`/images/avatars/10.png`} alt="@shadcn" />
-//               <AvatarFallback>AH</AvatarFallback>
+//               <AvatarImage
+//                 src={user.profileImage || `/images/avatars/10.png`}
+//                 alt={`${user.firstName} ${user.lastName}`}
+//               />
+//               <AvatarFallback>
+//                 {user.firstName?.[0]?.toUpperCase() || "U"}
+//               </AvatarFallback>
 //             </Avatar>
 //             <div className="text-center">
-//               <h5 className="flex items-center gap-2 text-xl font-semibold">
-//                 Anshan Haso <Badge variant="info">Pro</Badge>
+//               <h5 className="flex items-center justify-center gap-2 text-xl font-semibold">
+//                 {user.firstName} {user.lastName}
+//                 <Badge variant="info">{user.role}</Badge>
 //               </h5>
-//               <div className="text-muted-foreground text-sm">Project Manager</div>
+//               <div className="text-muted-foreground text-sm">{user.email}</div>
 //             </div>
 //           </div>
-//           <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
+
+//            <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
 //             <div>
-//               <h5 className="text-lg font-semibold">184</h5>
-//               <div className="text-muted-foreground text-sm">Post</div>
+//               <h5 className="text-lg font-semibold">
+//                 {user.id?.slice(0, 4) || "----"}
+//               </h5>
+//               <div className="text-muted-foreground text-sm"> User id</div>
 //             </div>
 //             <div>
-//               <h5 className="text-lg font-semibold">32</h5>
-//               <div className="text-muted-foreground text-sm">Projects</div>
+//               <h5 className="text-lg font-semibold">{user.role}</h5>
+//               <div className="text-muted-foreground text-sm">Role</div>
 //             </div>
 //             <div>
-//               <h5 className="text-lg font-semibold">4.5K</h5>
-//               <div className="text-muted-foreground text-sm">Members</div>
+//               <h5 className="text-lg font-semibold">True</h5>
+//               <div className="text-muted-foreground text-sm">Authenticated</div>
 //             </div>
 //           </div>
+
+//           {/* Contact Info (Static Examples) */}
 //           <div className="flex flex-col gap-y-4">
 //             <div className="flex items-center gap-3 text-sm">
-//               <Mail className="text-muted-foreground size-4" /> hello@tobybelhome.com
+//               <Mail className="text-muted-foreground size-4" /> {user.email}
 //             </div>
 //             <div className="flex items-center gap-3 text-sm">
-//               <PhoneCall className="text-muted-foreground size-4" /> (+1-876) 8654 239 581
+//               <PhoneCall className="text-muted-foreground size-4" /> (+1) 555-1234
 //             </div>
 //             <div className="flex items-center gap-3 text-sm">
-//               <MapPin className="text-muted-foreground size-4" />
-//               Canada
-//             </div>
-//             <div className="flex items-center gap-3 text-sm">
-//               <Link2Icon className="text-muted-foreground size-4" />
-//               <a
-//                 href="https://shadcnuikit.com"
-//                 className="hover:text-primary hover:underline"
-//                 target="_blank">
-//                 https://shadcnuikit.com
-//               </a>
+//               <MapPin className="text-muted-foreground size-4" /> USA
 //             </div>
 //             <div className="flex items-center gap-3 text-sm">
 //               <Link2Icon className="text-muted-foreground size-4" />
 //               <a
-//                 href="https://bundui.io/"
+//                 href="https://example.com"
 //                 className="hover:text-primary hover:underline"
-//                 target="_blank">
-//                 https://bundui.io/
+//                 target="_blank"
+//               >
+//                 example.com
 //               </a>
 //             </div>
 //           </div>
@@ -70,17 +84,18 @@
 //     </Card>
 //   );
 // }
+'use client';
+
 import { Mail, MapPin, PhoneCall, Link2Icon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getServerAuth } from "@/lib/api/services/auth/server";
+import { useAuth } from "@/lib/api/services/auth/context"; // 👈 import from your AuthContext
 
-export async function ProfileCard() {
-  // 👇 Fetch user from server-side cookies
-  const { user } = await getServerAuth();
+export function ProfileCard() {
+  const { user, isAuthenticated } = useAuth(); // 👈 get from context
 
-  if (!user) {
+  if (!user || !isAuthenticated) {
     return (
       <Card className="p-6 text-center">
         <p className="text-muted-foreground">Please log in to view your profile.</p>
@@ -112,12 +127,12 @@ export async function ProfileCard() {
             </div>
           </div>
 
-           <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
+          <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
             <div>
               <h5 className="text-lg font-semibold">
                 {user.id?.slice(0, 4) || "----"}
               </h5>
-              <div className="text-muted-foreground text-sm"> User id</div>
+              <div className="text-muted-foreground text-sm">User ID</div>
             </div>
             <div>
               <h5 className="text-lg font-semibold">{user.role}</h5>
@@ -129,7 +144,7 @@ export async function ProfileCard() {
             </div>
           </div>
 
-          {/* Contact Info (Static Examples) */}
+          {/* Contact Info */}
           <div className="flex flex-col gap-y-4">
             <div className="flex items-center gap-3 text-sm">
               <Mail className="text-muted-foreground size-4" /> {user.email}

@@ -152,32 +152,7 @@ export async function getUsersByRole(
     }
   );
 }
-// export async function getTrainerSubscriptions(token?: string, id?: string) {
-//   // 🔹 Token check
-//   const authToken = token || localStorage.getItem("authToken");
-//   if (!authToken) {
-//     throw new Error("Access denied. No token provided.");
-//   }
 
-//   // 🔹 Agar specific trainer id di gayi ho
-//   const url = id
-//     ? `${API_ENDPOINTS.USERS.TRAINER}/${id}`
-//     : `${API_ENDPOINTS.USERS.TRAINER}/subscriptions`;
-
-//   // 🔹 API Call
-//   return serverFetch<{
-//     count?: number;
-//     trainer?: User;
-//     trainers?: User[];
-//     message: string;
-//   }>(url, {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${authToken}`,
-//     },
-//   });
-// }
 // ===== 8) Buy Trainer =====
 export async function buyTrainer(
   trainerId: string,
