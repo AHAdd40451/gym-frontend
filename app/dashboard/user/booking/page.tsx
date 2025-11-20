@@ -1,11 +1,12 @@
 import React from 'react'
+import ProfileCard from './profile-card';
 
 const page = () => {
   return (
-    <div>
-      <h1 className='text-center'>This is booking</h1>
+    <div className='flex'>
+      <ProfileCard/>
     </div>
   )
 }
 
-export default page
+export default page;
