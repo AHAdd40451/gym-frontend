@@ -5,21 +5,20 @@ import type {
   User, 
   UserFilters 
 } from '../../../types/models';
+import { serverFetch } from '../../api-actions/server';
 
 // User API functions
 export const usersApi = {
   // Get all users
-getAll: async (filters?: UserFilters, token?: string) => {
-  try {
-    const queryString = filters ? buildQueryString(filters) : '';
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    const response = await apiClient.get(`${API_ENDPOINTS.USERS.BASE}${queryString}`, { headers });
-    return handleApiResponse(response);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-},
-
+  getAll: async (filters?: UserFilters): Promise<{ data: User[]; pagination?: any }> => {
+    try {
+      const queryString = filters ? buildQueryString(filters) : '';
+      const response = await apiClient.get(`${API_ENDPOINTS.USERS.BASE}${queryString}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 
   // Get user by ID
   getById: async (id: string): Promise<User> => {
@@ -214,3 +213,18 @@ getAll: async (filters?: UserFilters, token?: string) => {
 },
 
 };
+
+
+export async function getAllUsers(params: { page?: number; limit?: number } = {}, token: string) {
+  const { page = 1, limit = 10 } = params;
+  const queryString = buildQueryString({ page, limit });
+  return serverFetch<any>(
+    `${API_ENDPOINTS.USERS.BASE}${queryString}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    token
+  );
+}

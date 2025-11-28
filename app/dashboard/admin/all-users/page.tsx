@@ -1,31 +1,58 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { usersApi } from "@/lib/api/services/users/users";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ArrowRight, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getServerAuth } from "@/lib/api/services/auth/server";
+import { getAllUsers } from "@/lib/api/services/users/users";
+import Link from "next/link";
 
-const UsersTestPage = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+const UsersPage = async () => {
+  // 🔐 Get secure token on server
+  const { token } = await getServerAuth();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const result = await usersApi.getAll();
-        console.log(result);
-        setUsers(result.data);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Network error");
-      }
-    };
-    fetchUsers();
-  }, []);
+  const res = await getAllUsers({}, token || "");
+
+  const users = res?.data?.data?.users || [];
 
   return (
-    <div>
-      {error && <p>{error}</p>}
-      <pre>{JSON.stringify(users, null, 2)}</pre>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+      {users.length > 0 ? (
+        users.map((u: any) => (
+          <Card key={u._id} className="hover:shadow-lg transition">
+            <CardContent className="pt-6 pb-6 flex flex-col items-center space-y-4">
+              {/* Avatar */}
+              <Avatar className="size-20">
+                <AvatarFallback>{u.firstName?.[0] || "?"}</AvatarFallback>
+              </Avatar>
+
+              <div className="text-center">
+                <h5 className="text-xl font-semibold">
+                  {u.firstName} {u.lastName}
+                </h5>
+
+                {/* Email */}
+                <div className="flex items-center justify-center gap-2 text-sm mt-2 text-muted-foreground">
+                  <Mail className="size-4" /> {u.email}
+                </div>
+
+                {/* View Details Button */}
+                <Button variant="outline" size="sm" className="mt-3" asChild>
+                  <Link href={`/dashboard/admin/all-users/${u._id}`}>
+                    View Details <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <p className="text-center mt-10 text-muted-foreground">
+          No users found.
+        </p>
+      )}
     </div>
   );
 };
 
-export default UsersTestPage;
+export default UsersPage;
