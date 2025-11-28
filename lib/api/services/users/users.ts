@@ -9,15 +9,17 @@ import type {
 // User API functions
 export const usersApi = {
   // Get all users
-  getAll: async (filters?: UserFilters): Promise<{ data: User[]; pagination?: any }> => {
-    try {
-      const queryString = filters ? buildQueryString(filters) : '';
-      const response = await apiClient.get(`${API_ENDPOINTS.USERS.BASE}${queryString}`);
-      return handleApiResponse(response);
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  },
+getAll: async (filters?: UserFilters, token?: string) => {
+  try {
+    const queryString = filters ? buildQueryString(filters) : '';
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    const response = await apiClient.get(`${API_ENDPOINTS.USERS.BASE}${queryString}`, { headers });
+    return handleApiResponse(response);
+  } catch (error) {
+    throw handleApiError(error);
+  }
+},
+
 
   // Get user by ID
   getById: async (id: string): Promise<User> => {
