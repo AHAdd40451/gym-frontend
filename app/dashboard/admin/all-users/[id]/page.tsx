@@ -19,7 +19,7 @@ import { DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 import { getAllUsers } from "@/lib/api/services/users/users";
-import { deleteUser } from "@/lib/api/services/users/deleteUser"; // <-- 🔥 NEW
+import { deleteUser } from "@/lib/api/services/users/users"; // <-- 🔥 NEW
 
 interface UserType {
   _id: string;
