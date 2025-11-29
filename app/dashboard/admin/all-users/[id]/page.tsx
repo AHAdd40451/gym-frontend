@@ -5,8 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import { Mail, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";  // <-- Add this import
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
+import { toast } from "sonner";
+
 import { getAllUsers } from "@/lib/api/services/users/users";
+import { deleteUser } from "@/lib/api/services/users/deleteUser"; // <-- 🔥 NEW
 
 interface UserType {
   _id: string;
@@ -23,6 +36,7 @@ const UserDetailPage = () => {
 
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -43,6 +57,29 @@ const UserDetailPage = () => {
     if (id) fetchUser();
   }, [id]);
 
+  const handleDelete = async () => {
+    if (!user) return;
+
+    const token = localStorage.getItem("authToken") || "";
+    setDeleting(true);
+
+    try {
+      const success = await deleteUser(token, user._id);
+
+      if (success) {
+        toast.success("User deleted successfully!");
+        router.back();
+      } else {
+        toast.error("Failed to delete user.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting user.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <p className="mt-10 text-center">Loading...</p>;
   if (!user) return <p className="mt-10 text-center text-red-500">User not found</p>;
 
@@ -51,7 +88,7 @@ const UserDetailPage = () => {
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center space-y-4 pt-4 pb-8">
 
-          {/* Back Button (Same as Contact Page) */}
+          {/* Back button */}
           <div className="mb-2 self-start">
             <Button
               variant="outline"
@@ -86,13 +123,45 @@ const UserDetailPage = () => {
             Role: <strong>{user.role}</strong>
           </p>
 
-          {/* Created Date */}
+          {/* CreatedAt */}
           {user.createdAt && (
             <p className="text-sm text-muted-foreground">
               Joined: {user.createdAt.slice(0, 10)}
             </p>
           )}
 
+          {/* DELETE USER BUTTON + CONFIRMATION */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="mt-6 w-full"
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Remove User"}
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-red-500">Delete User?</DialogTitle>
+                <DialogDescription>
+                  This action cannot be undone. Do you want to remove{" "}
+                  <strong>{user.firstName} {user.lastName}</strong>?
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+
+                <Button variant="destructive" onClick={handleDelete}>
+                  Yes, Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
