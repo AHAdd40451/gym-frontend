@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import { DialogClose } from "@/components/ui/dialog";
 import { getAllContacts, Contact } from "@/lib/api/services/getusers/getContacts";
-import { deleteContact } from "@/lib/api/services/getusers/deleteContact"; 
+import { deleteContact } from "@/lib/api/services/getusers/getContacts"; 
 
 const ContactDetailPage = () => {
   const { id } = useParams();

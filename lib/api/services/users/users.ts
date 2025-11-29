@@ -238,7 +238,6 @@ interface DeleteUserResponse {
 export async function deleteUser(token: string, userId: string): Promise<boolean> {
   try {
     const endpoint = `${API_ENDPOINTS.USERS.BASE}/${userId}`;
-    // Example result: http://localhost:3001/api/users/6925e42b67562bcf646ee329
 
     const response = await serverFetch<DeleteUserResponse>(endpoint, {
       method: "DELETE",
