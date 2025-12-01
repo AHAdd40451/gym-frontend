@@ -5,6 +5,7 @@ import type {
   User, 
   UserFilters 
 } from '../../../types/models';
+import { serverFetch } from '../../api-actions/server';
 
 // User API functions
 export const usersApi = {
@@ -212,3 +213,45 @@ export const usersApi = {
 },
 
 };
+
+
+export async function getAllUsers(params: { page?: number; limit?: number } = {}, token: string) {
+  const { page = 1, limit = 10 } = params;
+  const queryString = buildQueryString({ page, limit });
+  return serverFetch<any>(
+    `${API_ENDPOINTS.USERS.BASE}${queryString}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    token
+  );
+}
+
+
+interface DeleteUserResponse {
+  success: boolean;
+  message: string;
+}
+
+export async function deleteUser(token: string, userId: string): Promise<boolean> {
+  try {
+    const endpoint = `${API_ENDPOINTS.USERS.BASE}/${userId}`;
+
+    const response = await serverFetch<DeleteUserResponse>(endpoint, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data?.success || false;
+
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return false;
+  }
+}
+

@@ -135,7 +135,7 @@ export const adminNavItems: NavGroup[] = [
     items: [
       {
         title: "All Users",
-        href: "/dashboard/admin/users",
+        href: "/dashboard/admin/all-users",
         icon: UsersIcon
       },
       {
