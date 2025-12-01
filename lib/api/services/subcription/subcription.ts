@@ -1,5 +1,20 @@
 import { serverFetch, buildQueryString } from "../../api-actions/server";
 import { API_ENDPOINTS } from "../../constants/constants";
+import { useEffect, useState, useCallback } from "react";
+
+export interface SubscribedUser {
+  _id: string;
+  status: string;
+  user: {
+    username: string;
+    email: string;
+    address?: string;
+  };
+  plan: {
+    name: string;
+    price?: number;
+  };
+}
 
 // Types
 export type SubscriptionStatus =
@@ -43,6 +58,7 @@ export interface Subscription {
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  
 }
 
 export interface SubscriptionPayload {
@@ -180,11 +196,10 @@ export function transformSubscriptionToUI(sub: Subscription, index?: number): UI
 export function transformSubscriptionsToUI(subs: Subscription[]): UISubscription[] {
   return subs.map(transformSubscriptionToUI);
 }
-// 3️⃣ Get all transactions of the logged-in user
+
 export async function getMyTransactions() {
   let userId: string | null = null;
 
-  // 🔹 Get user ID from localStorage
   if (typeof window !== "undefined") {
     const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
@@ -201,12 +216,10 @@ export async function getMyTransactions() {
     throw new Error("No user ID found in localStorage (auth-user)");
   }
 
-  // 🔹 Call backend route
   const response = await serverFetch(
     `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}/transactions`
   );
 
-  // 🔹 Handle possible data formats
   const apiData =
     response?.data?.transactions || response?.transactions || response?.data || [];
 
@@ -214,5 +227,50 @@ export async function getMyTransactions() {
     throw new Error("Invalid transactions data format from API");
   }
 
-  return apiData;
+  // ⭐ Ensure NON-BREAKING FORMAT
+  const normalizedData = apiData.map((item) => ({
+    ...item,
+    amount: Number(item.amount || 0), // <-- Safely convert amount
+    createdAt: item.createdAt || new Date().toISOString() // fallback
+  }));
+
+  return normalizedData;
+}
+
+export function useSubscribedUsers(token: string) {
+  const [data, setData] = useState<SubscribedUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await serverFetch(
+        `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/subscribed-users`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const apiData =
+        res?.data?.users || res?.data || res?.users || [];
+
+      if (!Array.isArray(apiData)) {
+        throw new Error("Invalid subscribed users format from API");
+      }
+
+      setData(apiData);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch subscribed users");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  return { data, loading, error, refetch: fetchUsers };
 }

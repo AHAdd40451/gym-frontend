@@ -4,7 +4,7 @@ export const API_ENDPOINTS = {
     REGISTER: "/auth/register",
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
-    PROFILE: "/auth/profile",
+    PROFILE: "/auth/profile"
   },
 
   USERS: {
@@ -17,27 +17,30 @@ export const API_ENDPOINTS = {
   },
 
   PRODUCTS: {
-    BASE: "/products",
+    BASE: "/products"
   },
 
   CATEGORIES: {
-    BASE: "/categories",
+    BASE: "/categories"
   },
 
   ORDERS: {
     BASE: "/orders",
-    BY_USER: "/orders/my-orders",
+    BY_USER: "/orders/my-orders"
   },
 
   SUBSCRIPTIONS: {
     BASE: "/subscriptions",
     BY_USER: "/subscriptions/user", // ✅ static
-    BY_USER_ID: (userId: string) => `/subscriptions/user/${userId}`, // ✅ user-specific
+    BY_USER_ID: (userId: string) => `/subscriptions/user/${userId}` // ✅ user-specific
   },
 
   PLANS: {
     BASE: "/plans",
-    BY_ID: (id: string) => `/plans/${id}`,
+    BY_ID: (id: string) => `/plans/${id}`
+  },
+  CONTECTS: {
+    BASE: "/contect"
   },
 
   TRANSACTIONS: {

@@ -1,7 +1,8 @@
 import axios, { AxiosError } from "axios";
+import { env } from "../config/env";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:3001/api",
+  baseURL: env.API_BASE_URL || "",
   withCredentials: true,
   timeout: 10000,
 });

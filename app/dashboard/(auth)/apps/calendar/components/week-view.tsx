@@ -26,7 +26,7 @@ import {
   useCurrentTimeIndicator,
   WeekCellsHeight,
   type CalendarEvent
-} from "./";
+} from ".";
 import { EndHour, StartHour } from "../constants";
 import { cn } from "@/lib/utils";
 
