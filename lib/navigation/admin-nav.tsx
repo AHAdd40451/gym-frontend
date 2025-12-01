@@ -122,6 +122,11 @@ export const adminNavItems: NavGroup[] = [
         title: "System Health",
         href: "/dashboard/admin/system",
         icon: ActivityIcon
+      },
+      {
+        title: "Contact",
+        href: "/dashboard/admin/contact",
+        icon: ActivityIcon
       }
     ]
   },
