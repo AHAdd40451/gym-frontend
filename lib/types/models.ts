@@ -335,3 +335,4 @@ export interface Activity {
   timestamp: string;
   metadata?: Record<string, any>;
 }
+

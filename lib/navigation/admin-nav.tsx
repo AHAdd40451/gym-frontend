@@ -155,51 +155,51 @@ export const adminNavItems: NavGroup[] = [
       }
     ]
   },
-  {
-    title: "Gym Management",
-    items: [
-      {
-        title: "Workouts",
-        href: "/dashboard/admin/workouts",
-        icon: ActivityIcon
-      },
-      {
-        title: "Exercises",
-        href: "/dashboard/admin/exercises",
-        icon: SquareCheckIcon
-      },
-      {
-        title: "Equipment",
-        href: "/dashboard/admin/equipment",
-        icon: ComponentIcon
-      },
-      {
-        title: "Schedules",
-        href: "/dashboard/admin/schedules",
-        icon: CalendarIcon
-      }
-    ]
-  },
-  {
-    title: "Content Management",
-    items: [
-      {
-        title: "Blog Posts",
-        href: "/dashboard/admin/blog",
-        icon: FileTextIcon
-      },
-      {
-        title: "Notifications",
-        href: "/dashboard/admin/notifications",
-        icon: BellIcon
-      },
-      {
-        title: "Email Templates",
-        href: "/dashboard/admin/email-templates",
-        icon: MailIcon
-      }
-    ]
-  },
+  // {
+  //   title: "Gym Management",
+  //   items: [
+  //     {
+  //       title: "Workouts",
+  //       href: "/dashboard/admin/workouts",
+  //       icon: ActivityIcon
+  //     },
+  //     {
+  //       title: "Exercises",
+  //       href: "/dashboard/admin/exercises",
+  //       icon: SquareCheckIcon
+  //     },
+  //     {
+  //       title: "Equipment",
+  //       href: "/dashboard/admin/equipment",
+  //       icon: ComponentIcon
+  //     },
+  //     {
+  //       title: "Schedules",
+  //       href: "/dashboard/admin/schedules",
+  //       icon: CalendarIcon
+  //     }
+  //   ]
+  // },
+  // {
+  //   title: "Content Management",
+  //   items: [
+  //     {
+  //       title: "Blog Posts",
+  //       href: "/dashboard/admin/blog",
+  //       icon: FileTextIcon
+  //     },
+  //     {
+  //       title: "Notifications",
+  //       href: "/dashboard/admin/notifications",
+  //       icon: BellIcon
+  //     },
+  //     {
+  //       title: "Email Templates",
+  //       href: "/dashboard/admin/email-templates",
+  //       icon: MailIcon
+  //     }
+  //   ]
+  // },
   {
     title: "System",
     items: [

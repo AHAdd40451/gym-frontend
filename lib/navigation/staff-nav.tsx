@@ -133,6 +133,11 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/schedule",
         icon: CalendarIcon
       },
+       {
+        title: "Attendence",
+        href: "/dashboard/staff/attendence",
+        icon: CalendarIcon
+      },
       {
         title: "Book Sessions",
         href: "/dashboard/staff/booking",
