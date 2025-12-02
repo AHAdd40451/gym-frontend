@@ -143,7 +143,7 @@ function ProfileComponent() {
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api
 NEXT_PUBLIC_APP_NAME=Gym Management Dashboard
 NEXT_PUBLIC_DEBUG_MODE=true
-```
+```r
 
 ### Query Client Configuration
 - 5-minute stale time for most queries
