@@ -1,5 +1,5 @@
-'use client';
 
+'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { loginAction } from '@/lib/api/services/auth/actions';
@@ -20,41 +20,82 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
 
-  const handleLogin = async () => {
-    setError('');
-    setIsLoading(true);
+  // const handleLogin = async () => {
+  //   setError('');
+  //   setIsLoading(true);
 
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      setIsLoading(false);
-      return;
-    }
+  //   if (!email || !password) {
+  //     setError('Please fill in all fields');
+  //     setIsLoading(false);
+  //     return;
+  //   }
 
-    try {
-      const result = await loginAction({ email, password });
+  //   try {
+  //     const result = await loginAction({ email, password, role });
 
-      if (result?.success) {
-        // ✅ Current user ko save karna
-        localStorage.setItem('authToken', result.token);
-        localStorage.setItem('auth-user', JSON.stringify(result.user));
+  //     if (result?.success) {
+  //       // ✅ Save current user
+  //       localStorage.setItem('authToken', result.token);
+  //       localStorage.setItem('auth-user', JSON.stringify(result.user));
 
-        // ✅ Multi-account support
-        const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
-        const exists = accounts.find((a: any) => a.email === result.user.email);
-        if (!exists) accounts.push(result.user);
-        localStorage.setItem('accounts', JSON.stringify(accounts));
+  //       // ✅ Multi-account support
+  //       const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+  //       if (!accounts.find((a: any) => a.email === result.user.email)) accounts.push(result.user);
+  //       localStorage.setItem('accounts', JSON.stringify(accounts));
 
-        // ✅ Redirect user
-        window.location.href = `/dashboard/${result.user.role}`;
+  //       // ✅ Redirect to dashboard
+  //       window.location.href = `/dashboard/${result.user.role}`;
+  //     } else {
+  //       setError(result?.message || 'Login failed');
+  //     }
+  //   } catch (err: any) {
+  //     setError(err.message || 'Login failed');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+const handleLogin = async () => {
+  setError('');
+  setIsLoading(true);
+
+  if (!email || !password) {
+    setError('Please fill in all fields');
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const result = await loginAction({ email, password, role });
+
+    if (result?.success) {
+      // 🔹 Save current user
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('auth-user', JSON.stringify(result.user));
+
+      // 🔹 Multi-account support
+      const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+      const existingIndex = accounts.findIndex((a: any) => a.email === result.user.email);
+      if (existingIndex === -1) {
+        accounts.push(result.user);
       } else {
-        setError(result?.message || 'Login failed');
+        accounts[existingIndex] = result.user; // update existing
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
+      localStorage.setItem('accounts', JSON.stringify(accounts));
+
+      // 🔹 Dispatch event for auth-change listeners
+      window.dispatchEvent(new Event('auth-changed'));
+
+      // 🔹 Redirect to dashboard
+      window.location.href = `/dashboard/${result.user.role}`;
+    } else {
+      setError(result?.message || 'Login failed');
     }
-  };
+  } catch (err: any) {
+    setError(err.message || 'Login failed');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -65,27 +106,17 @@ export default function LoginPage() {
 
   const getRoleIcon = (roleType: string) => {
     switch (roleType) {
-      case 'admin':
-        return <Crown className="h-4 w-4" />;
-      case 'staff':
-        return <Shield className="h-4 w-4" />;
-      case 'user':
-        return <User className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
+      case 'admin': return <Crown className="h-4 w-4" />;
+      case 'staff': return <Shield className="h-4 w-4" />;
+      case 'user': default: return <User className="h-4 w-4" />;
     }
   };
 
   const getRoleDescription = (roleType: string) => {
     switch (roleType) {
-      case 'admin':
-        return 'Full system access and management';
-      case 'staff':
-        return 'Member management and training';
-      case 'user':
-        return 'Personal fitness tracking';
-      default:
-        return 'Personal fitness tracking';
+      case 'admin': return 'Full system access and management';
+      case 'staff': return 'Member management and training';
+      case 'user': default: return 'Personal fitness tracking';
     }
   };
 
@@ -108,7 +139,7 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="role">Account Type</Label>
-              <Select value={role} onValueChange={(value: 'user' | 'staff' | 'admin') => setRole(value)}>
+              <Select value={role} onValueChange={(value: 'user' | 'staff' | 'admin') => setRole(value)} disabled={isLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
@@ -201,7 +232,7 @@ export default function LoginPage() {
               </Button>
             </p>
 
-            {/* Debug button - remove in production */}
+            {/* Debug button */}
             <Button
               variant="outline"
               size="sm"
