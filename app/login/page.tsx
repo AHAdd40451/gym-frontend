@@ -1,63 +1,76 @@
-'use client';
-
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { loginAction } from '@/lib/api/services/auth/actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, User, Shield, Crown } from 'lucide-react';
+"use client";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { loginAction } from "@/lib/api/services/auth/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Loader2, User, Shield, Crown } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'staff' | 'admin'>('user');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"user" | "staff" | "admin">("user");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
-  const urlError = searchParams.get('error');
+  const urlError = searchParams.get("error");
 
   const handleLogin = async () => {
-    setError('');
+    setError("");
     setIsLoading(true);
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       setIsLoading(false);
       return;
     }
 
     try {
-      const result = await loginAction({ email, password });
+      const result = await loginAction({ email, password, role });
 
       if (result?.success) {
-        // ✅ Current user ko save karna
-        localStorage.setItem('authToken', result.token);
-        localStorage.setItem('auth-user', JSON.stringify(result.user));
+        // 🔹 Save current user
+        localStorage.setItem("authToken", result.token);
+        // localStorage.setItem('auth-user', JSON.stringify(result.user));
+        localStorage.setItem("currentUser", JSON.stringify(result.user));
 
-        // ✅ Multi-account support
-        const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
-        const exists = accounts.find((a: any) => a.email === result.user.email);
-        if (!exists) accounts.push(result.user);
-        localStorage.setItem('accounts', JSON.stringify(accounts));
+        // 🔹 Multi-account support
+        const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+        const existingIndex = accounts.findIndex((a: any) => a.email === result.user.email);
+        if (existingIndex === -1) {
+          accounts.push(result.user);
+        } else {
+          accounts[existingIndex] = result.user; // update existing
+        }
+        localStorage.setItem("accounts", JSON.stringify(accounts));
 
-        // ✅ Redirect user
+        // 🔹 Dispatch event for auth-change listeners
+        window.dispatchEvent(new Event("auth-changed"));
+
+        // 🔹 Redirect to dashboard
         window.location.href = `/dashboard/${result.user.role}`;
       } else {
-        setError(result?.message || 'Login failed');
+        setError(result?.message || "Login failed");
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleLogin();
     }
@@ -65,12 +78,11 @@ export default function LoginPage() {
 
   const getRoleIcon = (roleType: string) => {
     switch (roleType) {
-      case 'admin':
+      case "admin":
         return <Crown className="h-4 w-4" />;
-      case 'staff':
+      case "staff":
         return <Shield className="h-4 w-4" />;
-      case 'user':
-        return <User className="h-4 w-4" />;
+      case "user":
       default:
         return <User className="h-4 w-4" />;
     }
@@ -78,19 +90,18 @@ export default function LoginPage() {
 
   const getRoleDescription = (roleType: string) => {
     switch (roleType) {
-      case 'admin':
-        return 'Full system access and management';
-      case 'staff':
-        return 'Member management and training';
-      case 'user':
-        return 'Personal fitness tracking';
+      case "admin":
+        return "Full system access and management";
+      case "staff":
+        return "Member management and training";
+      case "user":
       default:
-        return 'Personal fitness tracking';
+        return "Personal fitness tracking";
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">Gym Management System</CardTitle>
@@ -108,7 +119,10 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="role">Account Type</Label>
-              <Select value={role} onValueChange={(value: 'user' | 'staff' | 'admin') => setRole(value)}>
+              <Select
+                value={role}
+                onValueChange={(value: "user" | "staff" | "admin") => setRole(value)}
+                disabled={isLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
@@ -118,7 +132,9 @@ export default function LoginPage() {
                       <User className="h-4 w-4" />
                       <div>
                         <div className="font-medium">Member</div>
-                        <div className="text-xs text-muted-foreground">Personal fitness tracking</div>
+                        <div className="text-muted-foreground text-xs">
+                          Personal fitness tracking
+                        </div>
                       </div>
                     </div>
                   </SelectItem>
@@ -127,7 +143,9 @@ export default function LoginPage() {
                       <Shield className="h-4 w-4" />
                       <div>
                         <div className="font-medium">Staff</div>
-                        <div className="text-xs text-muted-foreground">Member management and training</div>
+                        <div className="text-muted-foreground text-xs">
+                          Member management and training
+                        </div>
                       </div>
                     </div>
                   </SelectItem>
@@ -136,7 +154,7 @@ export default function LoginPage() {
                       <Crown className="h-4 w-4" />
                       <div>
                         <div className="font-medium">Admin</div>
-                        <div className="text-xs text-muted-foreground">Full system access</div>
+                        <div className="text-muted-foreground text-xs">Full system access</div>
                       </div>
                     </div>
                   </SelectItem>
@@ -172,48 +190,40 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="p-3 bg-muted rounded-lg">
+            <div className="bg-muted rounded-lg p-3">
               <div className="flex items-center gap-2 text-sm">
                 {getRoleIcon(role)}
                 <span className="font-medium capitalize">{role} Account</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {getRoleDescription(role)}
-              </p>
+              <p className="text-muted-foreground mt-1 text-xs">{getRoleDescription(role)}</p>
             </div>
 
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isLoading}
-              onClick={handleLogin}
-            >
+            <Button type="button" className="w-full" disabled={isLoading} onClick={handleLogin}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In as {role.charAt(0).toUpperCase() + role.slice(1)}
             </Button>
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Button variant="link" className="p-0 h-auto">
+            <p className="text-muted-foreground text-sm">
+              Don't have an account?{" "}
+              <Button variant="link" className="h-auto p-0">
                 Contact your administrator
               </Button>
             </p>
 
-            {/* Debug button - remove in production */}
+            {/* Debug button */}
             <Button
               variant="outline"
               size="sm"
               className="mt-2"
               onClick={() => {
-                console.log('Current localStorage:', {
-                  authToken: localStorage.getItem('authToken'),
-                  authUser: localStorage.getItem('auth-user'),
-                  accounts: JSON.parse(localStorage.getItem('accounts') || '[]'),
+                console.log("Current localStorage:", {
+                  authToken: localStorage.getItem("currentUser"),
+                  authUser: localStorage.getItem("currentUser"),
+                  accounts: JSON.parse(localStorage.getItem("accounts") || "[]")
                 });
-              }}
-            >
+              }}>
               Debug localStorage
             </Button>
           </div>

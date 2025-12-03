@@ -106,22 +106,44 @@ export async function registerAction(userData: RegisterData) {
   }
 }
 
+// export async function logoutAction() {
+//   try {
+//     // Call logout API if needed
+//     await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Logout API call failed:', error);
+//   }
+  
+//   // Always clear the cookie
+//   await clearAuthCookie();
+//   redirect('/login');
+// }
 export async function logoutAction() {
   try {
-    // Call logout API if needed
     await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
   } catch (error) {
-    console.error('Logout API call failed:', error);
+    console.error("Logout API call failed:", error);
   }
-  
-  // Always clear the cookie
+
+  // ⭐ Clear localStorage on logout
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth-user");
+    localStorage.removeItem("authToken");
+    window.dispatchEvent(new Event("auth-changed"));
+  }
+
   await clearAuthCookie();
-  redirect('/login');
+  redirect("/login");
 }
 
 function getDashboardUrl(role: string): string {

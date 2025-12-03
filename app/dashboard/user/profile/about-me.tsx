@@ -94,7 +94,7 @@ export function AboutMe() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Type</TableHead>
+                {/* <TableHead>Type</TableHead> */}
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -112,7 +112,7 @@ export function AboutMe() {
 
                 return (
                   <TableRow key={t._id}>
-                    <TableCell>{t.product || t.paymentMethod || "—"}</TableCell>
+                    {/* <TableCell>{t.product || t.paymentMethod || "—"}</TableCell> */}
                     <TableCell>
                       <Badge variant={statusClass}>{t.status}</Badge>
                     </TableCell>
