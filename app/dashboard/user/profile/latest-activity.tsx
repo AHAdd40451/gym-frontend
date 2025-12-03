@@ -184,7 +184,7 @@ export function LatestActivity() {
 
   // ⭐ Load user from localStorage (auth-user)
   React.useEffect(() => {
-    const savedUser = localStorage.getItem("auth-user");
+    const savedUser = localStorage.getItem("currentUser");
     if (savedUser) {
       setAuthUser(JSON.parse(savedUser));
     }
@@ -213,7 +213,7 @@ export function LatestActivity() {
   // Re-fetch on auth change
   React.useEffect(() => {
     const handler = () => {
-      const savedUser = localStorage.getItem("auth-user");
+      const savedUser = localStorage.getItem("currentUser");
       if (savedUser) setAuthUser(JSON.parse(savedUser));
       fetchSubscriptions();
     };
@@ -291,8 +291,7 @@ export function LatestActivity() {
                 </span>
 
                 <h3 className="font-semibold">
-                  {s.plan?.name} – ${(s.plan?.priceCents / 100).toFixed(2)}
-                  {isLatest && <Badge variant="outline" className="ms-2">Latest</Badge>}
+                  {s.plan?.name} 
                 </h3>
 
                 <time className="text-muted-foreground flex items-center gap-1.5 text-sm">

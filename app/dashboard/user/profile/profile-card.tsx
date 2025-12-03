@@ -97,7 +97,7 @@ export function ProfileCard() {
   const [authUser, setAuthUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("auth-user"); // localStorage se current auth user
+    const storedUser = localStorage.getItem("currentUser"); // localStorage se current auth user
     if (storedUser) setAuthUser(JSON.parse(storedUser));
   }, []);
 

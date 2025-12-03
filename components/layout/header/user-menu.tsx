@@ -20,7 +20,9 @@ export default function UserMenu() {
 
   useEffect(() => {
     // Current logged-in user
-    const storedUser = localStorage.getItem("auth-user");
+    // const storedUser = localStorage.getItem("auth-user");
+        const storedUser = localStorage.getItem("currentUser");
+
     if (storedUser) setAuthUser(JSON.parse(storedUser));
 
     // All saved accounts
@@ -29,7 +31,7 @@ export default function UserMenu() {
   }, []);
 
   const handleSwitch = (acc: any) => {
-    localStorage.setItem("auth-user", JSON.stringify(acc));
+    localStorage.setItem("currentUser", JSON.stringify(acc));
     setAuthUser(acc);
     window.location.reload(); // ya state update se bhi ho sakta
   };
@@ -131,12 +133,11 @@ export default function UserMenu() {
           <LogOut /> Log out
         </DropdownMenuItem> */}
 
-        {/* Logout */}
         <DropdownMenuItem
           onClick={async () => {
             localStorage.removeItem("authToken");
             localStorage.removeItem("auth-user");
-            // localStorage.removeItem("accounts"); // optional
+             localStorage.removeItem("currentUser");
 
             await logoutAction();
           }}
