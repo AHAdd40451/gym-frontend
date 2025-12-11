@@ -40,12 +40,21 @@ export async function getCategoryById(id: string) {
 
 // Update Category (Admin)
 export async function updateCategory(id: string, name: string, token?: string) {
+  if (!token) {
+    return {
+      success: false,
+      message: "Access denied. No token provided.",
+      category: null
+    };
+  }
+
   return serverFetch<{ success: boolean; message: string; category: Category }>(
     `${API_ENDPOINTS.CATEGORIES.BASE}/${id}`,
     {
       method: "PUT",
       headers: {
-        Authorization: token ? `Bearer ${token}` : ""
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ name })
     }
@@ -54,12 +63,20 @@ export async function updateCategory(id: string, name: string, token?: string) {
 
 // Delete Category (Admin)
 export async function deleteCategory(id: string, token?: string) {
+  if (!token) {
+    return {
+      success: false,
+      message: "Access denied. No token provided."
+    };
+  }
+
   return serverFetch<{ success: boolean; message: string }>(
     `${API_ENDPOINTS.CATEGORIES.BASE}/${id}`,
     {
       method: "DELETE",
       headers: {
-        Authorization: token ? `Bearer ${token}` : ""
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
       }
     }
   );

@@ -24,6 +24,10 @@ export const API_ENDPOINTS = {
     BASE: "/categories"
   },
 
+SUBCATEGORIES: {
+  BASE: "/subcategories"
+},
+
   ORDERS: {
     BASE: "/orders",
     BY_USER: "/orders/my-orders"

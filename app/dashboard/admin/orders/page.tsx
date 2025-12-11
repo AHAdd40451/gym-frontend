@@ -142,7 +142,7 @@ const page = async () => {
         <h1 className="text-xl font-bold tracking-tight lg:text-2xl">Orders</h1>
         <Button asChild>
           <Link href="#">
-            <PlusIcon /> Create category
+            <PlusIcon /> Create Order
           </Link>
         </Button>
       </div>
