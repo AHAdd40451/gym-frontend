@@ -1,10 +1,14 @@
+// app/dashboard/admin/product/create/page.tsx
 import React from 'react'
-import AddProductForm from '../../(auth)/pages/products/create/add-product-form'
+import { getServerAuth } from "@/lib/api/services/auth/server";
+import AddProductForm from '../components/add-product-form';
 
-const page = () => {
+const page = async () => {
+  const { user, token } = await getServerAuth();
+
   return (
     <div>
-        <h1><AddProductForm/></h1>
+      <AddProductForm token={token} />
     </div>
   )
 }

@@ -2,8 +2,8 @@ import React from "react";
 import { getSubCategories } from "@/lib/api/services/subcategory/subcategory";
 import { getCategories } from "@/lib/api/services/category/category";
 import { getServerAuth } from "@/lib/api/services/auth/server";
-import CreateSubCategoryModal from "../../(auth)/pages/subcategories/CreateSubCategories";
-import SubCategoriesDataTable from "../../(auth)/pages/subcategories/data-table";
+import CreateSubCategoryModal from "../components/CreateSubCategories";
+import SubCategoriesDataTable from "../components/data-table copy";
 
 const page = async () => {
   const { user, token } = await getServerAuth();

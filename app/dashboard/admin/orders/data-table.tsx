@@ -51,11 +51,19 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export type Order = {
   id: number;
+  _id: string;
   product_name: string;
   image: string;
   customer: Customer;
   price?: string;
-  status: "active" | "transportation" | "pending" | "completed" | "cancel";
+  status:
+    | "active"
+    | "transportation"
+    | "pending"
+    | "completed"
+    | "cancel"
+    | "confirmed"
+    | "cancelled";
   date?: string;
   type?: string;
 };
@@ -90,13 +98,16 @@ export const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "id",
     header: "#",
-    cell: ({ row }) => (
-      <Link
-        href={`/dashboard/pages/orders/${row.getValue("id")}`}
-        className="text-muted-foreground hover:text-primary hover:underline">
-        #{row.getValue("id")}
-      </Link>
-    )
+    cell: ({ row }) => {
+      const order = row.original;
+      return (
+        <Link
+          href={`/dashboard/admin/orders/${order._id}`}
+          className="text-muted-foreground hover:text-primary hover:underline">
+          #{row.getValue("id")}
+        </Link>
+      );
+    }
   },
   {
     accessorKey: "product_name",
@@ -104,12 +115,12 @@ export const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-4">
         <Image
-          src={`/images${row.original.image}`}
+          src={row.original.image}
           width={40}
           height={40}
-          className="size-10 rounded-md lg:size-12"
+          className="size-10 rounded-md object-cover lg:size-12"
           unoptimized
-          alt="..."
+          alt={row.getValue("product_name")}
         />
         {row.getValue("product_name")}
       </div>
@@ -180,16 +191,17 @@ export const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
 
+      // Update the statusMap in your data-table.tsx columns
       const statusMap = {
-        active: "success",
-        transportation: "info",
-        pending: "warning",
-        cancel: "destructive",
-        completed: "success",
-        delivered: "success"
+        processing: "warning",
+        shipped: "default",
+        "out for delivery": "default",
+        delivered: "success",
+        cancelled: "destructive"
       } as const;
 
-      const statusClass = statusMap[status] ?? "secondary";
+      const statusClass =
+        statusMap[status.toLowerCase().replace(/ /g, " ") as keyof typeof statusMap] ?? "secondary";
 
       return (
         <div>
@@ -204,6 +216,8 @@ export const columns: ColumnDef<Order>[] = [
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
+      const order = row.original;
+
       return (
         <div className="text-end">
           <DropdownMenu>
@@ -216,9 +230,9 @@ export const columns: ColumnDef<Order>[] = [
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Order Details</DropdownMenuItem>
-              <DropdownMenuItem>Edit</DropdownMenuItem>
-              <DropdownMenuItem>Delete</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/admin/orders/${order._id}`}>Order Details</Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,8 +1,8 @@
 import React from "react";
 import { getCategories } from "@/lib/api/services/category/category";
-import CategoriesDataTable from "../../(auth)/pages/categories/data-table";
-import CreateCategoryModal from "../../(auth)/pages/categories/CreateCategoryModal"; 
 import { getServerAuth } from "@/lib/api/services/auth/server";
+import CreateCategoryModal from "../components/CreateCategoryModal";
+import CategoriesDataTable from "../components/data-table";
 
 const page = async () => {
   const { user, token } = await getServerAuth();
