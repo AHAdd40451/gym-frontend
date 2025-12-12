@@ -30,7 +30,10 @@ export interface Product {
   description: string;
   ingredients?: string;
   servingSize?: string;
-  stock: number;
+  stock: {
+    quantity: number;
+    inStock: boolean;
+  };
   image: string;
   category: string | Category;
   createdAt: string;
