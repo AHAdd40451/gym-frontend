@@ -26,7 +26,7 @@ import {
   sortEvents,
   useEventVisibility,
   type CalendarEvent
-} from ".";
+} from "./";
 import { DefaultStartHour } from "../constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 

@@ -30,7 +30,7 @@ import {
   MonthView,
   WeekCellsHeight,
   WeekView
-} from ".";
+} from "./";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { addDays, setHours, setMinutes, subDays } from "date-fns";
 
-import { EventCalendar, type CalendarEvent } from ".";
+import { EventCalendar, type CalendarEvent } from "./";
 
 const sampleEvents: CalendarEvent[] = [
   {
