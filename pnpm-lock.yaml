@@ -21,19 +21,22 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.0)
       '@fullcalendar/core':
-        specifier: ^6.1.17
+        specifier: ^6.1.19
         version: 6.1.19
       '@fullcalendar/daygrid':
-        specifier: ^6.1.17
+        specifier: ^6.1.19
         version: 6.1.19(@fullcalendar/core@6.1.19)
       '@fullcalendar/interaction':
         specifier: ^6.1.17
+        version: 6.1.19(@fullcalendar/core@6.1.19)
+      '@fullcalendar/list':
+        specifier: ^6.1.19
         version: 6.1.19(@fullcalendar/core@6.1.19)
       '@fullcalendar/react':
         specifier: ^6.1.17
         version: 6.1.19(@fullcalendar/core@6.1.19)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@fullcalendar/timegrid':
-        specifier: ^6.1.17
+        specifier: ^6.1.19
         version: 6.1.19(@fullcalendar/core@6.1.19)
       '@hello-pangea/dnd':
         specifier: ^18.0.1
@@ -266,6 +269,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
+      shadcn-ui-kit:
+        specifier: 'link:'
+        version: 'link:'
       shiki:
         specifier: ^3.7.0
         version: 3.13.0
@@ -451,6 +457,11 @@ packages:
 
   '@fullcalendar/interaction@6.1.19':
     resolution: {integrity: sha512-GOciy79xe8JMVp+1evAU3ytdwN/7tv35t5i1vFkifiuWcQMLC/JnLg/RA2s4sYmQwoYhTw/p4GLcP0gO5B3X5w==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.19
+
+  '@fullcalendar/list@6.1.19':
+    resolution: {integrity: sha512-knZHpAVF0LbzZpSJSUmLUUzF0XlU/MRGK+Py2s0/mP93bCtno1k2L3XPs/kzh528hSjehwLm89RgKTSfW1P6cA==}
     peerDependencies:
       '@fullcalendar/core': ~6.1.19
 
@@ -4252,6 +4263,10 @@ snapshots:
       '@fullcalendar/core': 6.1.19
 
   '@fullcalendar/interaction@6.1.19(@fullcalendar/core@6.1.19)':
+    dependencies:
+      '@fullcalendar/core': 6.1.19
+
+  '@fullcalendar/list@6.1.19(@fullcalendar/core@6.1.19)':
     dependencies:
       '@fullcalendar/core': 6.1.19
 

@@ -20,6 +20,7 @@ import { Download } from "lucide-react";
 import StatCards from "@/app/dashboard/user/components/stat-cards";
 import { getServerAuth } from "@/lib/api/services/auth/server";
 import { getAllOrders, transformOrdersToUI } from "@/lib/api/services/order/order";
+import { log } from "console";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -34,6 +35,7 @@ export async function generateMetadata() {
 
 export default async function AdminDashboardPage() {
   const { user, token } = await getServerAuth();
+//  console.log("token", token)
 
   const ordersResult = await getAllOrders({}, token || "");
 
