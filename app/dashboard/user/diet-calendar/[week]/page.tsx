@@ -15,18 +15,18 @@ interface WeekDetailsPageProps {
 export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
   // Parse the week start date from params
   const weekStartDate = new Date(params.week);
-  
+
   // Calculate the date range for the week
   const weekEndDate = new Date(weekStartDate);
   weekEndDate.setDate(weekStartDate.getDate() + 6);
-  
-  const startDateStr = weekStartDate.toLocaleDateString("en-US", { 
-    month: "short", 
+
+  const startDateStr = weekStartDate.toLocaleDateString("en-US", {
+    month: "short",
     day: "numeric",
     year: "numeric"
   });
-  const endDateStr = weekEndDate.toLocaleDateString("en-US", { 
-    month: "short", 
+  const endDateStr = weekEndDate.toLocaleDateString("en-US", {
+    month: "short",
     day: "numeric",
     year: "numeric"
   });
@@ -36,7 +36,7 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       {/* Back Button */}
       <Link href="/dashboard/user/diet-calendar">
         <Button variant="ghost" className="mb-4">
@@ -47,12 +47,12 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
 
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Week Overview</h1>
+        <h1 className="text-foreground text-3xl font-bold">Week Overview</h1>
         <p className="text-muted-foreground text-lg">{dateRange}</p>
       </div>
 
       {/* Day Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
         {daysOfWeek.map((day) => (
           <DayDietCard key={day} dayName={day} />
         ))}
@@ -60,4 +60,3 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
     </div>
   );
 }
-
