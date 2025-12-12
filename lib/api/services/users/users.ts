@@ -230,6 +230,19 @@ export async function getAllUsers(params: { page?: number; limit?: number } = {}
 }
 
 
+export async function getUserByIdServerSide(id: string, token: string) {
+  return serverFetch<{ data: { user: User } }>(
+    `${API_ENDPOINTS.USERS.BASE}/${id}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+}
+
+
 interface DeleteUserResponse {
   success: boolean;
   message: string;
