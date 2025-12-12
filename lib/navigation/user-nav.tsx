@@ -93,6 +93,11 @@ export const userNavItems: NavGroup[] = [
         icon: ActivityIcon
       },
       {
+        title: "Diet Calendar",
+        href: "/dashboard/user/diet-calendar",
+        icon: CalendarIcon
+      },
+      {
         title: "Exercise Library",
         href: "/dashboard/user/exercises",
         icon: DumbbellIcon
