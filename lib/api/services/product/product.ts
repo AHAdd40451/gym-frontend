@@ -45,7 +45,7 @@ export interface ProductPayload {
   price: number;
   description: string;
   image?: string;
-  stock?: number;
+  stock?: number | { quantity: number; inStock: boolean };
   ingredients?: string;
   servingSize?: string;
   category: string;
@@ -63,7 +63,7 @@ export async function createProduct(payload: ProductPayload, token?: string) {
 }
 
 // Get All Products (Public, with optional category filter)
-export async function getAllProducts(params: { category?: string } = {}) {
+export async function getAllProducts(params: { category?: string } = {}, token?: string) {
   const query = buildQueryString({ category: params.category });
   return serverFetch<{ success: boolean; count?: number; products: Product[] }>(
     `${API_ENDPOINTS.PRODUCTS.BASE}${query}`
