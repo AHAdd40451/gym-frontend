@@ -258,7 +258,7 @@ export default function AddProductForm({ token }: AddProductFormProps) {
 
       if (responseData?.success || responseData?.product) {
         toast.success("Product created successfully!");
-        router.push("/dashboard/pages/products");
+        router.push("/dashboard/admin/product-list");
         router.refresh();
       } else {
         toast.error(responseData?.message || "Failed to create product");
@@ -275,7 +275,7 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     form.reset();
     setVariants([]);
     setSelectedCategory("");
-    router.push("/dashboard/pages/products");
+    router.push("/dashboard/admin/product-list");
   };
 
   return (

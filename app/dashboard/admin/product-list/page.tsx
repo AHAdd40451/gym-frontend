@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,10 @@ import ProductListTable from './product-list-table';
 
 // Server Component - This runs on the server
 const page = async () => {
+  // Get authentication token from cookies
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth-token")?.value;
+  
   // Fetch products from API on the server
   const response = await getAllProducts();
   
