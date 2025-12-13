@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -51,24 +52,33 @@ import {
 import { AddMediaFromUrl } from "@/app/dashboard/(auth)/pages/products/create/add-media-from-url";
 import AddNewCategory from "@/app/dashboard/(auth)/pages/products/create/add-category";
 
+import { createProduct } from "@/lib/api/services/product/product";
+import { getCategories } from "@/lib/api/services/category/category";
+import { getSubCategoriesByCategory } from "@/lib/api/services/subcategory/subcategory";
+
 const FormSchema = z.object({
   name: z.string().min(2, {
     message: "Product name must be at least 2 characters."
   }),
-  sku: z.string(),
-  barcode: z.string(),
-  description: z.string(),
-  file: z.string(),
-  variants: z.string(),
-  price: z.string(),
-  status: z.string(),
-  category: z.string(),
-  sub_category: z.string(),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters."
+  }),
+  price: z.string().min(1, {
+    message: "Price is required."
+  }),
+  discountedPrice: z.string().optional(),
   ingredients: z.string().optional(),
   servingSize: z.string().optional(),
-  stock: z.number().min(0, {
+  stockQuantity: z.number().min(0, {
     message: "Stock must be 0 or greater."
-  })
+  }),
+  category: z.string().min(1, {
+    message: "Please select a category."
+  }),
+  subCategory: z.string().optional(),
+  status: z.string().default("draft"),
+  inStock: z.boolean().default(true),
+  chargeTax: z.boolean().default(false)
 });
 
 interface Variant {
@@ -78,19 +88,46 @@ interface Variant {
   price: string;
 }
 
-export default function AddProductForm() {
+interface Category {
+  _id: string;
+  name: string;
+}
+
+interface SubCategory {
+  _id: string;
+  name: string;
+  category: string;
+}
+
+interface AddProductFormProps {
+  token: string | null;
+}
+
+export default function AddProductForm({ token }: AddProductFormProps) {
+  const router = useRouter();
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingSubCategories, setLoadingSubCategories] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: "",
-      sku: "",
-      barcode: "",
       description: "",
       ingredients: "",
       servingSize: "",
-      stock: 0
+      stockQuantity: 0,
+      price: "",
+      discountedPrice: "",
+      category: "",
+      subCategory: "",
+      status: "draft",
+      inStock: true,
+      chargeTax: false
     }
   });
 
@@ -112,6 +149,54 @@ export default function AddProductForm() {
     maxFiles: 5
   });
 
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchSubCategories(selectedCategory);
+    } else {
+      setSubCategories([]);
+    }
+  }, [selectedCategory]);
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const result = await getCategories({});
+      const responseData = result?.data || result;
+      
+      if (responseData?.categories) {
+        setCategories(responseData.categories);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast.error("Failed to load categories");
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const fetchSubCategories = async (categoryId: string) => {
+    try {
+      setLoadingSubCategories(true);
+      const result = await getSubCategoriesByCategory(categoryId);
+      const responseData = result?.data || result;
+      
+      if (responseData?.subcategories) {
+        setSubCategories(responseData.subcategories);
+      }
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      setSubCategories([]);
+    } finally {
+      setLoadingSubCategories(false);
+    }
+  };
+
   const addVariant = () => {
     const newVariant: Variant = {
       id: Math.random().toString(36).substr(2, 9),
@@ -132,20 +217,66 @@ export default function AddProductForm() {
     ));
   };
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    const submitData = {
-      ...data,
-      variants: variants
-    };
-    
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(submitData, null, 2)}</code>
-        </pre>
-      )
-    });
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    if (!token) {
+      toast.error("Please login to continue");
+      return;
+    }
+
+    if (files.length === 0) {
+      toast.error("Please upload at least one product image");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Prepare product payload with proper stock object
+      const productPayload = {
+        name: data.name,
+        description: data.description,
+        price: parseFloat(data.price),
+        stock: {
+          quantity: data.stockQuantity,
+          inStock: data.inStock
+        },
+        category: data.category,
+        subCategory: data.subCategory,
+        ingredients: data.ingredients,
+        servingSize: data.servingSize,
+        image: files[0].preview,
+        variants: variants.length > 0 ? variants : undefined,
+        status: data.status,
+        chargeTax: data.chargeTax,
+        discountedPrice: data.discountedPrice ? parseFloat(data.discountedPrice) : undefined
+      };
+
+      console.log("Sending product payload:", productPayload); // Debug log
+
+      const result = await createProduct(productPayload, token);
+      const responseData = result?.data || result;
+
+      if (responseData?.success || responseData?.product) {
+        toast.success("Product created successfully!");
+        router.push("/dashboard/pages/products");
+        router.refresh();
+      } else {
+        toast.error(responseData?.message || "Failed to create product");
+      }
+    } catch (error) {
+      console.error("Error creating product:", error);
+      toast.error("An error occurred while creating the product");
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const handleDiscard = () => {
+    form.reset();
+    setVariants([]);
+    setSelectedCategory("");
+    router.push("/dashboard/pages/products");
+  };
 
   return (
     <Form {...form}>
@@ -157,16 +288,15 @@ export default function AddProductForm() {
                 <ChevronLeft />
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold tracking-tight">Add Products</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Add Product</h1>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="secondary" onClick={handleDiscard}>
               Discard
             </Button>
-            <Button type="button" variant="outline">
-              Save Draft
+            <Button type="submit" disabled={loading}>
+              {loading ? "Publishing..." : "Publish"}
             </Button>
-            <Button type="submit">Publish</Button>
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-6">
@@ -184,48 +314,20 @@ export default function AddProductForm() {
                       <FormItem>
                         <FormLabel>Name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder="Enter product name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  {/* <div className="grid gap-4 lg:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="sku"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SKU</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="barcode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Barcode</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div> */}
                   <FormField
                     control={form.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea {...field} />
+                          <Textarea {...field} placeholder="Enter product description" />
                         </FormControl>
                         <FormDescription>
                           Set a description to the product for better visibility.
@@ -241,7 +343,7 @@ export default function AddProductForm() {
                       <FormItem>
                         <FormLabel>Ingredients (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea {...field} />
+                          <Textarea {...field} placeholder="List ingredients" />
                         </FormControl>
                         <FormDescription>
                           List the ingredients for this product.
@@ -269,10 +371,10 @@ export default function AddProductForm() {
                     />
                     <FormField
                       control={form.control}
-                      name="stock"
+                      name="stockQuantity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Stock</FormLabel>
+                          <FormLabel>Stock Quantity</FormLabel>
                           <FormControl>
                             <Input 
                               {...field} 
@@ -293,7 +395,8 @@ export default function AddProductForm() {
                 </div>
               </CardContent>
             </Card>
-            {/* -- Product images -- */}
+            
+            {/* Product Images */}
             <Card>
               <CardHeader>
                 <CardTitle>Product Images</CardTitle>
@@ -307,103 +410,98 @@ export default function AddProductForm() {
                 </CardAction>
               </CardHeader>
               <CardContent>
-                <FormField
-                  name="file"
-                  control={form.control}
-                  render={({ field }) => (
-                    <div className="flex flex-col gap-2">
-                      <div
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        data-dragging={isDragging || undefined}
-                        data-files={files.length > 0 || undefined}
-                        className="border-input data-[dragging=true]:bg-accent/50 has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 relative flex min-h-52 flex-col items-center overflow-hidden rounded-xl border border-dashed p-4 transition-colors not-data-[files]:justify-center has-[input:focus]:ring-[3px]">
-                        <input
-                          {...getInputProps()}
-                          className="sr-only"
-                          aria-label="Upload image file"
-                        />
-                        {files.length > 0 ? (
-                          <div className="flex w-full flex-col gap-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <h3 className="truncate text-sm font-medium">
-                                Uploaded Files ({files.length})
-                              </h3>
+                <div className="flex flex-col gap-2">
+                  <div
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    data-dragging={isDragging || undefined}
+                    data-files={files.length > 0 || undefined}
+                    className="border-input data-[dragging=true]:bg-accent/50 has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 relative flex min-h-52 flex-col items-center overflow-hidden rounded-xl border border-dashed p-4 transition-colors not-data-[files]:justify-center has-[input:focus]:ring-[3px]">
+                    <input
+                      {...getInputProps()}
+                      className="sr-only"
+                      aria-label="Upload image file"
+                    />
+                    {files.length > 0 ? (
+                      <div className="flex w-full flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="truncate text-sm font-medium">
+                            Uploaded Files ({files.length})
+                          </h3>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={openFileDialog}
+                            disabled={files.length >= 5}>
+                            <UploadIcon
+                              className="-ms-0.5 size-3.5 opacity-60"
+                              aria-hidden="true"
+                            />
+                            Add more
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                          {files.map((file) => (
+                            <div
+                              key={file.id}
+                              className="bg-accent relative aspect-square rounded-md border">
+                              <img
+                                src={file.preview}
+                                alt={file.file.name}
+                                className="size-full rounded-[inherit] object-cover"
+                              />
                               <Button
                                 type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={openFileDialog}
-                                disabled={files.length >= 5}>
-                                <UploadIcon
-                                  className="-ms-0.5 size-3.5 opacity-60"
-                                  aria-hidden="true"
-                                />
-                                Add more
+                                onClick={() => removeFile(file.id)}
+                                size="icon"
+                                className="border-background focus-visible:border-background absolute -top-2 -right-2 size-6 rounded-full border-2 shadow-none">
+                                <XIcon className="size-3.5" />
                               </Button>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                              {files.map((file) => (
-                                <div
-                                  key={file.id}
-                                  className="bg-accent relative aspect-square rounded-md border">
-                                  <img
-                                    src={file.preview}
-                                    alt={file.file.name}
-                                    className="size-full rounded-[inherit] object-cover"
-                                  />
-                                  <Button
-                                    type="button"
-                                    onClick={() => removeFile(file.id)}
-                                    size="icon"
-                                    className="border-background focus-visible:border-background absolute -top-2 -right-2 size-6 rounded-full border-2 shadow-none">
-                                    <XIcon className="size-3.5" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
-                            <div
-                              className="bg-background mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border"
-                              aria-hidden="true">
-                              <ImageIcon className="size-4 opacity-60" />
-                            </div>
-                            <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
-                            <p className="text-muted-foreground text-xs">PNG or JPG (max. 5MB)</p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="mt-4"
-                              onClick={openFileDialog}>
-                              <UploadIcon className="-ms-1 opacity-60" aria-hidden="true" />
-                              Select images
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      {errors.length > 0 && (
-                        <div
-                          className="text-destructive flex items-center gap-1 text-xs"
-                          role="alert">
-                          <AlertCircleIcon className="size-3 shrink-0" />
-                          <span>{errors[0]}</span>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
+                        <div
+                          className="bg-background mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border"
+                          aria-hidden="true">
+                          <ImageIcon className="size-4 opacity-60" />
+                        </div>
+                        <p className="mb-1.5 text-sm font-medium">Drop your images here</p>
+                        <p className="text-muted-foreground text-xs">PNG or JPG (max. 5MB)</p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="mt-4"
+                          onClick={openFileDialog}>
+                          <UploadIcon className="-ms-1 opacity-60" aria-hidden="true" />
+                          Select images
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {errors.length > 0 && (
+                    <div
+                      className="text-destructive flex items-center gap-1 text-xs"
+                      role="alert">
+                      <AlertCircleIcon className="size-3 shrink-0" />
+                      <span>{errors[0]}</span>
                     </div>
                   )}
-                />
+                </div>
               </CardContent>
             </Card>
-            {/* -- Variants -- */}
+            
+            {/* Variants */}
             <Card className="pb-0">
               <CardHeader>
-                <CardTitle>Variants</CardTitle>
+                <CardTitle>Variants (Optional)</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -425,6 +523,7 @@ export default function AddProductForm() {
                                   <SelectItem value="size">Size</SelectItem>
                                   <SelectItem value="color">Color</SelectItem>
                                   <SelectItem value="weight">Weight</SelectItem>
+                                  <SelectItem value="flavor">Flavor</SelectItem>
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
@@ -481,7 +580,9 @@ export default function AddProductForm() {
               </CardFooter>
             </Card>
           </div>
+          
           <div className="space-y-4 lg:col-span-2">
+            {/* Pricing */}
             <Card>
               <CardHeader>
                 <CardTitle>Pricing</CardTitle>
@@ -495,41 +596,61 @@ export default function AddProductForm() {
                       <FormItem>
                         <FormLabel>Base Price</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} type="number" placeholder="0.00" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
-                    name="price"
+                    name="discountedPrice"
                     control={form.control}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discounted Price</FormLabel>
+                        <FormLabel>Discounted Price (Optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} type="number" placeholder="0.00" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="terms" />
-                    <label
-                      htmlFor="terms"
-                      className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Charge tax on this product
-                    </label>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="chargeTax"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="!mt-0">Charge tax on this product</FormLabel>
+                      </FormItem>
+                    )}
+                  />
                   <hr />
-                  <div className="flex items-center space-x-2">
-                    <Switch id="airplane-mode" checked />
-                    <Label htmlFor="airplane-mode">In stock</Label>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="inStock"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between space-x-2">
+                        <Label className="!mt-0">In stock</Label>
+                        <FormControl>
+                          <Switch 
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>
+            
+            {/* Status */}
             <Card>
               <CardHeader>
                 <CardTitle>Status</CardTitle>
@@ -541,22 +662,15 @@ export default function AddProductForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Select {...field} defaultValue="draft">
+                        <Select {...field} onValueChange={field.onChange}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select a status" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectItem value="draft">
-                                <span className="size-2 rounded-full bg-orange-400"></span> Draft
-                              </SelectItem>
-                              <SelectItem value="active">
-                                {" "}
-                                <span className="size-2 rounded-full bg-green-400"></span> Active
-                              </SelectItem>
-                              <SelectItem value="archived">
-                                <span className="size-2 rounded-full bg-indigo-400"></span> Archived
-                              </SelectItem>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="archived">Archived</SelectItem>
                             </SelectGroup>
                           </SelectContent>
                         </Select>
@@ -568,6 +682,8 @@ export default function AddProductForm() {
                 />
               </CardContent>
             </Card>
+            
+            {/* Categories */}
             <Card>
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle>Categories</CardTitle>
@@ -579,18 +695,29 @@ export default function AddProductForm() {
                     control={form.control}
                     render={({ field }) => (
                       <FormItem>
+                        <FormLabel>Category</FormLabel>
                         <FormControl>
                           <div className="flex gap-2">
                             <div className="grow">
-                              <Select {...field}>
+                              <Select 
+                                {...field} 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  setSelectedCategory(value);
+                                  form.setValue("subCategory", "");
+                                }}
+                                disabled={loadingCategories}
+                              >
                                 <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select a category" />
+                                  <SelectValue placeholder={loadingCategories ? "Loading..." : "Select a category"} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>
-                                    <SelectItem value="Electronics">Electronics</SelectItem>
-                                    <SelectItem value="Clothing">Clothing</SelectItem>
-                                    <SelectItem value="banana">Accessories</SelectItem>
+                                    {categories.map((cat) => (
+                                      <SelectItem key={cat._id} value={cat._id}>
+                                        {cat.name}
+                                      </SelectItem>
+                                    ))}
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>
@@ -603,20 +730,43 @@ export default function AddProductForm() {
                     )}
                   />
                   <FormField
-                    name="sub_category"
+                    name="subCategory"
                     control={form.control}
                     render={({ field }) => (
                       <FormItem>
+                        <FormLabel>Sub Category (Optional)</FormLabel>
                         <FormControl>
                           <div className="flex gap-2">
                             <div className="grow">
-                              <Select {...field}>
+                              <Select 
+                                {...field} 
+                                onValueChange={field.onChange}
+                                disabled={!selectedCategory || loadingSubCategories}
+                              >
                                 <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select a sub category" />
+                                  <SelectValue 
+                                    placeholder={
+                                      !selectedCategory 
+                                        ? "Select category first" 
+                                        : loadingSubCategories 
+                                        ? "Loading..." 
+                                        : "Select a sub category"
+                                    } 
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>
-                                    <SelectItem value="Toys">Toys</SelectItem>
+                                    {subCategories.length > 0 ? (
+                                      subCategories.map((subCat) => (
+                                        <SelectItem key={subCat._id} value={subCat._id}>
+                                          {subCat.name}
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-subcategories" disabled>
+                                        No subcategories available
+                                      </SelectItem>
+                                    )}
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>
