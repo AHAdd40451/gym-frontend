@@ -8,19 +8,54 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function SupplementSection() {
-  const [supplements, setSupplements] = React.useState({
-    multivitamin: false,
-    omega3: false,
-    protein: false
-  });
+interface SupplementsData {
+  multivitamin: boolean;
+  omega3: boolean;
+  protein: boolean;
+  custom: string[];
+}
+
+interface SupplementSectionProps {
+  value?: SupplementsData;
+  onChange?: (supplements: SupplementsData) => void;
+}
+
+export function SupplementSection({ value, onChange }: SupplementSectionProps) {
+  const [supplements, setSupplements] = React.useState<SupplementsData>(
+    value || {
+      multivitamin: false,
+      omega3: false,
+      protein: false,
+      custom: []
+    }
+  );
   const [customSupplement, setCustomSupplement] = React.useState("");
 
+  React.useEffect(() => {
+    if (value) {
+      setSupplements(value);
+    }
+  }, [value]);
+
   const handleSupplementChange = (supplement: string, checked: boolean) => {
-    setSupplements((prev) => ({
-      ...prev,
+    const updated = {
+      ...supplements,
       [supplement]: checked
-    }));
+    };
+    setSupplements(updated);
+    onChange?.(updated);
+  };
+
+  const handleAddCustom = () => {
+    if (customSupplement.trim()) {
+      const updated = {
+        ...supplements,
+        custom: [...supplements.custom, customSupplement.trim()]
+      };
+      setSupplements(updated);
+      setCustomSupplement("");
+      onChange?.(updated);
+    }
   };
 
   return (
@@ -84,7 +119,7 @@ export function SupplementSection() {
               onChange={(e) => setCustomSupplement(e.target.value)}
               className="flex-1"
             />
-            <Button type="button" variant="outline" size="icon">
+            <Button type="button" variant="outline" size="icon" onClick={handleAddCustom}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>

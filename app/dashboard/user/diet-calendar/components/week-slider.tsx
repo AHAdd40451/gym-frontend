@@ -15,9 +15,11 @@ interface Week {
 
 interface WeekSliderProps {
   weeks: Week[];
+  onCopyWeek?: (weekStart: string) => void;
+  onPasteWeek?: (weekStart: string) => void;
 }
 
-export function WeekSlider({ weeks }: WeekSliderProps) {
+export function WeekSlider({ weeks, onCopyWeek, onPasteWeek }: WeekSliderProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
@@ -65,6 +67,8 @@ export function WeekSlider({ weeks }: WeekSliderProps) {
               weekStart={week.weekStart}
               weekDates={week.weekDates}
               isCurrentWeek={week.isCurrentWeek}
+              onCopy={() => onCopyWeek?.(week.weekStart)}
+              onPaste={() => onPasteWeek?.(week.weekStart)}
             />
           </div>
         ))}

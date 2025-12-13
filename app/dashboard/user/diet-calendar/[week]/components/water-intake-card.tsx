@@ -7,8 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Droplet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-export function WaterIntakeCard() {
-  const [waterIntake, setWaterIntake] = React.useState("2.5");
+interface WaterIntakeCardProps {
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
+export function WaterIntakeCard({ value, onChange }: WaterIntakeCardProps) {
+  const [waterIntake, setWaterIntake] = React.useState(value || "2.5");
+
+  React.useEffect(() => {
+    if (value !== undefined) {
+      setWaterIntake(value);
+    }
+  }, [value]);
+
+  const handleChange = (newValue: string) => {
+    setWaterIntake(newValue);
+    onChange?.(newValue);
+  };
+
   const targetLiters = 3.0;
   const currentLiters = parseFloat(waterIntake) || 0;
   const progress = Math.min((currentLiters / targetLiters) * 100, 100);
@@ -33,7 +50,7 @@ export function WaterIntakeCard() {
             min="0"
             max="10"
             value={waterIntake}
-            onChange={(e) => setWaterIntake(e.target.value)}
+            onChange={(e) => handleChange(e.target.value)}
             placeholder="2.5"
             className="w-full"
           />

@@ -9,13 +9,46 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+interface MealData {
+  description: string;
+  calories: string;
+  protein: string;
+  carbs: string;
+  fats: string;
+  notes: string;
+}
+
 interface MealCardProps {
   mealName: string;
   mealId: string;
+  value?: MealData;
+  onChange?: (data: MealData) => void;
 }
 
-export function MealCard({ mealName, mealId }: MealCardProps) {
+export function MealCard({ mealName, mealId, value, onChange }: MealCardProps) {
   const [isOpen, setIsOpen] = React.useState(true);
+  const [mealData, setMealData] = React.useState<MealData>(
+    value || {
+      description: "",
+      calories: "",
+      protein: "",
+      carbs: "",
+      fats: "",
+      notes: ""
+    }
+  );
+
+  React.useEffect(() => {
+    if (value) {
+      setMealData(value);
+    }
+  }, [value]);
+
+  const handleChange = (field: keyof MealData, newValue: string) => {
+    const updated = { ...mealData, [field]: newValue };
+    setMealData(updated);
+    onChange?.(updated);
+  };
 
   return (
     <Card className="rounded-lg border shadow-sm">
@@ -41,6 +74,8 @@ export function MealCard({ mealName, mealId }: MealCardProps) {
                 placeholder="Describe your meal (e.g., Oatmeal with berries and nuts, Grilled chicken with vegetables)..."
                 className="min-h-[100px] resize-none"
                 rows={4}
+                value={mealData.description}
+                onChange={(e) => handleChange("description", e.target.value)}
               />
             </div>
 
@@ -54,25 +89,48 @@ export function MealCard({ mealName, mealId }: MealCardProps) {
                   type="number"
                   placeholder="kcal"
                   className="w-full"
+                  value={mealData.calories}
+                  onChange={(e) => handleChange("calories", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`protein-${mealId}`} className="text-sm font-medium">
                   Protein (g)
                 </Label>
-                <Input id={`protein-${mealId}`} type="number" placeholder="g" className="w-full" />
+                <Input
+                  id={`protein-${mealId}`}
+                  type="number"
+                  placeholder="g"
+                  className="w-full"
+                  value={mealData.protein}
+                  onChange={(e) => handleChange("protein", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`carbs-${mealId}`} className="text-sm font-medium">
                   Carbs (g)
                 </Label>
-                <Input id={`carbs-${mealId}`} type="number" placeholder="g" className="w-full" />
+                <Input
+                  id={`carbs-${mealId}`}
+                  type="number"
+                  placeholder="g"
+                  className="w-full"
+                  value={mealData.carbs}
+                  onChange={(e) => handleChange("carbs", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`fats-${mealId}`} className="text-sm font-medium">
                   Fats (g)
                 </Label>
-                <Input id={`fats-${mealId}`} type="number" placeholder="g" className="w-full" />
+                <Input
+                  id={`fats-${mealId}`}
+                  type="number"
+                  placeholder="g"
+                  className="w-full"
+                  value={mealData.fats}
+                  onChange={(e) => handleChange("fats", e.target.value)}
+                />
               </div>
             </div>
 
@@ -84,6 +142,8 @@ export function MealCard({ mealName, mealId }: MealCardProps) {
                 id={`notes-${mealId}`}
                 placeholder="Optional notes about this meal..."
                 className="w-full"
+                value={mealData.notes}
+                onChange={(e) => handleChange("notes", e.target.value)}
               />
             </div>
           </CardContent>

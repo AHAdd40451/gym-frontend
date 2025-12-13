@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DayDietCard } from "../components/day-diet-card";
+import { CopyPasteToolbar } from "../components/copy-paste-toolbar";
+import { useDietCopy, WeekDietData, DayDietData } from "../context/diet-copy-context";
+import { toast } from "sonner";
 
 interface WeekDetailsPageProps {
   params: Promise<{
@@ -38,6 +41,30 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
   // Days of the week
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+  // State for week diet data
+  const [weekData, setWeekData] = useState<WeekDietData>({});
+  const [isPasted, setIsPasted] = useState(false);
+  const { copyWeek, copiedWeekData } = useDietCopy();
+
+  // Handle paste highlight animation
+  React.useEffect(() => {
+    if (isPasted) {
+      const timer = setTimeout(() => setIsPasted(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isPasted]);
+
+  const handleCopy = () => {
+    copyWeek(weekData);
+  };
+
+  const handlePaste = () => {
+    if (copiedWeekData) {
+      setWeekData(copiedWeekData);
+      setIsPasted(true);
+    }
+  };
+
   return (
     <div className="container mx-auto space-y-6 p-6">
       {/* Back Button */}
@@ -48,14 +75,20 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
         </Button>
       </Link>
 
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-foreground text-3xl font-bold">Week Overview</h1>
-        <p className="text-muted-foreground text-lg">{dateRange}</p>
+      {/* Header with Copy/Paste Toolbar */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-2">
+          <h1 className="text-foreground text-3xl font-bold">Week Overview</h1>
+          <p className="text-muted-foreground text-lg">{dateRange}</p>
+        </div>
+        <CopyPasteToolbar onCopy={handleCopy} onPaste={handlePaste} type="week" />
       </div>
 
       {/* Day Cards Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+      <div
+        className={`grid grid-cols-1 gap-6 transition-all duration-500 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 ${
+          isPasted ? "ring-primary/50 rounded-lg p-2 ring-2" : ""
+        }`}>
         {daysOfWeek.map((day) => (
           <DayDietCard key={day} dayName={day} weekStart={resolvedParams.week} />
         ))}
