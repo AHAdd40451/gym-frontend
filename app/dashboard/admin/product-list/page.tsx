@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getAllProducts } from '@/lib/api/services/product/product';
+import { getCategories } from '@/lib/api/services/category/category';
 import ProductListTable from './product-list-table';
 
 // Server Component - This runs on the server
@@ -14,12 +15,16 @@ const page = async () => {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth-token")?.value;
   
-  // Fetch products from API on the server
-  const response = await getAllProducts();
+  // Fetch products and categories from API on the server (parallel fetch)
+  const [productsResponse, categoriesResponse] = await Promise.all([
+    getAllProducts(),
+    getCategories()
+  ]);
   
   // Handle API response
-  const products = response.data?.products || [];
-  const hasError = response.error;
+  const products = productsResponse.data?.products || [];
+  const categories = categoriesResponse.data?.categories || [];
+  const hasError = productsResponse.error;
 
   return (
     <div className="space-y-4">
@@ -27,7 +32,7 @@ const page = async () => {
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">Products</h1>
         <Button asChild>
-          <Link href="/dashboard/pages/products/create">
+          <Link href="/dashboard/admin/product">
             <PlusIcon /> Add Product
           </Link>
         </Button>
@@ -90,7 +95,7 @@ const page = async () => {
 
       {/* Product List Table - Client Component */}
       <div className="pt-4">
-        <ProductListTable products={products} />
+        <ProductListTable products={products} categories={categories} />
       </div>
     </div>
   )

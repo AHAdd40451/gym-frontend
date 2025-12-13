@@ -63,6 +63,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Product } from "@/lib/api/services/product/product";
 import { deleteProductAction } from "./actions";
+import { EditProductDialog } from "./edit-product-dialog";
 
 // Helper function to determine product status based on stock
 const getProductStatus = (stock: { quantity: number; inStock: boolean }) => {
@@ -86,9 +87,10 @@ const getCategoryName = (category: string | { _id: string; name: string }): stri
 type ProductActionsProps = {
   row: any;
   onDelete: (productId: string, productName: string) => void;
+  onEdit: (product: Product) => void;
 };
 
-const ProductActions = ({ row, onDelete }: ProductActionsProps) => {
+const ProductActions = ({ row, onDelete, onEdit }: ProductActionsProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -101,7 +103,9 @@ const ProductActions = ({ row, onDelete }: ProductActionsProps) => {
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>View details</DropdownMenuItem>
-        <DropdownMenuItem>Edit</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onEdit(row.original)}>
+          Edit
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original._id)}>
           Copy ID
         </DropdownMenuItem>
@@ -116,7 +120,10 @@ const ProductActions = ({ row, onDelete }: ProductActionsProps) => {
   );
 };
 
-export const createColumns = (onDelete: (productId: string, productName: string) => void): ColumnDef<Product>[] => [
+export const createColumns = (
+  onDelete: (productId: string, productName: string) => void,
+  onEdit: (product: Product) => void
+): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -266,15 +273,21 @@ export const createColumns = (onDelete: (productId: string, productName: string)
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => <ProductActions row={row} onDelete={onDelete} />
+    cell: ({ row }) => <ProductActions row={row} onDelete={onDelete} onEdit={onEdit} />
   }
 ];
 
-interface ProductListTableProps {
-  products: Product[];
+interface Category {
+  _id: string;
+  name: string;
 }
 
-export default function ProductListTable({ products }: ProductListTableProps) {
+interface ProductListTableProps {
+  products: Product[];
+  categories: Category[];
+}
+
+export default function ProductListTable({ products, categories }: ProductListTableProps) {
   const [localProducts, setLocalProducts] = React.useState(products);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -290,6 +303,13 @@ export default function ProductListTable({ products }: ProductListTableProps) {
     productId: "",
     productName: ""
   });
+  const [editDialog, setEditDialog] = React.useState<{
+    open: boolean;
+    product: Product | null;
+  }>({
+    open: false,
+    product: null
+  });
 
   // Handle delete product
   const handleDeleteProduct = React.useCallback((productId: string, productName: string) => {
@@ -298,6 +318,23 @@ export default function ProductListTable({ products }: ProductListTableProps) {
       productId,
       productName
     });
+  }, []);
+
+  // Handle edit product
+  const handleEditProduct = React.useCallback((product: Product) => {
+    setEditDialog({
+      open: true,
+      product
+    });
+  }, []);
+
+  // Handle edit success - update product in local state
+  const handleEditSuccess = React.useCallback((updatedProduct: Product) => {
+    setLocalProducts(prev => 
+      prev.map(product => 
+        product._id === updatedProduct._id ? updatedProduct : product
+      )
+    );
   }, []);
 
   // Confirm delete
@@ -337,7 +374,7 @@ export default function ProductListTable({ products }: ProductListTableProps) {
     setDeleteDialog({ open: false, productId: "", productName: "" });
   }, []);
 
-  const columns = React.useMemo(() => createColumns(handleDeleteProduct), [handleDeleteProduct]);
+  const columns = React.useMemo(() => createColumns(handleDeleteProduct, handleEditProduct), [handleDeleteProduct, handleEditProduct]);
 
   const table = useReactTable({
     data: localProducts,
@@ -454,6 +491,17 @@ export default function ProductListTable({ products }: ProductListTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Product Dialog */}
+      {editDialog.product && (
+        <EditProductDialog
+          open={editDialog.open}
+          onOpenChange={(open) => setEditDialog({ open, product: null })}
+          product={editDialog.product}
+          categories={categories}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </>
   );
 }
