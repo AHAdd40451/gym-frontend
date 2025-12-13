@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button";
 import { DayDietCard } from "../components/day-diet-card";
 
 interface WeekDetailsPageProps {
-  params: {
+  params: Promise<{
     week: string;
-  };
+  }>;
 }
 
 export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
+  // Unwrap params Promise in Next.js 16
+  const resolvedParams = React.use(params);
+
   // Parse the week start date from params
-  const weekStartDate = new Date(params.week);
+  const weekStartDate = new Date(resolvedParams.week);
 
   // Calculate the date range for the week
   const weekEndDate = new Date(weekStartDate);
@@ -54,7 +57,7 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
       {/* Day Cards Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
         {daysOfWeek.map((day) => (
-          <DayDietCard key={day} dayName={day} />
+          <DayDietCard key={day} dayName={day} weekStart={resolvedParams.week} />
         ))}
       </div>
     </div>
