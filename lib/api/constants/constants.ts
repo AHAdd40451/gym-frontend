@@ -24,9 +24,13 @@ export const API_ENDPOINTS = {
     BASE: "/categories"
   },
 
-SUBCATEGORIES: {
-  BASE: "/subcategories"
-},
+  SUBCATEGORIES: {
+    BASE: "/subcategories"
+  },
+
+  REVIEWS: {
+    BASE: "/reviews"
+  },
 
   ORDERS: {
     BASE: "/orders",
@@ -50,12 +54,12 @@ SUBCATEGORIES: {
   TRANSACTIONS: {
     BASE: "/subscriptions",
     BY_USER: (userId: string) => `/subscriptions/user/${userId}`, // ✅ get all transactions by user ID
-    BY_SUBSCRIPTION: (subscriptionId: string) => `/subscription/${subscriptionId}`, // ✅ get transactions by subscription
+    BY_SUBSCRIPTION: (subscriptionId: string) => `/subscription/${subscriptionId}` // ✅ get transactions by subscription
   },
 
   ATTENDANCE: {
-  BASE: "/attendance",
-  RUN_DAILY: "/attendance/mark",
-  ALL: "/attendance/all",
-},
+    BASE: "/attendance",
+    RUN_DAILY: "/attendance/mark",
+    ALL: "/attendance/all"
+  }
 } as const;
