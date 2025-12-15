@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import * as React from "react";
 import {
   ColumnDef,
@@ -13,13 +14,7 @@ import {
   getSortedRowModel,
   useReactTable
 } from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  MoreHorizontal,
-  PlusCircle,
-  Star,
-  Loader2
-} from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, PlusCircle, Star, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -49,7 +44,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import {
   Table,
@@ -102,17 +97,17 @@ const ProductActions = ({ row, onDelete, onEdit }: ProductActionsProps) => {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>View details</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onEdit(row.original)}>
-          Edit
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/admin/product-list/${row.original._id}`}>View details</Link>
         </DropdownMenuItem>
+        {/* Edit moved to product details page */}
+        {/* <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem> */}
         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original._id)}>
           Copy ID
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           className="text-red-600"
-          onClick={() => onDelete(row.original._id, row.original.name)}
-        >
+          onClick={() => onDelete(row.original._id, row.original.name)}>
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -160,7 +155,7 @@ export const createColumns = (
     },
     cell: ({ row }) => (
       <div className="flex items-center gap-4">
-        <figure className="rounded-lg border overflow-hidden">
+        <figure className="overflow-hidden rounded-lg border">
           <Image
             src={row.original.image || "/images/placeholder-product.jpg"}
             width={48}
@@ -330,10 +325,8 @@ export default function ProductListTable({ products, categories }: ProductListTa
 
   // Handle edit success - update product in local state
   const handleEditSuccess = React.useCallback((updatedProduct: Product) => {
-    setLocalProducts(prev => 
-      prev.map(product => 
-        product._id === updatedProduct._id ? updatedProduct : product
-      )
+    setLocalProducts((prev) =>
+      prev.map((product) => (product._id === updatedProduct._id ? updatedProduct : product))
     );
   }, []);
 
@@ -344,7 +337,7 @@ export default function ProductListTable({ products, categories }: ProductListTa
     setIsDeleting(true);
     try {
       const result = await deleteProductAction(deleteDialog.productId);
-      
+
       if (!result.success) {
         toast.error("Failed to delete product", {
           description: result.error || "An error occurred while deleting the product."
@@ -353,10 +346,10 @@ export default function ProductListTable({ products, categories }: ProductListTa
         toast.success("Product deleted successfully", {
           description: `${deleteDialog.productName} has been removed from your product list.`
         });
-        
+
         // ✅ Remove product from local state (No GET API call needed!)
-        setLocalProducts(prev => 
-          prev.filter(product => product._id !== deleteDialog.productId)
+        setLocalProducts((prev) =>
+          prev.filter((product) => product._id !== deleteDialog.productId)
         );
       }
     } catch (error: any) {
@@ -374,7 +367,10 @@ export default function ProductListTable({ products, categories }: ProductListTa
     setDeleteDialog({ open: false, productId: "", productName: "" });
   }, []);
 
-  const columns = React.useMemo(() => createColumns(handleDeleteProduct, handleEditProduct), [handleDeleteProduct, handleEditProduct]);
+  const columns = React.useMemo(
+    () => createColumns(handleDeleteProduct, handleEditProduct),
+    [handleDeleteProduct, handleEditProduct]
+  );
 
   const table = useReactTable({
     data: localProducts,
@@ -461,13 +457,15 @@ export default function ProductListTable({ products, categories }: ProductListTa
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !isDeleting && !open && cancelDelete()}>
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => !isDeleting && !open && cancelDelete()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{deleteDialog.productName}</strong> from your product list. 
-              This action cannot be undone.
+              This will permanently delete <strong>{deleteDialog.productName}</strong> from your
+              product list. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -477,8 +475,7 @@ export default function ProductListTable({ products, categories }: ProductListTa
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-            >
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -505,4 +502,3 @@ export default function ProductListTable({ products, categories }: ProductListTa
     </>
   );
 }
-

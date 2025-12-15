@@ -93,11 +93,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/analytics",
         icon: BarChart3Icon
       },
-      {
-        title: "Product",
-        href: "/dashboard/admin/product",
-        icon: BarChart3Icon
-      },
+      // {
+      //   title: "Product",
+      //   href: "/dashboard/admin/product",
+      //   icon: BarChart3Icon
+      // },
       {
         title: "Product-list",
         href: "/dashboard/admin/product-list",
@@ -126,6 +126,11 @@ export const adminNavItems: NavGroup[] = [
       {
         title: "Contact",
         href: "/dashboard/admin/contact",
+        icon: ActivityIcon
+      },
+      {
+        title: "All Subcriptions",
+        href: "/dashboard/admin/all-sub",
         icon: ActivityIcon
       }
     ]

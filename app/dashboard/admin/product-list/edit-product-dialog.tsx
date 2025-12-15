@@ -124,18 +124,7 @@ export function EditProductDialog({
       // Call server action
       const result = await updateProductAction(product._id, updatePayload);
 
-      if (!result.success) {
-        toast.error("Failed to update product", {
-          description: result.error || "An error occurred while updating the product.",
-        });
-        return;
-      }
-
-      // Success!
-      toast.success("Product updated successfully", {
-        description: `${data.name} has been updated.`,
-      });
-
+    
       // Call onSuccess callback with updated product
       if (result.product) {
         onSuccess(result.product);
