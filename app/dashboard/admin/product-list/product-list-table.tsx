@@ -100,7 +100,8 @@ const ProductActions = ({ row, onDelete, onEdit }: ProductActionsProps) => {
         <DropdownMenuItem asChild>
           <Link href={`/dashboard/admin/product-list/${row.original._id}`}>View details</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem>
+        {/* Edit moved to product details page */}
+        {/* <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem> */}
         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original._id)}>
           Copy ID
         </DropdownMenuItem>

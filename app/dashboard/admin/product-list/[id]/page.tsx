@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   CircleDollarSign,
   ChevronLeft,
-  Edit3Icon,
   HandCoinsIcon,
   HeartIcon,
   Layers2Icon,
@@ -24,8 +23,10 @@ import { Progress } from "@/components/ui/progress";
 import { getServerAuth } from "@/lib/api/services/auth/server";
 import { getProductById } from "@/lib/api/services/product/product";
 import { getProductReviews } from "@/lib/api/services/review/review";
+import { getCategories } from "@/lib/api/services/category/category";
 import ProductImageGallery from "./product-image-gallery";
 import ProductReviewList from "./reviews";
+import { EditProductButton } from "./edit-product-button";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -38,6 +39,10 @@ export default async function Page({ params }: PageProps) {
   // Fetch product details
   const productResult = await getProductById(resolvedParams.id);
   const productData = productResult?.data?.product || productResult?.product;
+
+  // Fetch categories for edit dialog
+  const categoriesResult = await getCategories();
+  const categories = categoriesResult?.data?.categories || categoriesResult?.categories || [];
 
   if (!productData) {
     return (
@@ -113,6 +118,7 @@ export default async function Page({ params }: PageProps) {
             </div>
           </div>
         </div>
+        <EditProductButton product={productData} categories={categories} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
