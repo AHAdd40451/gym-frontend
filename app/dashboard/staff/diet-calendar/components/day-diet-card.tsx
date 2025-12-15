@@ -67,7 +67,7 @@ export function DayDietCard({ dayName, weekStart }: DayDietCardProps) {
   const dayRoute = `${weekStart}/${dayDate}`;
 
   return (
-    <Link href={`/dashboard/user/diet-calendar/${dayRoute}`}>
+    <Link href={`/dashboard/staff/diet-calendar/${dayRoute}`}>
       <Card className="group cursor-pointer rounded-lg border shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

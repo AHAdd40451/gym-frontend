@@ -149,8 +149,8 @@ export function transformOrderToUI(order: Order, index?: number): UIOrder {
   };
 
   // Get customer name or use default
-  const customerName = order.customer?.name || "Unknown Customer";
-
+  const customerName = order?.guest || "Unknown Customer";
+console.log("customerName555", order)
   // Generate a simple avatar based on name
   const customerImage = `/images/avatars/${Math.abs(customerName.split("").reduce((hash, char) => (hash << 5) - hash + char.charCodeAt(0), 0)) % 10}.png`;
 

@@ -57,7 +57,7 @@ export function WeekCard({
 
   return (
     <div className="relative w-[300px]">
-      <Link href={`/dashboard/user/diet-calendar/${weekStart}`} className="block">
+      <Link href={`/dashboard/staff/diet-calendar/${weekStart}`} className="block">
         <Card
           className={`group relative cursor-pointer overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
             isCurrentWeek
