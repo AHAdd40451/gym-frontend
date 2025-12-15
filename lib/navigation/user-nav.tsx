@@ -150,6 +150,16 @@ export const userNavItems: NavGroup[] = [
     ]
   },
   {
+    title: "Nutrition",
+    items: [
+      {
+        title: "Diet Calendar",
+        href: "/dashboard/user/diet-calendar",
+        icon: CalendarIcon
+      }
+    ]
+  },
+  {
     title: "Community",
     items: [
       {

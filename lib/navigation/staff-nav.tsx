@@ -97,7 +97,12 @@ export const staffNavItems: NavGroup[] = [
         title: "Member Check-ins",
         href: "/dashboard/staff/checkins",
         icon: ClockIcon
-      }
+      },
+      {
+        title: "Diet Calendar",
+        href: "/dashboard/staff/diet-calendar",
+        icon: CalendarIcon
+      },
     ]
   },
   {
