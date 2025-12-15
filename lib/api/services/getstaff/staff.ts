@@ -22,6 +22,8 @@ export interface PaginationParams {
   limit?: number;
   sort?: string;
   search?: string;
+  role?: string;
+  status?: string;
 }
 
 // ===== 1) Get All Users =====
@@ -29,8 +31,8 @@ export async function getAllUsers(
   params: PaginationParams = {},
   token: string
 ) {
-  const { page = 1, limit = 10, sort = "-createdAt", search } = params;
-  const queryString = buildQueryString({ page, limit, sort, search });
+  const { page = 1, limit = 10, sort = "-createdAt", search, role, status } = params;
+  const queryString = buildQueryString({ page, limit, sort, search, role, status });
 
   return serverFetch<{
     users: User[];

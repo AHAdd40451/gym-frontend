@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { SupplementSection } from "../components/supplement-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { CopyPasteToolbar } from "../../components/copy-paste-toolbar";
 import { useDietCopy, DayDietData } from "../../context/diet-copy-context";
+import { toast } from "sonner";
+import { createMealPlan, MealPlanPayload } from "@/lib/api/services/meals/meals";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -27,9 +30,29 @@ interface DayDetailPageProps {
   }>;
 }
 
+interface DietPlanPayload {
+  user: string;
+  date: string;
+  day: string;
+  meals: Array<{
+    type: string;
+    description: string;
+    calories: number;
+    carbs: number;
+    protein: number;
+    fat: number;
+    note: string;
+  }>;
+  supplements: string[];
+  dietaryInstructions: string;
+  waterIntake: number;
+  status: string;
+}
+
 export default function DayDetailPage({ params }: DayDetailPageProps) {
   // Unwrap params Promise in Next.js 16
   const resolvedParams = React.use(params);
+  const searchParams = useSearchParams();
 
   // Parse dates
   const dayDate = new Date(resolvedParams.day);
@@ -71,6 +94,10 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
 
   const [isPasted, setIsPasted] = useState(false);
   const { copyDay, copiedDayData } = useDietCopy();
+  const [userId, setUserId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [token, setToken] = useState("");
+  const [tokenReady, setTokenReady] = useState(false);
 
   // Handle paste highlight animation
   useEffect(() => {
@@ -79,6 +106,22 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       return () => clearTimeout(timer);
     }
   }, [isPasted]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedToken =
+        localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+      setToken(storedToken);
+      setTokenReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const qpUser = searchParams.get("user");
+    if (qpUser) {
+      setUserId(qpUser);
+    }
+  }, [searchParams]);
 
   const handleCopy = () => {
     // Collect all current data before copying
@@ -96,6 +139,70 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
     if (copiedDayData) {
       setDietData(copiedDayData);
       setIsPasted(true);
+    }
+  };
+
+  const mealTypeMap: Record<string, string> = useMemo(
+    () => ({
+      breakfast: "breakfast",
+      "mid-morning": "mid_morning_snack",
+      lunch: "lunch",
+      evening: "evening_snack",
+      dinner: "dinner"
+    }),
+    []
+  );
+
+  const buildPayload = (): DietPlanPayload => {
+    const mealsArray = Object.entries(dietData.meals).map(([mealId, meal]) => ({
+      type: mealTypeMap[mealId] || mealId,
+      description: meal?.description || "",
+      calories: Number(meal?.calories || 0),
+      carbs: Number(meal?.carbs || 0),
+      protein: Number(meal?.protein || 0),
+      fat: Number(meal?.fats || 0),
+      note: meal?.notes || ""
+    }));
+
+    const supplements: string[] = [];
+    if (dietData.supplements.multivitamin) supplements.push("Multivitamin");
+    if (dietData.supplements.omega3) supplements.push("Omega 3");
+    if (dietData.supplements.protein) supplements.push("Protein");
+    supplements.push(...(dietData.supplements.custom || []));
+
+    const waterMl = Math.round((parseFloat(dietData.waterIntake) || 0) * 1000);
+
+    return {
+      user: userId.trim(),
+      date: resolvedParams.day,
+      day: dayName,
+      meals: mealsArray,
+      supplements,
+      dietaryInstructions: dietData.specialInstructions,
+      waterIntake: waterMl,
+      status: dietData.status
+    };
+  };
+
+  const handleSave = async () => {
+    if (!userId.trim()) {
+      toast.error("Please enter a member ID (user).");
+      return;
+    }
+    if (!tokenReady || !token) {
+      toast.error("Missing auth token. Please login again.");
+      return;
+    }
+
+    const payload = buildPayload();
+    setSaving(true);
+    try {
+      await createMealPlan(payload, token);
+      toast.success("Diet plan saved");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save diet plan");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -173,6 +280,26 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
 
         {/* Right Column - Side Info */}
         <div className="space-y-6">
+          {/* Member selection */}
+          <Card className="rounded-lg border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Member</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="member-id" className="text-sm font-medium">
+                  Member/User ID
+                </Label>
+                <Input
+                  id="member-id"
+                  placeholder="Enter member user id"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Water Intake */}
           <WaterIntakeCard
             value={dietData.waterIntake}
@@ -214,8 +341,8 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
           {/* Action Buttons */}
           <Card className="rounded-lg border shadow-sm">
             <CardContent className="space-y-3 pt-6">
-              <Button className="w-full" variant="default" size="lg">
-                Save Diet Plan
+              <Button className="w-full" variant="default" size="lg" onClick={handleSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Diet Plan"}
               </Button>
               <Button className="w-full" variant="outline" size="lg">
                 Reset / Clear

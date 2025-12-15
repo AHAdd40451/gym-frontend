@@ -6,14 +6,20 @@ export interface SubscribedUser {
   _id: string;
   status: string;
   user: {
+    _id?: string;
     username: string;
     email: string;
     address?: string;
+    role?: string;
+    userType?: string;
   };
   plan: {
     name: string;
     price?: number;
   };
+  startDate?: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
 }
 
 // Types
@@ -243,6 +249,12 @@ export function useSubscribedUsers(token: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
+    if (!token) {
+      setData([]);
+      setError("Missing auth token");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await serverFetch(
