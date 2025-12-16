@@ -1,16 +1,22 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { CalendarHeader } from "@/app/dashboard/staff/diet-calendar/components/calendar-header";
-import { WeekSlider } from "@/app/dashboard/staff/diet-calendar/components/week-slider";
-import { MiniMonthCalendar } from "@/app/dashboard/staff/diet-calendar/components/mini-month-calendar";
-import { StatsOverview } from "@/app/dashboard/staff/diet-calendar/components/stats-overview";
+import React, { useEffect, useMemo, useState } from "react";
+import { CalendarHeader } from "@/app/dashboard/user/diet-calendar/components/calendar-header";
+import { WeekSlider } from "@/app/dashboard/user/diet-calendar/components/week-slider";
+import { MiniMonthCalendar } from "@/app/dashboard/user/diet-calendar/components/mini-month-calendar";
+import { StatsOverview } from "@/app/dashboard/user/diet-calendar/components/stats-overview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockUserDietPlan } from "./mock-data";
+import { DietPlanPreset, mockUserDietPlan } from "./mock-data";
+import { getAllMeals, MealPlanDocument } from "@/lib/api/services/meals/meals";
+import { getCurrentUserId, getLocalDayRangeIso, transformMealPlanToPreset } from "./utils";
+import { formatDateKey } from "@/lib/utils/date";
 
 export default function UserDietCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [todayPreset, setTodayPreset] = useState<DietPlanPreset | null>(null);
+  const [todayError, setTodayError] = useState<string | null>(null);
+  const [todayLoading, setTodayLoading] = useState(false);
 
   const getWeeksForMonth = (month: Date) => {
     const weeks: Array<{
@@ -66,7 +72,7 @@ export default function UserDietCalendarPage() {
         weeks.push({
           weekNumber,
           dateRange: `${startDate} – ${endDate}`,
-          weekStart: currentWeekStart.toISOString().split("T")[0],
+          weekStart: formatDateKey(currentWeekStart),
           weekDates,
           isCurrentWeek
         });
@@ -88,6 +94,49 @@ export default function UserDietCalendarPage() {
   const weeks = useMemo(() => getWeeksForMonth(currentMonth), [currentMonth]);
   const currentWeek = weeks.find((w) => w.isCurrentWeek);
   const selectedWeekStart = currentWeek?.weekStart;
+  const todayDate = new Date();
+  const todayKey = formatDateKey(todayDate);
+
+  useEffect(() => {
+    const fetchTodayPlan = async () => {
+      setTodayLoading(true);
+      try {
+        const token =
+          (typeof window !== "undefined" &&
+            (localStorage.getItem("authToken") || localStorage.getItem("token"))) ||
+          "";
+        const userId = getCurrentUserId();
+
+        if (!userId || !token) {
+          setTodayPreset(mockUserDietPlan[todayKey] ?? mockUserDietPlan.default);
+          setTodayError("Missing user or token, showing sample plan.");
+          return;
+        }
+
+        const { startIso, endIso } = getLocalDayRangeIso(todayDate);
+        const res = await getAllMeals({ user: userId, startDate: startIso, endDate: endIso }, token);
+        const payload = (res as any)?.data ?? res;
+        const list: MealPlanDocument[] =
+          payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
+
+        if (Array.isArray(list) && list.length > 0) {
+          setTodayPreset(transformMealPlanToPreset(list[0]));
+          setTodayError((res as any)?.error || null);
+        } else {
+          setTodayPreset(mockUserDietPlan[todayKey] ?? mockUserDietPlan.default);
+          setTodayError("No plan found for today; showing sample plan.");
+        }
+      } catch (err: any) {
+        console.error("Failed to load today diet plan", err);
+        setTodayPreset(mockUserDietPlan[todayKey] ?? mockUserDietPlan.default);
+        setTodayError("Unable to load plan; showing sample plan.");
+      } finally {
+        setTodayLoading(false);
+      }
+    };
+
+    fetchTodayPlan();
+  }, [todayKey]);
 
   const handlePreviousMonth = () => {
     setCurrentMonth((prev) => {
@@ -127,9 +176,8 @@ export default function UserDietCalendarPage() {
   const year = currentMonth.getFullYear();
 
   // Today bottom highlight
-  const todayKey = new Date().toISOString().split("T")[0];
-  const todayPreset = mockUserDietPlan[todayKey] ?? mockUserDietPlan.default;
-  const todaysMeals = Object.entries(todayPreset.dietData.meals).slice(0, 3);
+  const todaysPreset = todayPreset ?? mockUserDietPlan[todayKey] ?? mockUserDietPlan.default;
+  const todaysMeals = Object.entries(todaysPreset.dietData.meals).slice(0, 3);
 
   return (
     <div className="container mx-auto space-y-8 p-6">
@@ -142,14 +190,18 @@ export default function UserDietCalendarPage() {
 
       {/* Today quick preview placed near top for immediate visibility */}
       <Card className="rounded-2xl border shadow-sm">
-        <CardHeader>
+          <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold">Today&apos;s Diet Plan</CardTitle>
             <Badge variant="outline">Auto-selected</Badge>
           </div>
+            {todayLoading && (
+              <p className="text-muted-foreground text-xs">Loading today&apos;s plan...</p>
+            )}
+            {todayError && <p className="text-amber-600 text-xs">{todayError}</p>}
           <p className="text-muted-foreground text-sm">
-            Target {todayPreset.summary.targetCalories} kcal · P {todayPreset.summary.protein}g · C{" "}
-            {todayPreset.summary.carbs}g · F {todayPreset.summary.fats}g · Water {todayPreset.summary.water}
+            Target {todaysPreset.summary.targetCalories} kcal · P {todaysPreset.summary.protein}g · C{" "}
+            {todaysPreset.summary.carbs}g · F {todaysPreset.summary.fats}g · Water {todaysPreset.summary.water}
           </p>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">

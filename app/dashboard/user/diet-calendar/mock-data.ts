@@ -272,3 +272,5 @@ export const weeklyPlanSnapshot = [
   { day: "Sunday", calories: "1900 kcal", hydration: "3.0 L", focus: "Refeed + rest" }
 ];
 
+
+

@@ -68,7 +68,7 @@ export default function WeekDetailsPage({ params }: WeekDetailsPageProps) {
   return (
     <div className="container mx-auto space-y-6 p-6">
       {/* Back Button */}
-      <Link href="/dashboard/user/diet-calendar">
+      <Link href="/dashboard/staff/diet-calendar">
         <Button variant="ghost" className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Calendar

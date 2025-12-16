@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { mockUserDietPlan } from "../../mock-data";
+import { mockUserDietPlan, DietPlanPreset } from "../../mock-data";
+import { getAllMeals, MealPlanDocument } from "@/lib/api/services/meals/meals";
+import {
+  getCurrentUserId,
+  getLocalDayRangeIso,
+  parseLocalDateKey,
+  transformMealPlanToPreset
+} from "../../utils";
+import { formatDateKey } from "@/lib/utils/date";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -18,13 +26,59 @@ interface DayDetailPageProps {
 
 export default function UserDayDetailPage({ params }: DayDetailPageProps) {
   const resolvedParams = React.use(params);
-  const dayDate = new Date(resolvedParams.day);
-  const dayKey = dayDate.toISOString().split("T")[0];
-  const preset = mockUserDietPlan[dayKey] ?? mockUserDietPlan.default;
+  const dayDate = parseLocalDateKey(resolvedParams.day);
+  const dayKey = formatDateKey(dayDate);
+  const [preset, setPreset] = useState<DietPlanPreset | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasPlan, setHasPlan] = useState<boolean>(false);
 
-  const dietData = preset.dietData;
-  const timeline = preset.timeline;
-  const summary = preset.summary;
+  useEffect(() => {
+    const fetchPlan = async () => {
+      setLoading(true);
+      try {
+        const storedToken =
+          (typeof window !== "undefined" && (localStorage.getItem("authToken") || localStorage.getItem("token"))) ||
+          "";
+        const userId = getCurrentUserId();
+
+        if (!userId || !storedToken) {
+          setPreset(mockUserDietPlan[dayKey] ?? mockUserDietPlan.default);
+          setError("Missing user or token, showing sample plan.");
+          return;
+        }
+
+        const { startIso, endIso } = getLocalDayRangeIso(dayDate);
+        const res = await getAllMeals({ user: userId, startDate: startIso, endDate: endIso }, storedToken);
+        const payload = (res as any)?.data ?? res;
+        const list: MealPlanDocument[] =
+          payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
+
+        if (Array.isArray(list) && list.length > 0) {
+          const plan = list[0];
+          setPreset(transformMealPlanToPreset(plan));
+          setError((res as any)?.error || null);
+          setHasPlan(true);
+        } else {
+          setPreset(null);
+          setHasPlan(false);
+          setError("No plan found for this day.");
+        }
+      } catch (err: any) {
+        console.error("getUserMeals error", err);
+        setPreset(null);
+        setHasPlan(false);
+        setError("Unable to load plan.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlan();
+  }, [dayKey, resolvedParams.day]);
+
+  const dietData = preset?.dietData;
+  const timeline = preset?.timeline;
+  const summary = preset?.summary;
 
   const dayName = dayDate.toLocaleDateString("en-US", { weekday: "long" });
   const dateStr = dayDate.toLocaleDateString("en-US", {
@@ -36,14 +90,16 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
 
   const totals = useMemo(() => {
     const totalsInit = { calories: 0, protein: 0, carbs: 0, fats: 0 };
-    Object.values(dietData.meals || {}).forEach((meal) => {
-      totalsInit.calories += Number(meal.calories) || 0;
-      totalsInit.protein += Number(meal.protein) || 0;
-      totalsInit.carbs += Number(meal.carbs) || 0;
-      totalsInit.fats += Number(meal.fats) || 0;
-    });
+    if (dietData?.meals) {
+      Object.values(dietData.meals).forEach((meal: any) => {
+        totalsInit.calories += Number(meal.calories) || 0;
+        totalsInit.protein += Number(meal.protein) || 0;
+        totalsInit.carbs += Number(meal.carbs) || 0;
+        totalsInit.fats += Number(meal.fats) || 0;
+      });
+    }
     return totalsInit;
-  }, [dietData.meals]);
+  }, [dietData?.meals]);
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -54,21 +110,50 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
         </Button>
       </Link>
 
-      <div className="flex items-start justify-between gap-4">
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading diet plan...
+        </div>
+      )}
+      {error && (
+        <p className="text-xs text-amber-600">
+          {error}
+        </p>
+      )}
+
+      {!loading && !hasPlan && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold">No plan found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-sm">No diet plan is available for this day.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!hasPlan && (
+        <div className="pointer-events-none opacity-40">
+          {/* Prevent rendering empty data-driven sections when no plan */}
+        </div>
+      )}
+
+      <div className={`${hasPlan ? "flex" : "hidden"} items-start justify-between gap-4`}>
         <div className="flex-1 space-y-2">
           <h1 className="text-foreground text-3xl font-bold">Diet Plan – {dayName}</h1>
           <p className="text-muted-foreground text-lg">{dateStr}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className={`${hasPlan ? "grid" : "hidden"} grid-cols-1 gap-6 lg:grid-cols-3`}>
         <div className="space-y-6 lg:col-span-2">
           <Card className="rounded-lg border shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">Meal Schedule</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {Object.entries(dietData.meals).map(([id, meal]) => (
+              {dietData &&
+                Object.entries(dietData.meals).map(([id, meal]) => (
                 <div
                   key={id}
                   className="border-border/60 bg-muted/40 hover:bg-muted/60 rounded-lg border p-4 transition-colors">
@@ -95,7 +180,7 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
               <CardTitle className="text-xl font-semibold">Dietary Instructions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p className="text-muted-foreground text-sm">{dietData.specialInstructions}</p>
+              <p className="text-muted-foreground text-sm">{dietData?.specialInstructions}</p>
             </CardContent>
           </Card>
         </div>
@@ -106,8 +191,8 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
               <CardTitle className="text-xl font-semibold">Hydration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p className="text-foreground text-lg font-semibold">{dietData.waterIntake} L</p>
-              <p className="text-muted-foreground text-sm">Target: {summary.water}</p>
+              <p className="text-foreground text-lg font-semibold">{dietData?.waterIntake} L</p>
+              <p className="text-muted-foreground text-sm">Target: {summary?.water}</p>
             </CardContent>
           </Card>
 
@@ -117,18 +202,18 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex flex-wrap gap-2 text-sm">
-                {dietData.supplements.multivitamin && <Badge variant="outline">Multivitamin</Badge>}
-                {dietData.supplements.omega3 && <Badge variant="outline">Omega-3</Badge>}
-                {dietData.supplements.protein && <Badge variant="outline">Protein</Badge>}
-                {dietData.supplements.custom.map((item) => (
-                  <Badge key={item} variant="outline">
-                    {item}
-                  </Badge>
-                ))}
-                {!dietData.supplements.multivitamin &&
-                  !dietData.supplements.omega3 &&
-                  !dietData.supplements.protein &&
-                  dietData.supplements.custom.length === 0 && (
+                {dietData?.supplements?.multivitamin && <Badge variant="outline">Multivitamin</Badge>}
+                {dietData?.supplements?.omega3 && <Badge variant="outline">Omega-3</Badge>}
+                {dietData?.supplements?.protein && <Badge variant="outline">Protein</Badge>}
+                {dietData?.supplements?.custom?.map((item) => (
+                    <Badge key={item} variant="outline">
+                      {item}
+                    </Badge>
+                  ))}
+                {!dietData?.supplements?.multivitamin &&
+                  !dietData?.supplements?.omega3 &&
+                  !dietData?.supplements?.protein &&
+                  (dietData?.supplements?.custom?.length || 0) === 0 && (
                     <p className="text-muted-foreground text-sm">No supplements planned.</p>
                   )}
               </div>
@@ -140,56 +225,58 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
               <CardTitle className="text-xl font-semibold">Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <Badge>{dietData.status}</Badge>
+              <Badge>{dietData?.status}</Badge>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <Card className="rounded-xl border shadow-sm">
+      <Card className={`${hasPlan ? "" : "hidden"} rounded-xl border shadow-sm`}>
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Daily Targets & Coach Notes</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-muted-foreground text-xs uppercase">Calories</p>
-            <p className="text-foreground text-2xl font-semibold">{summary.targetCalories} kcal</p>
+            <p className="text-foreground text-2xl font-semibold">{summary?.targetCalories} kcal</p>
             <p className="text-muted-foreground text-xs">Target</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-muted-foreground text-xs uppercase">Macros</p>
             <p className="text-foreground text-sm">
-              P {summary.protein}g · C {summary.carbs}g · F {summary.fats}g
+              P {summary?.protein}g · C {summary?.carbs}g · F {summary?.fats}g
             </p>
             <p className="text-muted-foreground text-xs">Goal split</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-muted-foreground text-xs uppercase">Hydration</p>
-            <p className="text-foreground text-lg font-semibold">{summary.water}</p>
+            <p className="text-foreground text-lg font-semibold">{summary?.water}</p>
             <p className="text-muted-foreground text-xs">Min. water target</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-muted-foreground text-xs uppercase">Today&apos;s Goal</p>
-            <p className="text-foreground text-sm font-semibold">{summary.goal}</p>
-            <p className="text-muted-foreground text-xs">{summary.recovery}</p>
+            <p className="text-foreground text-sm font-semibold">{summary?.goal}</p>
+            <p className="text-muted-foreground text-xs">{summary?.recovery}</p>
           </div>
         </CardContent>
         <CardContent className="space-y-3 pt-0">
           <Separator />
-          <p className="text-muted-foreground text-sm">{summary.coachNote}</p>
-          <div className="text-foreground text-sm font-medium">
-            Current total from meals: {totals.calories} kcal · P {totals.protein}g · C {totals.carbs}g · F{" "}
-            {totals.fats}g
-          </div>
+          <p className="text-muted-foreground text-sm">{summary?.coachNote}</p>
+          {dietData && (
+            <div className="text-foreground text-sm font-medium">
+              Current total from meals: {totals.calories} kcal · P {totals.protein}g · C {totals.carbs}g · F{" "}
+              {totals.fats}g
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl border shadow-sm">
+      <Card className={`${hasPlan ? "" : "hidden"} rounded-xl border shadow-sm`}>
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Today&apos;s Diet Plan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {timeline.map((item) => (
+          {timeline?.map((item) => (
             <div
               key={`${item.time}-${item.title}`}
               className="border-border/60 bg-muted/40 hover:bg-muted/70 rounded-lg border p-4 transition-colors">
