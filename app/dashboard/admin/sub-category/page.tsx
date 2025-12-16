@@ -13,15 +13,15 @@ const page = async () => {
   const categoriesResult = await getCategories({});
 
   const subCategories =
-    subCategoriesResult?.data?.map((subCat, idx) => ({
-      id: idx + 1,
-      _id: subCat._id,
-      name: subCat.name,
-      categoryName: typeof subCat.category === 'object' ? subCat.category.name : '',
-      categoryId: typeof subCat.category === 'object' ? subCat.category._id : subCat.category,
-      description: subCat.description || "",
-      createdAt: subCat.createdAt?.slice(0, 10) ?? ""
-    })) || [];
+  subCategoriesResult?.data?.map((subCat, idx) => ({
+    id: idx + 1,
+    _id: subCat._id,
+    name: subCat.name,
+    categoryName: subCat.category?.name ?? "",
+    categoryId: subCat.category?._id ?? subCat.category ?? "",
+    description: subCat.description || "",
+    createdAt: subCat.createdAt?.slice(0, 10) ?? "",
+  })) || [];
 
   const categories = categoriesResult?.data?.categories || [];
 
