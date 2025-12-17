@@ -73,7 +73,7 @@ export function EcommerceBestSellingProductsCard() {
         {products.map((product) => (
           <Link
             key={product._id}
-            href={`/dashboard/pages/products/${product._id}`}
+            href={`/dashboard/admin/product-list/${product._id}`}
             className="hover:bg-muted flex items-center justify-between rounded-md border px-4 py-3"
           >
             <div className="flex items-center gap-4">
