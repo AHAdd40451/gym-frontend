@@ -106,18 +106,24 @@ const statusBadgeMap = {
 } as const;
 
 // Transform backend order to UI format
-function transformOrder(backendOrder: BackendOrder): Order {
-  const totalItems = backendOrder.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+function transformOrder(backendOrder: any): Order {
+  // Handle missing or undefined fields safely
+  const shippingAddr = backendOrder.shippingAddress || {};
+  const items = backendOrder.items || [];
+  
+  const totalItems = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+  
   const customerName = backendOrder.guest || 
-    `${backendOrder.shippingAddress.firstName} ${backendOrder.shippingAddress.lastName}`;
+    `${shippingAddr.firstName || ''} ${shippingAddr.lastName || ''}`.trim() || 
+    "Guest Customer";
 
   return {
-    id: backendOrder._id,
+    id: backendOrder._id || "",
     customerName,
     items: totalItems,
-    amount: backendOrder.total,
-    email: backendOrder.shippingAddress.email,
-    phone: backendOrder.shippingAddress.phone,
+    amount: backendOrder.total || 0,
+    email: shippingAddr.email || "",
+    phone: shippingAddr.phone || "",
     status: statusMap[backendOrder.status] || "processing"
   };
 }
@@ -154,12 +160,12 @@ const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       const status = row.original.status;
-      const statusClass = statusBadgeMap[status] ?? "default";
+      const statusClass = (statusBadgeMap as Record<string, string>)[status] ?? "default";
 
       return (
-        <Badge variant={statusClass} className="capitalize">
+        <Badge variant={statusClass as any} className="capitalize">
           {status.replace("-", " ")}
         </Badge>
       );
@@ -201,17 +207,29 @@ export function EcommerceRecentOrdersCard() {
       // Get token from localStorage or cookie
       const token = localStorage.getItem("authToken") || "";
       
+      if (!token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+      
       const response = await getAllOrders({ page: 1, limit: 100 }, token);
       
-      if (Array.isArray(response)) {
-        const transformedOrders = response.map(transformOrder);
+      // serverFetch returns { data, error, status }
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      if (response.data && Array.isArray(response.data)) {
+        const transformedOrders = response.data.map(transformOrder);
         setData(transformedOrders);
+      } else if (response.data === null) {
+        setData([]);
       } else {
-        throw new Error("Invalid response format");
+        throw new Error("Invalid response format: expected array of orders");
       }
     } catch (err) {
       console.error("Failed to fetch orders:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch orders");
+      setData([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
