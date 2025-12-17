@@ -123,8 +123,19 @@ export function getLocalDayRangeIso(date: Date) {
 }
 
 // Parse a YYYY-MM-DD string as a local date (avoids UTC interpretation)
-export function parseLocalDateKey(dateKey: string): Date {
-  const [y, m, d] = dateKey.split("-").map((v) => Number(v));
+export function parseLocalDateKey(dateKey?: string): Date {
+  if (!dateKey || typeof dateKey !== "string") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  const parts = dateKey.split("-");
+  if (parts.length !== 3) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  const [y, m, d] = parts.map((v) => Number(v));
   return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
 }
 

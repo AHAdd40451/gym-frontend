@@ -1,80 +1,75 @@
-"use client";
+"use server";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { cookies } from "next/headers";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { mockUserDietPlan, DietPlanPreset } from "../../mock-data";
 import { getAllMeals, MealPlanDocument } from "@/lib/api/services/meals/meals";
-import {
-  getCurrentUserId,
-  getLocalDayRangeIso,
-  parseLocalDateKey,
-  transformMealPlanToPreset
-} from "../../utils";
+import { parseLocalDateKey, transformMealPlanToPreset, toIsoUtcStartFromDate } from "../../utils";
 import { formatDateKey } from "@/lib/utils/date";
 
 interface DayDetailPageProps {
-  params: Promise<{
+  params: {
     week: string;
     day: string;
-  }>;
+  };
 }
 
-export default function UserDayDetailPage({ params }: DayDetailPageProps) {
-  const resolvedParams = React.use(params);
+export default async function UserDayDetailPage({ params }: DayDetailPageProps) {
+  const resolvedParams = params;
   const dayDate = parseLocalDateKey(resolvedParams.day);
   const dayKey = formatDateKey(dayDate);
-  const [preset, setPreset] = useState<DietPlanPreset | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasPlan, setHasPlan] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchPlan = async () => {
-      setLoading(true);
-      try {
-        const storedToken =
-          (typeof window !== "undefined" && (localStorage.getItem("authToken") || localStorage.getItem("token"))) ||
-          "";
-        const userId = getCurrentUserId();
+  const cookieStore = await cookies();
+  const storedToken = cookieStore.get("authToken")?.value || cookieStore.get("token")?.value || "";
+  const storedUser = cookieStore.get("currentUser")?.value;
 
-        if (!userId || !storedToken) {
-          setPreset(mockUserDietPlan[dayKey] ?? mockUserDietPlan.default);
-          setError("Missing user or token, showing sample plan.");
-          return;
-        }
+  let userId = "";
+  if (storedUser) {
+    try {
+      const parsed = JSON.parse(storedUser);
+      userId = parsed?.id || parsed?._id || parsed?.userId || "";
+    } catch {
+      userId = "";
+    }
+  }
 
-        const { startIso, endIso } = getLocalDayRangeIso(dayDate);
-        const res = await getAllMeals({ user: userId, startDate: startIso, endDate: endIso }, storedToken);
-        const payload = (res as any)?.data ?? res;
-        const list: MealPlanDocument[] =
-          payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
+  let preset: DietPlanPreset | null = null;
+  let error: string | null = null;
+  let hasPlan = false;
 
-        if (Array.isArray(list) && list.length > 0) {
-          const plan = list[0];
-          setPreset(transformMealPlanToPreset(plan));
-          setError((res as any)?.error || null);
-          setHasPlan(true);
-        } else {
-          setPreset(null);
-          setHasPlan(false);
-          setError("No plan found for this day.");
-        }
-      } catch (err: any) {
-        console.error("getUserMeals error", err);
-        setPreset(null);
-        setHasPlan(false);
-        setError("Unable to load plan.");
-      } finally {
-        setLoading(false);
+  try {
+    if (!userId || !storedToken) {
+      preset = mockUserDietPlan[dayKey] ?? mockUserDietPlan.default;
+      error = null;
+    } else {
+      const startIso = toIsoUtcStartFromDate(dayDate);
+      const res = await getAllMeals({ user: userId, startDate: startIso, endDate: startIso }, storedToken);
+      const payload = (res as any)?.data ?? res;
+      const list: MealPlanDocument[] = payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
+
+      if (Array.isArray(list) && list.length > 0) {
+        const plan = list[0];
+        preset = transformMealPlanToPreset(plan);
+        error = (res as any)?.error || null;
+        hasPlan = true;
+      } else {
+        preset = null;
+        hasPlan = false;
+        error = "No plan found for this day.";
       }
-    };
-    fetchPlan();
-  }, [dayKey, resolvedParams.day]);
+    }
+  } catch (err: any) {
+    console.error("getUserMeals error", err);
+    preset = null;
+    hasPlan = false;
+    error = "Unable to load plan.";
+  }
 
   const dietData = preset?.dietData;
   const timeline = preset?.timeline;
@@ -88,7 +83,7 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
     year: "numeric"
   });
 
-  const totals = useMemo(() => {
+  const totals = (() => {
     const totalsInit = { calories: 0, protein: 0, carbs: 0, fats: 0 };
     if (dietData?.meals) {
       Object.values(dietData.meals).forEach((meal: any) => {
@@ -99,7 +94,7 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
       });
     }
     return totalsInit;
-  }, [dietData?.meals]);
+  })();
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -110,18 +105,13 @@ export default function UserDayDetailPage({ params }: DayDetailPageProps) {
         </Button>
       </Link>
 
-      {loading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading diet plan...
-        </div>
-      )}
       {error && (
         <p className="text-xs text-amber-600">
           {error}
         </p>
       )}
 
-      {!loading && !hasPlan && (
+      {!hasPlan && (
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-xl font-semibold">No plan found</CardTitle>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { CalendarHeader } from "@/app/dashboard/user/diet-calendar/components/calendar-header";
 import { WeekSlider } from "@/app/dashboard/user/diet-calendar/components/week-slider";
 import { MiniMonthCalendar } from "@/app/dashboard/user/diet-calendar/components/mini-month-calendar";
@@ -9,8 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DietPlanPreset, mockUserDietPlan } from "./mock-data";
 import { formatDateKey } from "@/lib/utils/date";
-import { getAllMeals, MealPlanDocument } from "@/lib/api/services/meals/meals";
-import { getCurrentUserId, getLocalDayRangeIso, transformMealPlanToPreset } from "./utils";
 
 type WeekSummary = {
   weekNumber: number;
@@ -99,43 +97,8 @@ interface UserDietCalendarClientProps {
 
 export function UserDietCalendarClient({ initialTodayPreset, initialTodayError }: UserDietCalendarClientProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [todayPreset, setTodayPreset] = useState<DietPlanPreset | null>(initialTodayPreset);
-  const [todayError, setTodayError] = useState<string | null>(initialTodayError);
-  const fetchedRef = useRef(false);
-
   const todayKey = formatDateKey(new Date());
-
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
-    const fetchTodayPlan = async () => {
-      try {
-        const token = localStorage.getItem("authToken") || localStorage.getItem("token") || "";
-        const userId = getCurrentUserId();
-
-        if (!userId || !token) {
-          return; // Keep using initial/fallback preset
-        }
-
-        const { startIso, endIso } = getLocalDayRangeIso(new Date());
-        const res = await getAllMeals({ user: userId, startDate: startIso, endDate: endIso }, token);
-        const payload = (res as any)?.data ?? res;
-        const list: MealPlanDocument[] = payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
-
-        if (Array.isArray(list) && list.length > 0) {
-          setTodayPreset(transformMealPlanToPreset(list[0]));
-          setTodayError((res as any)?.error || null);
-        }
-      } catch (err: any) {
-        console.error("Failed to load today diet plan", err);
-      }
-    };
-
-    fetchTodayPlan();
-  }, []);
-
-  const todaysPreset = todayPreset ?? mockUserDietPlan[todayKey] ?? mockUserDietPlan.default;
+  const todaysPreset = initialTodayPreset ?? mockUserDietPlan[todayKey] ?? mockUserDietPlan.default;
 
   const getWeeksForMonth = (month: Date): WeekSummary[] => {
     const weeks: WeekSummary[] = [];
@@ -247,7 +210,7 @@ export function UserDietCalendarClient({ initialTodayPreset, initialTodayError }
         onNextMonth={handleNextMonth}
       />
 
-      <TodayPreview preset={todaysPreset} error={todayError} />
+      <TodayPreview preset={todaysPreset} error={initialTodayError} />
 
       <WeeklyPlans weeks={weeks} monthLabel={monthName} />
 

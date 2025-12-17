@@ -39,8 +39,8 @@ export function MiniMonthCalendar({ currentMonth, selectedWeekStart, onDateClick
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-7 gap-2 text-center text-xs font-medium text-muted-foreground">
-          {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
-            <div key={d}>{d}</div>
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, idx) => (
+            <div key={`${d}-${idx}`}>{d}</div>
           ))}
         </div>
         <div className="mt-2 grid grid-cols-7 gap-2 text-center text-sm">
