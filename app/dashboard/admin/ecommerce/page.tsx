@@ -3,7 +3,6 @@ import { generateMeta } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import {
-  EcommerceBestSellingProductsCard,
   EcommerceCustomerReviewsCard,
   EcommerceNewCustomersCard,
   EcommerceRecentOrdersCard,
@@ -18,6 +17,7 @@ import {
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "../ecommerce/components/stat-cards";
+import { EcommerceBestSellingProductsCard } from "./components/best-selling-products";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -57,9 +57,10 @@ export default function Page() {
           {/* <EcommerceVisitBySourceCard /> */}
           <EcommerceCustomerReviewsCard />
         </div>
-        <div className="space-y-4 xl:grid xl:grid-cols-12 xl:gap-4 xl:space-y-0">
-          <EcommerceRecentOrdersCard />
+        <div className="space-y-4 xl:grid xl:grid-cols-4 xl:gap-4 xl:space-y-0">
           <EcommerceBestSellingProductsCard />
+          <EcommerceRecentOrdersCard />
+          
         </div>
       </div>
     </div>

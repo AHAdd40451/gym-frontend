@@ -13,7 +13,7 @@ import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function EcommerceBestSellingProductsCard() {
+export function BestSellingProducts() {
   const products = [
     {
       id: 1,
