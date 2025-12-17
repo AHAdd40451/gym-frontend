@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   Card,
   CardAction,
@@ -6,70 +9,52 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { ExportButton } from "@/components/CardActionMenus";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
+
+import { getAllProducts, Product } from "@/lib/api/services/product/product";
 
 export function EcommerceBestSellingProductsCard() {
-  const products = [
-    {
-      id: 1,
-      image: `/images/products/01.jpeg`,
-      name: "Sports Shoes",
-      price: 316,
-      sold: 316,
-      sales: 10
-    },
-    {
-      id: 2,
-      image: `/images/products/02.jpeg`,
-      name: "Black T-Shirt",
-      price: 274,
-      sold: 274,
-      sales: 20
-    },
-    {
-      id: 3,
-      image: `/images/products/03.jpeg`,
-      name: "Jeans",
-      price: 195,
-      sold: 195,
-      sales: 15
-    },
-    {
-      id: 4,
-      image: `/images/products/04.jpeg`,
-      name: "Red Sneakers",
-      price: 402,
-      sold: 402,
-      sales: 40
-    },
-    {
-      id: 5,
-      image: `/images/products/05.jpeg`,
-      name: "Red Scarf",
-      price: 280,
-      sold: 280,
-      sales: 37
-    },
-    {
-      id: 6,
-      image: `/images/products/06.jpeg`,
-      name: "Kitchen Accessory",
-      price: 150,
-      sold: 150,
-      sales: 18
-    }
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const res = await getAllProducts();
+
+      // ⚠️ serverFetch pattern
+      if (res?.data?.success) {
+        // TEMP: top 6 products
+        setProducts(res.data.products.slice(0, 6));
+      }
+
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardContent className="p-6">Loading products...</CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Best Selling Product</CardTitle>
-        <CardDescription>Top-Selling Products at a Glance</CardDescription>
+        <CardTitle>Best Selling Products</CardTitle>
+        <CardDescription>Top products overview</CardDescription>
         <CardAction>
           <TooltipProvider>
             <Tooltip>
@@ -83,26 +68,35 @@ export function EcommerceBestSellingProductsCard() {
           </TooltipProvider>
         </CardAction>
       </CardHeader>
+
       <CardContent className="space-y-4">
         {products.map((product) => (
           <Link
-            href="/dashboard/pages/products/1"
-            key={product.name}
-            className="hover:bg-muted flex items-center justify-between rounded-md border px-4 py-3">
+            key={product._id}
+            href={`/dashboard/pages/products/${product._id}`}
+            className="hover:bg-muted flex items-center justify-between rounded-md border px-4 py-3"
+          >
             <div className="flex items-center gap-4">
               <Image
-                src={product.image}
+                src={product.image || "/images/placeholder.png"}
                 width={40}
                 height={40}
-                className="rounded-md!"
-                alt="..."
+                className="rounded-md"
+                alt={product.name}
                 unoptimized
               />
               <div>
                 <div className="font-medium">{product.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  ${product.price}
+                </div>
               </div>
             </div>
-            <div className="text-sm text-green-600">{product.sold} items sold</div>
+
+            {/* TEMP text (real selling orders se aayega) */}
+            <div className="text-sm text-green-600">
+              In Stock: {product.stock?.quantity ?? 0}
+            </div>
           </Link>
         ))}
       </CardContent>

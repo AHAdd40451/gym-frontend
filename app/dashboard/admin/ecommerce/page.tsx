@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   EcommerceCustomerReviewsCard,
   EcommerceNewCustomersCard,
-  EcommerceRecentOrdersCard,
   EcommerceReturnRateCard,
   EcommerceRevenueCard,
   EcommerceSalesByLocationCard,
@@ -18,6 +17,7 @@ import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "../ecommerce/components/stat-cards";
 import { EcommerceBestSellingProductsCard } from "./components/best-selling-products";
+import { EcommerceRecentOrdersCard } from "./components/table-order-status";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -57,10 +57,19 @@ export default function Page() {
           {/* <EcommerceVisitBySourceCard /> */}
           <EcommerceCustomerReviewsCard />
         </div>
-        <div className="space-y-4 xl:grid xl:grid-cols-4 xl:gap-4 xl:space-y-0">
+        {/* <div className="space-y-4 xl:grid xl:grid-cols-4 xl:gap-4 xl:space-y-0">
           <EcommerceBestSellingProductsCard />
           <EcommerceRecentOrdersCard />
           
+        </div> */}
+
+        <div className="gap-4 space-y-4 lg:space-y-0 xl:grid xl:grid-cols-3">
+                <div className="xl:col-span-1">
+                  <EcommerceBestSellingProductsCard />
+                </div>
+                <div className="xl:col-span-2">
+                  <EcommerceRecentOrdersCard />
+                </div>
         </div>
       </div>
     </div>
