@@ -50,7 +50,9 @@ import {
   DatabaseIcon,
   BarChart3Icon,
   FileTextIcon,
-  BellIcon
+  BellIcon,
+  Plane,
+  Podcast
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -131,7 +133,7 @@ export const adminNavItems: NavGroup[] = [
       {
         title: "All Subcriptions",
         href: "/dashboard/admin/all-sub",
-        icon: ActivityIcon
+        icon: Podcast
       }
     ]
   },

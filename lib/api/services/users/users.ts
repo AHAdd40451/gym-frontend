@@ -268,3 +268,35 @@ export async function deleteUser(token: string, userId: string): Promise<boolean
   }
 }
 
+export interface Subscription {
+  _id: string;
+  plan: {
+    _id: string;
+    name: string;
+    price?: number;
+  };
+  status: string;
+  startDate?: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+}
+
+export interface UserWithSubscriptionsResponse {
+  user: User;
+  subscriptions: Subscription[];
+}
+
+export async function getUserWithSubscriptions(id: string, token: string) {
+  if (!id) throw new Error("User ID is required.");
+
+  return serverFetch<UserWithSubscriptionsResponse>(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/${id}/details`, // Backend route should exist
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+}
