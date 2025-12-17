@@ -28,6 +28,11 @@ export type DietPlanPreset = {
   dietData: DayDietData;
   summary: DietPlanSummary;
   timeline: DietPlanTimelineItem[];
+  meta?: {
+    dateKey?: string;
+    dayName?: string;
+    rawDate?: string;
+  };
 };
 
 export const mockUserDietPlan: Record<string, DietPlanPreset> = {
