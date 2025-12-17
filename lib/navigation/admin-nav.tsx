@@ -88,6 +88,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin",
         icon: ChartPieIcon
       },
+       {
+        title: "Ecommerce",
+        href: "/dashboard/admin/ecommerce",
+        icon: ChartPieIcon
+      },
       {
         title: "Analytics",
         href: "/dashboard/admin/analytics",
