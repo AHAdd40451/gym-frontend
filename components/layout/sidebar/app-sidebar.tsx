@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ChevronsUpDown, ShoppingBagIcon, UserCircle2Icon } from "lucide-react";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { usePathname } from "next/navigation";
@@ -35,9 +35,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  // Prevent SSR/client ID mismatches from Radix by rendering only after mount
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -46,6 +52,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   useEffect(() => {
     setOpen(!isTablet);
   }, [isTablet]);
+
+  if (!mounted) return null;
 
   return (
     <Sidebar collapsible="icon" {...props}>

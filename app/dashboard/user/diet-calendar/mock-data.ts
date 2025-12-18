@@ -28,6 +28,11 @@ export type DietPlanPreset = {
   dietData: DayDietData;
   summary: DietPlanSummary;
   timeline: DietPlanTimelineItem[];
+  meta?: {
+    dateKey?: string;
+    dayName?: string;
+    rawDate?: string;
+  };
 };
 
 export const mockUserDietPlan: Record<string, DietPlanPreset> = {
@@ -271,4 +276,6 @@ export const weeklyPlanSnapshot = [
   { day: "Saturday", calories: "2200 kcal", hydration: "3.2 L", focus: "Long run fuel" },
   { day: "Sunday", calories: "1900 kcal", hydration: "3.0 L", focus: "Refeed + rest" }
 ];
+
+
 

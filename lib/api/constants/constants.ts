@@ -57,6 +57,11 @@ export const API_ENDPOINTS = {
     BY_SUBSCRIPTION: (subscriptionId: string) => `/subscription/${subscriptionId}` // ✅ get transactions by subscription
   },
 
+  MEALS: {
+    BASE: "/meals",
+    BY_USER: (userId: string) => `/meals/user/${userId}`
+  },
+
   ATTENDANCE: {
     BASE: "/attendance",
     RUN_DAILY: "/attendance/mark",
