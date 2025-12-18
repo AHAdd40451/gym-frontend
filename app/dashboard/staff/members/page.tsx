@@ -7,12 +7,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Mail } from "lucide-react";
-import { getAllUsers, User } from "@/lib/api/services/getstaff/staff";
+import {
+  Subscription,
+  getAllSubscriptions
+} from "@/lib/api/services/subcription/subcription";
 
 const MembersPage = () => {
   const [token, setToken] = useState<string>("");
   const [tokenReady, setTokenReady] = useState<boolean>(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [subs, setSubs] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -31,12 +34,16 @@ const MembersPage = () => {
       if (!tokenReady || !token) return;
       setLoading(true);
       try {
-        const res = await getAllUsers({ page: 1, limit: 200, role: "user" }, token);
-        const list = (res as any)?.users || (res as any)?.data || [];
-        setUsers(Array.isArray(list) ? list : []);
+        const res = await getAllSubscriptions({ page: 1, limit: 200 }, token);
+        const list =
+          (res as any)?.data?.data ||
+          (res as any)?.data ||
+          (res as any)?.subscriptions ||
+          [];
+        setSubs(Array.isArray(list) ? list : []);
         setError(null);
       } catch (err: any) {
-        setError(err?.message || "Failed to load members");
+        setError(err?.message || "Failed to load subscriptions");
       } finally {
         setLoading(false);
       }
@@ -58,21 +65,38 @@ const MembersPage = () => {
   return (
     <div className="p-5">
  
-      {users.length === 0 ? (
+      {subs.length === 0 ? (
         <p className="text-center mt-10 text-muted-foreground">
           No members found.
         </p>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {users.map((u) => {
-            const email = u.email || "-";
-            const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-            const userName = fullName || (email.includes("@") ? email.split("@")[0] : "Unknown User");
+          {subs.map((sub) => {
+            const userObj = typeof sub.user === "object" ? sub.user : undefined;
+            const userId =
+              userObj?._id ||
+              (typeof sub.user === "string" ? sub.user : "") ||
+              (sub as any)?.id ||
+              "";
+            const email = userObj?.email || "-";
+            const userName =
+              userObj?.name ||
+              (sub as any)?.firstName ||
+              (email && email.includes("@") ? email.split("@")[0] : "") ||
+              "Unknown User";
+            const planObj = typeof sub.plan === "object" ? sub.plan : undefined;
+            const planName = planObj?.name || (sub as any)?.planName || String(sub.plan || "Plan");
+            const periodStart = (sub as any)?.currentPeriodStart || (sub as any)?.startDate;
+            const periodEnd = (sub as any)?.currentPeriodEnd || (sub as any)?.endDate;
+            const periodLabel =
+              periodStart && periodEnd
+                ? `${new Date(periodStart).toLocaleDateString()} → ${new Date(periodEnd).toLocaleDateString()}`
+                : "Period unknown";
 
             return (
               <Card
-                key={u._id}
-                onClick={() => router.push(`/dashboard/staff/members/${u._id}`)}
+                key={sub._id}
+                onClick={() => userId && router.push(`/dashboard/staff/members/${userId}`)}
                 className="cursor-pointer hover:shadow-lg transition"
               >
                 <CardContent className="pt-6 pb-8 flex flex-col items-center space-y-4">
@@ -82,7 +106,7 @@ const MembersPage = () => {
 
                   <div className="text-center">
                     <h5 className="flex items-center justify-center gap-2 text-xl font-semibold">
-                      {userName || "Member"} <Badge>{u.status || "Active"}</Badge>
+                      {userName || "Member"} <Badge>{sub.status || "active"}</Badge>
                     </h5>
 
                     <div className="flex items-center justify-center gap-2 text-sm mt-2 text-muted-foreground">
@@ -90,8 +114,9 @@ const MembersPage = () => {
                     </div>
 
                     <p className="mt-2 text-sm text-muted-foreground">
-                      <strong>Role:</strong> {u.role || "Member"}
+                      <strong>Plan:</strong> {planName}
                     </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
                   </div>
                 </CardContent>
               </Card>
