@@ -50,7 +50,11 @@ export function transformMealPlanToPreset(plan: MealPlanDocument): DietPlanPrese
     else supplementsKnown.custom.push(supplement);
   });
 
-  const waterLiters = plan.waterIntake ? (plan.waterIntake / 1000).toFixed(1) : "0";
+  // Normalize water intake to liters for display. Incoming values may be stored in
+  // milliliters (e.g., 2500) or already in liters (e.g., 2.5). Convert numbers
+  // above 20 to liters, otherwise keep as-is.
+  const rawWater = Number(plan.waterIntake || 0);
+  const waterLiters = rawWater > 20 ? (rawWater / 1000).toFixed(1) : rawWater.toString();
 
   return {
     dietData: {

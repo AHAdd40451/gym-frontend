@@ -214,7 +214,8 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
     if (dietData.supplements.protein) supplements.push("Protein");
     supplements.push(...(dietData.supplements.custom || []));
 
-    const waterMl = Math.round((parseFloat(dietData.waterIntake) || 0) * 1000);
+    // Store water intake in liters (backend appears to persist liters, not ml).
+    const waterLiters = Math.round((parseFloat(dietData.waterIntake) || 0) * 10) / 10;
 
     return {
       user: userId.trim(),
@@ -223,7 +224,7 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       meals: mealsArray,
       supplements,
       dietaryInstructions: dietData.specialInstructions,
-      waterIntake: waterMl,
+      waterIntake: waterLiters,
       status: dietData.status
     };
   };
