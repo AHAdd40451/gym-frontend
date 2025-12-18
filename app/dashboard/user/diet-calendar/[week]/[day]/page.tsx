@@ -21,10 +21,12 @@ interface DayDetailPageProps {
 }
 
 export default async function UserDayDetailPage({ params }: DayDetailPageProps) {
-  const resolvedParams = params;
+  const resolvedParams = await params;
   const dayDate = parseLocalDateKey(resolvedParams.day);
   const dayKey = formatDateKey(dayDate);
 
+
+  console.log(params.day, "dayDate=====");
   const cookieStore = await cookies();
   const storedToken = cookieStore.get("authToken")?.value || cookieStore.get("token")?.value || "";
   const storedUser = cookieStore.get("currentUser")?.value;
@@ -44,26 +46,25 @@ export default async function UserDayDetailPage({ params }: DayDetailPageProps) 
   let hasPlan = false;
 
   try {
-    if (!userId || !storedToken) {
-      preset = mockUserDietPlan[dayKey] ?? mockUserDietPlan.default;
-      error = null;
-    } else {
-      const startIso = toIsoUtcStartFromDate(dayDate);
-      const res = await getAllMeals({ user: userId, startDate: startIso, endDate: startIso }, storedToken);
-      const payload = (res as any)?.data ?? res;
-      const list: MealPlanDocument[] = payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
 
-      if (Array.isArray(list) && list.length > 0) {
-        const plan = list[0];
-        preset = transformMealPlanToPreset(plan);
-        error = (res as any)?.error || null;
-        hasPlan = true;
-      } else {
-        preset = null;
-        hasPlan = false;
-        error = "No plan found for this day.";
-      }
+    const startIso = toIsoUtcStartFromDate(dayDate);
+    const res = await getAllMeals({ user: userId, startDate: startIso, endDate: startIso }, storedToken);
+
+    console.log(res, "res=====");
+    const payload = (res as any)?.data ?? res;
+    const list: MealPlanDocument[] = payload?.meals ?? payload?.data ?? (Array.isArray(payload) ? payload : []);
+
+    if (Array.isArray(list) && list.length > 0) {
+      const plan = list[0];
+      preset = transformMealPlanToPreset(plan);
+      error = (res as any)?.error || null;
+      hasPlan = true;
+    } else {
+      preset = null;
+      hasPlan = false;
+      error = "No plan found for this day.";
     }
+
   } catch (err: any) {
     console.error("getUserMeals error", err);
     preset = null;
@@ -144,24 +145,24 @@ export default async function UserDayDetailPage({ params }: DayDetailPageProps) 
             <CardContent className="space-y-4">
               {dietData &&
                 Object.entries(dietData.meals).map(([id, meal]) => (
-                <div
-                  key={id}
-                  className="border-border/60 bg-muted/40 hover:bg-muted/60 rounded-lg border p-4 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <p className="text-foreground font-semibold capitalize">{id.replace("-", " ")}</p>
-                    <Badge variant="outline" className="text-xs">
-                      {meal.calories} kcal
-                    </Badge>
+                  <div
+                    key={id}
+                    className="border-border/60 bg-muted/40 hover:bg-muted/60 rounded-lg border p-4 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <p className="text-foreground font-semibold capitalize">{id.replace("-", " ")}</p>
+                      <Badge variant="outline" className="text-xs">
+                        {meal.calories} kcal
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-sm">{meal.description}</p>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      P {meal.protein}g · C {meal.carbs}g · F {meal.fats}g
+                    </p>
+                    {meal.notes && (
+                      <p className="text-primary mt-1 text-xs font-medium">Note: {meal.notes}</p>
+                    )}
                   </div>
-                  <p className="text-muted-foreground mt-1 text-sm">{meal.description}</p>
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    P {meal.protein}g · C {meal.carbs}g · F {meal.fats}g
-                  </p>
-                  {meal.notes && (
-                    <p className="text-primary mt-1 text-xs font-medium">Note: {meal.notes}</p>
-                  )}
-                </div>
-              ))}
+                ))}
             </CardContent>
           </Card>
 
@@ -196,10 +197,10 @@ export default async function UserDayDetailPage({ params }: DayDetailPageProps) 
                 {dietData?.supplements?.omega3 && <Badge variant="outline">Omega-3</Badge>}
                 {dietData?.supplements?.protein && <Badge variant="outline">Protein</Badge>}
                 {dietData?.supplements?.custom?.map((item) => (
-                    <Badge key={item} variant="outline">
-                      {item}
-                    </Badge>
-                  ))}
+                  <Badge key={item} variant="outline">
+                    {item}
+                  </Badge>
+                ))}
                 {!dietData?.supplements?.multivitamin &&
                   !dietData?.supplements?.omega3 &&
                   !dietData?.supplements?.protein &&

@@ -68,7 +68,7 @@ export async function getAllMeals(
   if (params.startDate) searchParams.append("startDate", params.startDate);
   if (params.endDate) searchParams.append("endDate", params.endDate);
   const qs = searchParams.toString();
-  const url = `${API_ENDPOINTS.MEALS.BASE}${qs ? `?${qs}` : ""}`;
+  const url = `${API_ENDPOINTS.MEALS.BASE}`;
   return serverFetch<{
     success?: boolean;
     count?: number;
