@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminDashboard } from "@/lib/api/Admin/admin";
 
@@ -12,7 +12,7 @@ export function EcommerceWelcomeCard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authToken");
       if (!token) return;
 
       const data = await getAdminDashboard(token);
@@ -44,7 +44,7 @@ export function EcommerceWelcomeCard() {
               from last month
             </div>
           </div>
-          <Button variant="outline">View Reports</Button>
+          {/* <Button variant="outline">View Reports</Button> */}
         </div>
       </CardContent>
 

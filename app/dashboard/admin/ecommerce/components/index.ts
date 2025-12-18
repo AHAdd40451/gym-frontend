@@ -7,5 +7,4 @@ export * from "./revenue";
 export * from "./sales-by-location";
 export * from "./sales";
 export * from "./total-revenue";
-// export * from "./visit-by-source";
 export * from "./welcome";

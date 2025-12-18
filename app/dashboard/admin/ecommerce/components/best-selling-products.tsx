@@ -58,12 +58,12 @@ export function EcommerceBestSellingProductsCard() {
         <CardAction>
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="outline">
+              {/* <TooltipTrigger asChild> */}
+                {/* <Button size="icon" variant="outline">
                   <ChevronRight />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>View All</TooltipContent>
+              <TooltipContent>View All</TooltipContent> */}
             </Tooltip>
           </TooltipProvider>
         </CardAction>

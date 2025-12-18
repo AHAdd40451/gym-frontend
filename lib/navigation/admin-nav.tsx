@@ -85,13 +85,13 @@ export const adminNavItems: NavGroup[] = [
   {
     title: "Admin Dashboard",
     items: [
-      {
-        title: "Overview",
-        href: "/dashboard/admin",
-        icon: ChartPieIcon
-      },
+      // {
+      //   title: "Overview",
+      //   href: "/dashboard/admin",
+      //   icon: ChartPieIcon
+      // },
        {
-        title: "Ecommerce",
+        title: "Overview",
         href: "/dashboard/admin/ecommerce",
         icon: ChartPieIcon
       },
