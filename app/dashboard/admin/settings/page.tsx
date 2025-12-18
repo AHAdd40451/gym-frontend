@@ -43,19 +43,22 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+function extractUserFromUsersApiResponse(res: any) {
+  // usersApi uses handleApiResponse which returns: { data: axiosResponseData, success, status }
+  const payload = res?.data;
+  return (
+    payload?.data?.user ??
+    payload?.user ??
+    payload?.data ??
+    payload ??
+    null
+  );
+}
+
 export default function Page() {
-  const { user } = useAuth();
-  
-  // Get user from localStorage
-  const [currentUser, setCurrentUser] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('currentUser');
-      return stored ? JSON.parse(stored) : null;
-    }
-    return null;
-  });
-  
-  const userId = user?._id || user?.id || currentUser?._id || currentUser?.id;
+  const { user, setUser } = useAuth();
+
+  const userId = user?._id || user?.id || (user as any)?.userId;
 
   const [loading, setLoading] = useState(false);
   const [fetchingProfile, setFetchingProfile] = useState(false);
@@ -79,37 +82,52 @@ export default function Page() {
   });
 
   // =========================
-  // LOAD USER DATA (localStorage first, API fallback)
+  // LOAD USER DATA (API first, auth context fallback)
   // =========================
   useEffect(() => {
-    const loadUserProfile = () => {
-      // First try localStorage
-      if (currentUser) {
-        console.log("Loading from localStorage:", currentUser);
-        form.reset({
-          username: `${currentUser.firstName ?? ""} ${currentUser.lastName ?? ""}`.trim(),
-          email: currentUser.email ?? "",
-          bio: currentUser.bio ?? "",
-          urls: currentUser.urls?.map((u: string) => ({ value: u })) ?? [],
-        });
-        return;
-      }
+    const resetFormFromUser = (u: any) => {
+      if (!u) return;
+      form.reset({
+        username: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
+        email: u.email ?? "",
+        bio: u.bio ?? "",
+        urls: Array.isArray(u.urls) ? u.urls.map((val: string) => ({ value: val })) : [],
+      });
+    };
 
-      // If no localStorage data, show error
+    const loadUserProfile = async () => {
       if (!userId) {
-        toast.error("User not found. Please login again.");
+        // Auth context restores async from localStorage; wait until we actually have an id
         return;
       }
 
-      // Optionally try API (will likely fail due to CORS)
-      console.log("No localStorage data found");
+      setFetchingProfile(true);
+      try {
+        const res = await usersApi.getById(String(userId));
+        const freshUser = extractUserFromUsersApiResponse(res);
+
+        if (freshUser) {
+          setUser(freshUser);
+          resetFormFromUser(freshUser);
+        } else {
+          // fallback to whatever we have in auth context
+          resetFormFromUser(user);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch user profile:", err);
+        // fallback to auth context user (still allows update)
+        resetFormFromUser(user);
+      } finally {
+        setFetchingProfile(false);
+      }
     };
 
     loadUserProfile();
-  }, [currentUser, userId, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, setUser, form]);
 
   // =========================
-  // SUBMIT PROFILE (Update localStorage + Try API)
+  // SUBMIT PROFILE (API update + refresh user state)
   // =========================
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userId) {
@@ -132,56 +150,21 @@ export default function Page() {
           .filter((url) => url !== ""),
       };
 
-      console.log("Updating profile with data:", updateData);
+      await usersApi.update(String(userId), updateData);
 
-      // Handle image upload and convert to base64 for localStorage
-      let profileImageUrl = currentUser?.profileImage || "";
-      
-      if (files[0]?.file) {
-        // Convert image to base64 for localStorage
-        const reader = new FileReader();
-        profileImageUrl = await new Promise((resolve) => {
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(files[0].file);
-        });
-        console.log("Image converted to base64");
+      if (files[0]?.file instanceof File) {
+        await usersApi.uploadProfileImage(String(userId), files[0].file);
       }
 
-      // Update localStorage first (always works)
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-          const currentUserData = JSON.parse(stored);
-          const updatedUserData = {
-            ...currentUserData,
-            ...updateData,
-            profileImage: profileImageUrl, // Save image in localStorage
-          };
-          localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
-          setCurrentUser(updatedUserData);
-          console.log("localStorage updated successfully with image");
-        }
-      }
+      // Refresh user from API so avatar/header/etc update everywhere
+      const res = await usersApi.getById(String(userId));
+      const freshUser = extractUserFromUsersApiResponse(res);
+      if (freshUser) setUser(freshUser);
 
-      // Try to update via API (might fail due to CORS, but that's OK)
-      try {
-        await usersApi.update(userId, updateData);
-        
-        // Upload profile image if selected
-        if (files[0]?.file) {
-          await usersApi.uploadProfileImage(userId, files[0].file);
-        }
-        
-        toast.success("Profile updated successfully!");
-      } catch (apiError: any) {
-        console.warn("API update failed (CORS issue), but localStorage updated:", apiError?.message);
-        toast.success("Profile updated locally! (Backend sync pending due to CORS)");
-      }
+      toast.success("Profile updated successfully!");
     } catch (error: any) {
       console.error("Profile update error:", error);
-      toast.error("Profile update failed. Please try again.");
+      toast.error(error?.message || "Profile update failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -192,27 +175,17 @@ export default function Page() {
     if (!userId) return;
 
     try {
-      // Try API first
-      try {
-        await usersApi.deleteProfileImage(userId);
-      } catch (apiError) {
-        console.warn("API delete failed, updating localStorage only");
-      }
-
-      // Update localStorage
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-          const userData = JSON.parse(stored);
-          delete userData.profileImage;
-          localStorage.setItem('currentUser', JSON.stringify(userData));
-          setCurrentUser(userData);
-        }
-      }
+      await usersApi.deleteProfileImage(String(userId));
 
       if (files[0]?.id) {
         removeFile(files[0].id);
       }
+
+      // Refresh user after deletion
+      const res = await usersApi.getById(String(userId));
+      const freshUser = extractUserFromUsersApiResponse(res);
+      if (freshUser) setUser(freshUser);
+
       toast.success("Image removed");
     } catch (error) {
       console.error("Image deletion error:", error);
@@ -220,7 +193,7 @@ export default function Page() {
     }
   };
 
-  const previewUrl = files[0]?.preview || user?.profileImage || currentUser?.profileImage || "";
+  const previewUrl = files[0]?.preview || (user as any)?.profileImage || "";
 
   // Show loading state
   if (fetchingProfile) {
