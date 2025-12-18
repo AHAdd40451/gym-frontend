@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MealCard } from "../components/meal-card";
 import { WaterIntakeCard } from "../components/water-intake-card";
@@ -10,7 +10,6 @@ import { SupplementSection } from "../components/supplement-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,10 +17,24 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
 import { CopyPasteToolbar } from "../../components/copy-paste-toolbar";
 import { useDietCopy, DayDietData } from "../../context/diet-copy-context";
 import { toast } from "sonner";
 import { createMealPlan, getAllMeals, MealPlanPayload } from "@/lib/api/services/meals/meals";
+import { Subscription, getAllSubscriptions } from "@/lib/api/services/subcription/subcription";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -98,6 +111,10 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
   const [saving, setSaving] = useState(false);
   const [token, setToken] = useState("");
   const [tokenReady, setTokenReady] = useState(false);
+  const [subs, setSubs] = useState<Subscription[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
+  const [subsError, setSubsError] = useState<string | null>(null);
+  const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
 
   // Handle paste highlight animation
   useEffect(() => {
@@ -115,6 +132,33 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       setTokenReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!tokenReady) return;
+      if (!token) {
+        setSubsLoading(false);
+        setSubsError("Missing auth token. Please login again.");
+        return;
+      }
+      setSubsLoading(true);
+      try {
+        const res = await getAllSubscriptions({ page: 1, limit: 200 }, token);
+        const list =
+          (res as any)?.data?.data ||
+          (res as any)?.data ||
+          (res as any)?.subscriptions ||
+          [];
+        setSubs(Array.isArray(list) ? list : []);
+        setSubsError(null);
+      } catch (err: any) {
+        setSubsError(err?.message || "Unable to load members");
+      } finally {
+        setSubsLoading(false);
+      }
+    };
+    fetchMembers();
+  }, [tokenReady, token]);
 
   useEffect(() => {
     const qpUser = searchParams.get("user");
@@ -191,6 +235,31 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
     end.setHours(23, 59, 59, 999);
     return { startIso: start.toISOString(), endIso: end.toISOString() };
   };
+
+  const memberOptions = useMemo(() => {
+    return subs.map((sub) => {
+      const userObj = typeof sub.user === "object" ? sub.user : undefined;
+      // Prefer explicit userId from subscription payload (new contract)
+      const id =
+        (sub as any)?.userId ||
+        userObj?._id ||
+        (typeof sub.user === "string" ? sub.user : "") ||
+        (sub as any)?.id ||
+        "";
+      const email = userObj?.email || "-";
+      const name =
+        userObj?.name ||
+        (sub as any)?.firstName ||
+        (email && email.includes("@") ? email.split("@")[0] : "") ||
+        "Unknown User";
+      return { id, name, email };
+    });
+  }, [subs]);
+
+  const selectedMember = useMemo(
+    () => memberOptions.find((opt) => opt.id === userId),
+    [memberOptions, userId]
+  );
 
   const handleSave = async () => {
     if (!userId.trim()) {
@@ -306,14 +375,59 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
             <CardContent className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="member-id" className="text-sm font-medium">
-                  Member/User ID
+                  Member/User
                 </Label>
-                <Input
-                  id="member-id"
-                  placeholder="Enter member user id"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                />
+                <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="member-id"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                      disabled={subsLoading}>
+                      {subsLoading
+                        ? "Loading members..."
+                        : selectedMember
+                          ? `${selectedMember.name} (${selectedMember.email})`
+                          : userId
+                            ? `Using ID: ${userId}`
+                            : "Select member"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[320px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search members..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          {subsLoading ? "Loading..." : "No members found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {memberOptions.map((option) => (
+                            <CommandItem
+                              key={option.id}
+                              value={`${option.name} ${option.email} ${option.id}`}
+                              onSelect={() => {
+                                setUserId(option.id);
+                                setMemberPopoverOpen(false);
+                              }}>
+                              <Check
+                                className={`mr-2 h-4 w-4 ${userId === option.id ? "opacity-100" : "opacity-0"}`}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{option.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {option.email} • {option.id}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {subsError ? <p className="text-xs text-red-500">{subsError}</p> : null}
               </div>
             </CardContent>
           </Card>
