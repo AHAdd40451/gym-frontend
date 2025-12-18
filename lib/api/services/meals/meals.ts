@@ -68,13 +68,21 @@ export async function getAllMeals(
   if (params.startDate) searchParams.append("startDate", params.startDate);
   if (params.endDate) searchParams.append("endDate", params.endDate);
   const qs = searchParams.toString();
-  const url = `${API_ENDPOINTS.MEALS.BASE}`;
+  const url = qs ? `${API_ENDPOINTS.MEALS.BASE}?${qs}` : API_ENDPOINTS.MEALS.BASE;
   return serverFetch<{
     success?: boolean;
     count?: number;
     meals?: MealPlanDocument[];
     data?: MealPlanDocument[];
   }>(url, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  });
+}
+
+export async function getMealById(id: string, token?: string) {
+  return serverFetch<MealPlanDocument>(`${API_ENDPOINTS.MEALS.BASE}/${id}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }

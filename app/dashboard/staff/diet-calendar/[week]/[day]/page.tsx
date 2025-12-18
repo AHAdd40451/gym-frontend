@@ -21,7 +21,7 @@ import {
 import { CopyPasteToolbar } from "../../components/copy-paste-toolbar";
 import { useDietCopy, DayDietData } from "../../context/diet-copy-context";
 import { toast } from "sonner";
-import { createMealPlan, MealPlanPayload } from "@/lib/api/services/meals/meals";
+import { createMealPlan, getAllMeals, MealPlanPayload } from "@/lib/api/services/meals/meals";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -184,6 +184,14 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
     };
   };
 
+  const getDayIsoRange = (date: Date) => {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  };
+
   const handleSave = async () => {
     if (!userId.trim()) {
       toast.error("Please enter a member ID (user).");
@@ -194,9 +202,19 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       return;
     }
 
-    const payload = buildPayload();
     setSaving(true);
     try {
+      const { startIso, endIso } = getDayIsoRange(dayDate);
+      const existing = await getAllMeals({ user: userId.trim(), startDate: startIso, endDate: endIso }, token);
+      const payloadData = (existing as any)?.data ?? existing;
+      const existingList = payloadData?.meals ?? payloadData?.data ?? (Array.isArray(payloadData) ? payloadData : []);
+      if (Array.isArray(existingList) && existingList.length > 0) {
+        toast.warning("A diet plan already exists for this day.");
+        setSaving(false);
+        return;
+      }
+
+      const payload = buildPayload();
       await createMealPlan(payload, token);
       toast.success("Diet plan saved");
     } catch (err: any) {
