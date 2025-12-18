@@ -1,8 +1,8 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MealCard } from "../components/meal-card";
 import { WaterIntakeCard } from "../components/water-intake-card";
@@ -17,8 +17,24 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
 import { CopyPasteToolbar } from "../../components/copy-paste-toolbar";
 import { useDietCopy, DayDietData } from "../../context/diet-copy-context";
+import { toast } from "sonner";
+import { createMealPlan, getAllMeals, MealPlanPayload } from "@/lib/api/services/meals/meals";
+import { Subscription, getAllSubscriptions } from "@/lib/api/services/subcription/subcription";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -27,9 +43,29 @@ interface DayDetailPageProps {
   }>;
 }
 
+interface DietPlanPayload {
+  user: string;
+  date: string;
+  day: string;
+  meals: Array<{
+    type: string;
+    description: string;
+    calories: number;
+    carbs: number;
+    protein: number;
+    fat: number;
+    note: string;
+  }>;
+  supplements: string[];
+  dietaryInstructions: string;
+  waterIntake: number;
+  status: string;
+}
+
 export default function DayDetailPage({ params }: DayDetailPageProps) {
   // Unwrap params Promise in Next.js 16
   const resolvedParams = React.use(params);
+  const searchParams = useSearchParams();
 
   // Parse dates
   const dayDate = new Date(resolvedParams.day);
@@ -71,6 +107,14 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
 
   const [isPasted, setIsPasted] = useState(false);
   const { copyDay, copiedDayData } = useDietCopy();
+  const [userId, setUserId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [token, setToken] = useState("");
+  const [tokenReady, setTokenReady] = useState(false);
+  const [subs, setSubs] = useState<Subscription[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
+  const [subsError, setSubsError] = useState<string | null>(null);
+  const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
 
   // Handle paste highlight animation
   useEffect(() => {
@@ -79,6 +123,49 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       return () => clearTimeout(timer);
     }
   }, [isPasted]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedToken =
+        localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+      setToken(storedToken);
+      setTokenReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!tokenReady) return;
+      if (!token) {
+        setSubsLoading(false);
+        setSubsError("Missing auth token. Please login again.");
+        return;
+      }
+      setSubsLoading(true);
+      try {
+        const res = await getAllSubscriptions({ page: 1, limit: 200 }, token);
+        const list =
+          (res as any)?.data?.data ||
+          (res as any)?.data ||
+          (res as any)?.subscriptions ||
+          [];
+        setSubs(Array.isArray(list) ? list : []);
+        setSubsError(null);
+      } catch (err: any) {
+        setSubsError(err?.message || "Unable to load members");
+      } finally {
+        setSubsLoading(false);
+      }
+    };
+    fetchMembers();
+  }, [tokenReady, token]);
+
+  useEffect(() => {
+    const qpUser = searchParams.get("user");
+    if (qpUser) {
+      setUserId(qpUser);
+    }
+  }, [searchParams]);
 
   const handleCopy = () => {
     // Collect all current data before copying
@@ -96,6 +183,114 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
     if (copiedDayData) {
       setDietData(copiedDayData);
       setIsPasted(true);
+    }
+  };
+
+  const mealTypeMap: Record<string, string> = useMemo(
+    () => ({
+      breakfast: "breakfast",
+      "mid-morning": "mid_morning_snack",
+      lunch: "lunch",
+      evening: "evening_snack",
+      dinner: "dinner"
+    }),
+    []
+  );
+
+  const buildPayload = (): DietPlanPayload => {
+    const mealsArray = Object.entries(dietData.meals).map(([mealId, meal]) => ({
+      type: mealTypeMap[mealId] || mealId,
+      description: meal?.description || "",
+      calories: Number(meal?.calories || 0),
+      carbs: Number(meal?.carbs || 0),
+      protein: Number(meal?.protein || 0),
+      fat: Number(meal?.fats || 0),
+      note: meal?.notes || ""
+    }));
+
+    const supplements: string[] = [];
+    if (dietData.supplements.multivitamin) supplements.push("Multivitamin");
+    if (dietData.supplements.omega3) supplements.push("Omega 3");
+    if (dietData.supplements.protein) supplements.push("Protein");
+    supplements.push(...(dietData.supplements.custom || []));
+
+    // Store water intake in liters (backend appears to persist liters, not ml).
+    const waterLiters = Math.round((parseFloat(dietData.waterIntake) || 0) * 10) / 10;
+
+    return {
+      user: userId.trim(),
+      date: resolvedParams.day,
+      day: dayName,
+      meals: mealsArray,
+      supplements,
+      dietaryInstructions: dietData.specialInstructions,
+      waterIntake: waterLiters,
+      status: dietData.status
+    };
+  };
+
+  const getDayIsoRange = (date: Date) => {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  };
+
+  const memberOptions = useMemo(() => {
+    return subs.map((sub) => {
+      const userObj = typeof sub.user === "object" ? sub.user : undefined;
+      // Prefer explicit userId from subscription payload (new contract)
+      const id =
+        (sub as any)?.userId ||
+        userObj?._id ||
+        (typeof sub.user === "string" ? sub.user : "") ||
+        (sub as any)?.id ||
+        "";
+      const email = userObj?.email || "-";
+      const name =
+        userObj?.name ||
+        (sub as any)?.firstName ||
+        (email && email.includes("@") ? email.split("@")[0] : "") ||
+        "Unknown User";
+      return { id, name, email };
+    });
+  }, [subs]);
+
+  const selectedMember = useMemo(
+    () => memberOptions.find((opt) => opt.id === userId),
+    [memberOptions, userId]
+  );
+
+  const handleSave = async () => {
+    if (!userId.trim()) {
+      toast.error("Please enter a member ID (user).");
+      return;
+    }
+    if (!tokenReady || !token) {
+      toast.error("Missing auth token. Please login again.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { startIso, endIso } = getDayIsoRange(dayDate);
+      const existing = await getAllMeals({ user: userId.trim(), startDate: startIso, endDate: endIso }, token);
+      const payloadData = (existing as any)?.data ?? existing;
+      const existingList = payloadData?.meals ?? payloadData?.data ?? (Array.isArray(payloadData) ? payloadData : []);
+      if (Array.isArray(existingList) && existingList.length > 0) {
+        toast.warning("A diet plan already exists for this day.");
+        setSaving(false);
+        return;
+      }
+
+      const payload = buildPayload();
+      await createMealPlan(payload, token);
+      toast.success("Diet plan saved");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save diet plan");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -173,6 +368,71 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
 
         {/* Right Column - Side Info */}
         <div className="space-y-6">
+          {/* Member selection */}
+          <Card className="rounded-lg border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Member</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="member-id" className="text-sm font-medium">
+                  Member/User
+                </Label>
+                <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="member-id"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                      disabled={subsLoading}>
+                      {subsLoading
+                        ? "Loading members..."
+                        : selectedMember
+                          ? `${selectedMember.name} (${selectedMember.email})`
+                          : userId
+                            ? `Using ID: ${userId}`
+                            : "Select member"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[320px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search members..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          {subsLoading ? "Loading..." : "No members found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {memberOptions.map((option) => (
+                            <CommandItem
+                              key={option.id}
+                              value={`${option.name} ${option.email} ${option.id}`}
+                              onSelect={() => {
+                                setUserId(option.id);
+                                setMemberPopoverOpen(false);
+                              }}>
+                              <Check
+                                className={`mr-2 h-4 w-4 ${userId === option.id ? "opacity-100" : "opacity-0"}`}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{option.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {option.email} • {option.id}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {subsError ? <p className="text-xs text-red-500">{subsError}</p> : null}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Water Intake */}
           <WaterIntakeCard
             value={dietData.waterIntake}
@@ -214,8 +474,8 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
           {/* Action Buttons */}
           <Card className="rounded-lg border shadow-sm">
             <CardContent className="space-y-3 pt-6">
-              <Button className="w-full" variant="default" size="lg">
-                Save Diet Plan
+              <Button className="w-full" variant="default" size="lg" onClick={handleSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Diet Plan"}
               </Button>
               <Button className="w-full" variant="outline" size="lg">
                 Reset / Clear

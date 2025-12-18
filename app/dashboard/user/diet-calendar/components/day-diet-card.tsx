@@ -12,46 +12,22 @@ interface DayDietCardProps {
 }
 
 export function DayDietCard({ dayName, weekStart }: DayDietCardProps) {
-  // Calculate the day's date based on week start and day name
   const getDayDate = () => {
     if (!weekStart) return "";
-
     const weekStartDate = new Date(weekStart);
+    if (isNaN(weekStartDate.getTime())) return "";
 
-    // Check if date is valid
-    if (isNaN(weekStartDate.getTime())) {
-      return "";
-    }
-
-    const daysOfWeek = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday"
-    ];
+    const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const dayIndex = daysOfWeek.indexOf(dayName);
-
-    if (dayIndex === -1) {
-      return "";
-    }
+    if (dayIndex === -1) return "";
 
     const dayDate = new Date(weekStartDate);
     dayDate.setDate(weekStartDate.getDate() + dayIndex);
-
-    // Check if resulting date is valid
-    if (isNaN(dayDate.getTime())) {
-      return "";
-    }
-
+    if (isNaN(dayDate.getTime())) return "";
     return formatDateKey(dayDate);
   };
 
   const dayDate = getDayDate();
-
-  // Only render link if we have a valid date
   if (!dayDate || !weekStart) {
     return (
       <Card className="rounded-lg border shadow-sm">
@@ -68,7 +44,7 @@ export function DayDietCard({ dayName, weekStart }: DayDietCardProps) {
   const dayRoute = `${weekStart}/${dayDate}`;
 
   return (
-    <Link href={`/dashboard/staff/diet-calendar/${dayRoute}`}>
+    <Link href={`/dashboard/user/diet-calendar/${dayRoute}`}>
       <Card className="group cursor-pointer rounded-lg border shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -83,3 +59,4 @@ export function DayDietCard({ dayName, weekStart }: DayDietCardProps) {
     </Link>
   );
 }
+

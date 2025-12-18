@@ -5,6 +5,7 @@ import { CalendarHeader } from "./components/calendar-header";
 import { WeekSlider } from "./components/week-slider";
 import { MiniMonthCalendar } from "./components/mini-month-calendar";
 import { StatsOverview } from "./components/stats-overview";
+import { formatDateKey } from "@/lib/utils/date";
 
 export default function DietCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -70,7 +71,7 @@ export default function DietCalendarPage() {
         weeks.push({
           weekNumber,
           dateRange: `${startDate} – ${endDate}`,
-          weekStart: currentWeekStart.toISOString().split("T")[0],
+          weekStart: formatDateKey(currentWeekStart),
           weekDates,
           isCurrentWeek
         });

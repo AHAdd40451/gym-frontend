@@ -4,10 +4,11 @@ import React from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DayDietCard } from "@/app/dashboard/staff/diet-calendar/components/day-diet-card";
+import { DayDietCard } from "@/app/dashboard/user/diet-calendar/components/day-diet-card";
 import { useDietCopy, WeekDietData } from "@/app/dashboard/staff/diet-calendar/context/diet-copy-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { weeklyPlanSnapshot } from "../mock-data";
+import { parseLocalDateKey } from "../utils";
 
 interface WeekDetailsPageProps {
   params: Promise<{
@@ -17,7 +18,7 @@ interface WeekDetailsPageProps {
 
 export default function UserWeekDetailsPage({ params }: WeekDetailsPageProps) {
   const resolvedParams = React.use(params);
-  const weekStartDate = new Date(resolvedParams.week);
+  const weekStartDate = parseLocalDateKey(resolvedParams.week);
   const weekEndDate = new Date(weekStartDate);
   weekEndDate.setDate(weekStartDate.getDate() + 6);
 
