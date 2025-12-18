@@ -91,15 +91,17 @@ export function EventCalendar({
 
   return (
     <div
-      className={cn("flex min-h-[calc(100vh-var(--header-height)-3rem)] flex-col rounded-lg border", className)}
+      className={cn(
+        "flex min-h-[calc(100vh-var(--header-height)-3rem)] flex-col rounded-lg border",
+        className
+      )}
       style={
         {
           "--event-height": `${EventHeight}px`,
           "--event-gap": `${EventGap}px`,
           "--week-cells-height": `${WeekCellsHeight}px`
         } as React.CSSProperties
-      }
-    >
+      }>
       <CalendarDndProvider>
         <div className="flex items-center justify-between p-2 sm:p-4">
           <div className="flex items-center gap-1 sm:gap-4">
@@ -117,29 +119,22 @@ export function EventCalendar({
             </div>
             <h2 className="text-sm font-semibold sm:text-lg md:text-xl">{viewTitle}</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1.5">
-                  {view.charAt(0).toUpperCase()}
-                  <ChevronDownIcon className="-me-1 opacity-60" size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-32">
-                <DropdownMenuItem onClick={() => setView("month")}>Month <DropdownMenuShortcut>M</DropdownMenuShortcut></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setView("week")}>Week <DropdownMenuShortcut>W</DropdownMenuShortcut></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setView("day")}>Day <DropdownMenuShortcut>D</DropdownMenuShortcut></DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setView("agenda")}>Agenda <DropdownMenuShortcut>A</DropdownMenuShortcut></DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
 
         <div className="flex flex-1 flex-col">
-          {view === "month" && <MonthView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />}
-          {view === "week" && <WeekView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />}
-          {view === "day" && <DayView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />}
-          {view === "agenda" && <AgendaView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />}
+          {view === "month" && (
+            <MonthView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+          )}
+          {view === "week" && (
+            <WeekView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+          )}
+          {view === "day" && (
+            <DayView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+          )}
+          {view === "agenda" && (
+            <AgendaView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+          )}
         </div>
       </CalendarDndProvider>
     </div>
