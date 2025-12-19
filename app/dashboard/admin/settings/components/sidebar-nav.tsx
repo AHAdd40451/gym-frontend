@@ -41,11 +41,11 @@ const sidebarNavItems = [
     href: "/dashboard/admin/settings/notifications",
     icon: BellIcon
   },
-  {
-    title: "Display",
-    href: "/dashboard/admin/settings/display",
-    icon: ContrastIcon
-  }
+  // {
+  //   title: "Display",
+  //   href: "/dashboard/admin/settings/display",
+  //   icon: ContrastIcon
+  // }
 ];
 
 export function SidebarNav() {

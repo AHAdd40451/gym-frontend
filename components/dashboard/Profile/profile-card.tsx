@@ -49,7 +49,7 @@ export function ProfileCard() {
           <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
             <div>
               <h5 className="text-lg font-semibold">
-                {authUser.id?.slice(0, 4) || "----"}
+                {authUser._id?.slice(0, 4) || "----"}
               </h5>
               <div className="text-muted-foreground text-sm">User ID</div>
             </div>

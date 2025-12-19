@@ -109,7 +109,7 @@ export async function getMySubscriptions() {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        userId = parsedUser?.id || null;
+        userId = parsedUser?._id || null;
       } catch (err) {
         console.error("Error parsing auth-user from localStorage:", err);
       }
@@ -211,7 +211,7 @@ export async function getMyTransactions() {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        userId = parsedUser?.id || null;
+        userId = parsedUser?._id || null;
       } catch (err) {
         console.error("Error parsing auth-user from localStorage:", err);
       }

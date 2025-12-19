@@ -43,6 +43,26 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+// Helper to safely extract error message
+function getErrorMessage(error: any): string {
+  if (!error) return "An unknown error occurred";
+  
+  // Check various error formats
+  if (typeof error === "string") return error;
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  if (error.data?.message) return error.data.message;
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.error) return error.response.data.error;
+  
+  // If it's an object, try to stringify it
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "An unknown error occurred";
+  }
+}
+
 function extractUserFromUsersApiResponse(res: any) {
   // usersApi uses handleApiResponse which returns: { data: axiosResponseData, success, status }
   const payload = res?.data;
@@ -53,6 +73,47 @@ function extractUserFromUsersApiResponse(res: any) {
     payload ??
     null
   );
+}
+
+// Helper function to update user in localStorage accounts
+function updateAccountInLocalStorage(updatedUser: any) {
+  try {
+    // Get current accounts from localStorage
+    const accountsStr = localStorage.getItem("accounts");
+    if (!accountsStr) return;
+    
+    const accounts = JSON.parse(accountsStr);
+    const userId = updatedUser?._id || updatedUser?.id;
+    
+    if (!userId) return;
+    
+    // Find and update the matching account
+    const updatedAccounts = accounts.map((acc: any) => {
+      const accId = acc?._id || acc?.id;
+      if (accId === userId) {
+        // Merge updated user data with existing account
+        return { ...acc, ...updatedUser };
+      }
+      return acc;
+    });
+    
+    // Save updated accounts back to localStorage
+    localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
+    
+    // Also update currentUser if it matches
+    const currentUserStr = localStorage.getItem("currentUser");
+    if (currentUserStr) {
+      const currentUser = JSON.parse(currentUserStr);
+      const currentUserId = currentUser?._id || currentUser?.id;
+      if (currentUserId === userId) {
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      }
+    }
+    
+    console.log("✅ Updated user in localStorage accounts");
+  } catch (error) {
+    console.error("❌ Failed to update localStorage accounts:", error);
+  }
 }
 
 export default function Page() {
@@ -97,24 +158,32 @@ export default function Page() {
 
     const loadUserProfile = async () => {
       if (!userId) {
-        // Auth context restores async from localStorage; wait until we actually have an id
+        console.log("No userId available yet, waiting...");
         return;
       }
 
+      console.log("Loading profile for userId:", userId);
       setFetchingProfile(true);
+      
       try {
         const res = await usersApi.getById(String(userId));
+        console.log("API Response:", res);
+        
         const freshUser = extractUserFromUsersApiResponse(res);
+        console.log("Extracted user:", freshUser);
 
         if (freshUser) {
           setUser(freshUser);
           resetFormFromUser(freshUser);
         } else {
-          // fallback to whatever we have in auth context
+          console.warn("No user data in API response, using auth context");
           resetFormFromUser(user);
         }
       } catch (err: any) {
-        console.error("Failed to fetch user profile:", err);
+        const errorMsg = getErrorMessage(err);
+        console.error("Failed to fetch user profile:", errorMsg, err);
+        toast.error(`Failed to load profile: ${errorMsg}`);
+        
         // fallback to auth context user (still allows update)
         resetFormFromUser(user);
       } finally {
@@ -127,13 +196,16 @@ export default function Page() {
   }, [userId, setUser, form]);
 
   // =========================
-  // SUBMIT PROFILE (API update + refresh user state)
+  // SUBMIT PROFILE (API update + refresh user state + update localStorage)
   // =========================
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userId) {
       toast.error("User ID not found");
       return;
     }
+
+    console.log("Submitting profile update for userId:", userId);
+    console.log("Form data:", data);
 
     try {
       setLoading(true);
@@ -150,21 +222,36 @@ export default function Page() {
           .filter((url) => url !== ""),
       };
 
-      await usersApi.update(String(userId), updateData);
+      console.log("Update data:", updateData);
+
+      const updateResponse = await usersApi.update(String(userId), updateData);
+      console.log("Update response:", updateResponse);
 
       if (files[0]?.file instanceof File) {
-        await usersApi.uploadProfileImage(String(userId), files[0].file);
+        console.log("Uploading profile image...");
+        const uploadResponse = await usersApi.uploadProfileImage(String(userId), files[0].file);
+        console.log("Upload response:", uploadResponse);
       }
 
       // Refresh user from API so avatar/header/etc update everywhere
+      console.log("Fetching updated user data...");
       const res = await usersApi.getById(String(userId));
       const freshUser = extractUserFromUsersApiResponse(res);
-      if (freshUser) setUser(freshUser);
+      
+      if (freshUser) {
+        // Update auth context
+        setUser(freshUser);
+        console.log("User state updated:", freshUser);
+        
+        // Update localStorage accounts and currentUser
+        updateAccountInLocalStorage(freshUser);
+      }
 
       toast.success("Profile updated successfully!");
     } catch (error: any) {
-      console.error("Profile update error:", error);
-      toast.error(error?.message || "Profile update failed. Please try again.");
+      const errorMsg = getErrorMessage(error);
+      console.error("Profile update error:", errorMsg, error);
+      toast.error(errorMsg || "Profile update failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -184,12 +271,19 @@ export default function Page() {
       // Refresh user after deletion
       const res = await usersApi.getById(String(userId));
       const freshUser = extractUserFromUsersApiResponse(res);
-      if (freshUser) setUser(freshUser);
+      
+      if (freshUser) {
+        setUser(freshUser);
+        
+        // Update localStorage accounts
+        updateAccountInLocalStorage(freshUser);
+      }
 
       toast.success("Image removed");
-    } catch (error) {
-      console.error("Image deletion error:", error);
-      toast.error("Failed to remove image");
+    } catch (error: any) {
+      const errorMsg = getErrorMessage(error);
+      console.error("Image deletion error:", errorMsg, error);
+      toast.error(`Failed to remove image: ${errorMsg}`);
     }
   };
 
