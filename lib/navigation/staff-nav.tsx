@@ -5,6 +5,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -68,16 +69,16 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff",
         icon: GaugeIcon
       },
-      {
-        title: "My Schedule",
-        href: "/dashboard/staff/schedule",
-        icon: CalendarIcon
-      },
-      {
-        title: "Performance",
-        href: "/dashboard/staff/performance",
-        icon: BarChart3Icon
-      }
+      // {
+      //   title: "My Schedule",
+      //   href: "/dashboard/staff/schedule",
+      //   icon: CalendarIcon
+      // },
+      // {
+      //   title: "Performance",
+      //   href: "/dashboard/staff/performance",
+      //   icon: BarChart3Icon
+      // }
     ]
   },
   {
@@ -122,12 +123,12 @@ export const staffNavItems: NavGroup[] = [
         title: "Personal Training",
         href: "/dashboard/staff/training",
         icon: GraduationCapIcon
-      },
-      {
-        title: "Group Classes",
-        href: "/dashboard/staff/classes",
-        icon: ComponentIcon
       }
+      // {
+      //   title: "Group Classes",
+      //   href: "/dashboard/staff/classes",
+      //   icon: ComponentIcon
+      // }
     ]
   },
   {
@@ -138,11 +139,11 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/schedule",
         icon: CalendarIcon
       },
-       {
-        title: "Attendence",
-        href: "/dashboard/staff/attendence",
-        icon: CalendarIcon
-      },
+      //  {
+      //   title: "Attendence",
+      //   href: "/dashboard/staff/attendence",
+      //   icon: CalendarIcon
+      // },
       {
         title: "Book Sessions",
         href: "/dashboard/staff/booking",
@@ -158,16 +159,16 @@ export const staffNavItems: NavGroup[] = [
   {
     title: "Communication",
     items: [
-      {
-        title: "Messages",
-        href: "/dashboard/staff/messages",
-        icon: MessageSquareIcon
-      },
-      {
-        title: "Notifications",
-        href: "/dashboard/staff/notifications",
-        icon: BellIcon
-      },
+      // {
+      //   title: "Messages",
+      //   href: "/dashboard/staff/messages",
+      //   icon: MessageSquareIcon
+      // },
+      // {
+      //   title: "Notifications",
+      //   href: "/dashboard/staff/notifications",
+      //   icon: BellIcon
+      // },
       {
         title: "Announcements",
         href: "/dashboard/staff/announcements",

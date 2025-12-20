@@ -107,23 +107,21 @@ export default function UserMenu() {
 
         {/* Links */}
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
+          {/* <DropdownMenuItem asChild>
             <Link href="https://shadcnuikit.com/pricing" target="_blank">
               <Sparkles /> Upgrade to Pro
             </Link>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
         </DropdownMenuGroup>
 
         <DropdownMenuGroup>
           <DropdownMenuItem>
             <BadgeCheck /> Account
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCard /> Billing
-          </DropdownMenuItem>
-          <DropdownMenuItem>
+     
+          {/* <DropdownMenuItem>
             <Bell /> Notifications
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
@@ -146,7 +144,7 @@ export default function UserMenu() {
         </DropdownMenuItem>
 
         {/* Credits */}
-        <div className="bg-muted mt-1.5 rounded-md border">
+        {/* <div className="bg-muted mt-1.5 rounded-md border">
           <div className="space-y-3 p-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium">Credits</h4>
@@ -160,7 +158,7 @@ export default function UserMenu() {
               Daily credits used first
             </div>
           </div>
-        </div>
+        </div> */}
       </DropdownMenuContent>
     </DropdownMenu>
   );
