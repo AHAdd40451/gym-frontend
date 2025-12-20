@@ -66,5 +66,10 @@ export const API_ENDPOINTS = {
     BASE: "/attendance",
     RUN_DAILY: "/attendance/mark",
     ALL: "/attendance/all"
+  },
+  EXERCISES: {
+    BASE: "/exercises",
+    RUN_DAILY: "/exercises",
+    ALL: "/exercises"
   }
 } as const;
