@@ -8,7 +8,6 @@ export interface Category {
   updatedAt: string;
 }
 
-// Create Category (Admin)
 export async function createCategory(name: string, token?: string) {
   return serverFetch<{ success: boolean; message: string; category: Category }>(
     API_ENDPOINTS.CATEGORIES.BASE,
