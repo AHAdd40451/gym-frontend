@@ -25,6 +25,8 @@ export async function generateMetadata() {
 // Server Component
 export default async function Page() {
   const { user } = await getServerAuth();
+  console.log("profile", user);
+  
 
   if (!user) {
     return (
