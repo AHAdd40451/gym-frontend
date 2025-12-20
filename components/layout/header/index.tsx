@@ -26,7 +26,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Notifications />
           <ThemeSwitch />
-          <ThemeCustomizerPanel />
+          {/* <ThemeCustomizerPanel /> */}
           <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           <UserMenu />
         </div>
