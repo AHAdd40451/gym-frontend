@@ -88,14 +88,14 @@ export const userNavItems: NavGroup[] = [
     title: "Workouts",
     items: [
       {
+        title: "Exercise's Library",
+        href: "/dashboard/user/exercises",
+        icon: DumbbellIcon
+      },
+      {
         title: "My Workouts",
         href: "/dashboard/user/workouts",
         icon: ActivityIcon
-      },
-      {
-        title: "Exercise Library",
-        href: "/dashboard/user/exercises",
-        icon: DumbbellIcon
       },
       {
         title: "Workout Plans",
