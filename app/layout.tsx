@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "next-themes";
@@ -14,6 +15,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { AuthProvider } from "@/lib/api/services/auth/context";
 import { getServerAuth } from "@/lib/api/services/auth/server";
+
+export const metadata: Metadata = {
+  title: "Gym Management Dashboard",
+ 
+};
 
 export default async function RootLayout({
   children

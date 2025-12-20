@@ -13,7 +13,7 @@ export const API_ENDPOINTS = {
     UPDATE_PROFILE: "/users/profile",
     CHANGE_PASSWORD: "/users/change-password",
     BY_ROLE: "/users/role",
-    TRAINER: "/users/trainer" // ✅ role ab query string se bhejna
+    TRAINER: "/users/trainer"
   },
 
   PRODUCTS: {
@@ -37,24 +37,45 @@ export const API_ENDPOINTS = {
     BY_USER: "/orders/my-orders"
   },
 
+  // ✅ UPDATED SUBSCRIPTIONS SECTION
   SUBSCRIPTIONS: {
     BASE: "/subscriptions",
-    BY_USER: "/subscriptions/user", // ✅ static
-    BY_USER_ID: (userId: string) => `/subscriptions/user/${userId}` // ✅ user-specific
+    CREATE: "/subscriptions",
+    GET_ALL: "/subscriptions",
+    GET_BY_ID: (id: string) => `/subscriptions/${id}`,
+    UPDATE: (id: string) => `/subscriptions/${id}`,
+    CANCEL: (id: string) => `/subscriptions/cancel/${id}`,
+    DELETE: (id: string) => `/subscriptions/${id}`,
+    
+    // User-specific subscriptions
+    BY_USER: "/subscriptions/user",
+    BY_USER_ID: (userId: string) => `/subscriptions/user/${userId}`,
+    
+    // ✅ Main endpoint for billing page (returns user + subscriptions + transactions)
+    USER_DETAILS: (userId: string) => `/subscriptions/${userId}/details`,
+    
+    // Transaction management
+    ADD_TRANSACTION: "/subscriptions/addTransaction",
+    USER_TRANSACTIONS: (userId: string) => `/subscriptions/user/${userId}/transactions`,
+    
+    // Other
+    SUBSCRIBED_USERS: "/subscriptions/subscribed-users"
   },
 
   PLANS: {
     BASE: "/plans",
     BY_ID: (id: string) => `/plans/${id}`
   },
+
   CONTECTS: {
     BASE: "/contect"
   },
 
+  // ✅ UPDATED TRANSACTIONS SECTION (for backward compatibility)
   TRANSACTIONS: {
     BASE: "/subscriptions",
-    BY_USER: (userId: string) => `/subscriptions/user/${userId}`, // ✅ get all transactions by user ID
-    BY_SUBSCRIPTION: (subscriptionId: string) => `/subscription/${subscriptionId}` // ✅ get transactions by subscription
+    BY_USER: (userId: string) => `/subscriptions/user/${userId}/transactions`,
+    BY_SUBSCRIPTION: (subscriptionId: string) => `/subscription/${subscriptionId}`
   },
 
   MEALS: {

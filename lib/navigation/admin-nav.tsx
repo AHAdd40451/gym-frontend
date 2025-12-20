@@ -95,11 +95,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/ecommerce",
         icon: ChartPieIcon
       },
-      {
-        title: "Analytics",
-        href: "/dashboard/admin/analytics",
-        icon: BarChart3Icon
-      },
+      // {
+      //   title: "Analytics",
+      //   href: "/dashboard/admin/analytics",
+      //   icon: BarChart3Icon
+      // },
       // {
       //   title: "Product",
       //   href: "/dashboard/admin/product",
@@ -125,16 +125,12 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/sub-category",
         icon: BarChart3Icon
       },
-      {
-        title: "System Health",
-        href: "/dashboard/admin/system",
-        icon: ActivityIcon
-      },
-      {
-        title: "Contact",
-        href: "/dashboard/admin/contact",
-        icon: ActivityIcon
-      },
+     
+      // {
+      //   title: "Contact",
+      //   href: "/dashboard/admin/contact",
+      //   icon: ActivityIcon
+      // },
       {
         title: "All Subcriptions",
         href: "/dashboard/admin/all-sub",
@@ -155,11 +151,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/staff",
         icon: UserIcon
       },
-      {
-        title: "User Roles",
-        href: "/dashboard/admin/roles",
-        icon: ShieldIcon
-      },
+      // {
+      //   title: "User Roles",
+      //   href: "/dashboard/admin/roles",
+      //   icon: ShieldIcon
+      // },
       {
         title: "Permissions",
         href: "/dashboard/admin/permissions",
@@ -220,21 +216,21 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/settings",
         icon: SettingsIcon
       },
-      {
-        title: "Database",
-        href: "/dashboard/admin/database",
-        icon: DatabaseIcon
-      },
+      // {
+      //   title: "Database",
+      //   href: "/dashboard/admin/database",
+      //   icon: DatabaseIcon
+      // },
       {
         title: "Logs",
         href: "/dashboard/admin/logs",
         icon: FileTextIcon
-      },
-      {
-        title: "Backup",
-        href: "/dashboard/admin/backup",
-        icon: DatabaseIcon
       }
+      // {
+      //   title: "Backup",
+      //   href: "/dashboard/admin/backup",
+      //   icon: DatabaseIcon
+      // }
     ]
   }
 ];
