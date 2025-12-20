@@ -7,6 +7,19 @@ export const API_ENDPOINTS = {
     PROFILE: "/auth/profile"
   },
 
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    SETTINGS: '/notifications/settings',
+    GET_SETTINGS: '/notifications/settings', // GET user's notification settings
+    UPDATE_SETTINGS: '/notifications/settings', // PUT update settings
+    PREFERENCES: '/notifications/preferences', // GET/PUT preferences
+    SEND: '/notifications/send', // POST send notification
+    MARK_READ: (id: string) => `/notifications/${id}/read`, // PUT mark as read
+    MARK_ALL_READ: '/notifications/mark-all-read', // PUT mark all as read
+    DELETE: (id: string) => `/notifications/${id}`, // DELETE specific notification
+    DELETE_ALL: '/notifications/delete-all', // DELETE all notifications
+  },
+
   USERS: {
     BASE: "/users",
     PROFILE: "/users/profile",
