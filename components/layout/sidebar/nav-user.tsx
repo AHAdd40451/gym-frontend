@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -18,15 +19,55 @@ import {
 } from "@/components/ui/sidebar";
 import { BellIcon, CreditCardIcon, LogOutIcon, UserCircle2Icon } from "lucide-react";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
+import { logoutAction } from "@/lib/api/services/auth/actions";
 
-const userData = {
-  name: "Toby Belhome",
-  email: "hello@tobybelhome.com",
-  avatar: "/images/avatars/01.png"
+type AuthUser = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  profileImage?: string;
+  avatar?: string;
+  name?: string;
 };
+
+const DEFAULT_AVATAR = "/images/avatars/01.png";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? localStorage.getItem("currentUser") || localStorage.getItem("auth-user")
+        : null;
+
+    if (stored) setAuthUser(JSON.parse(stored));
+  }, []);
+
+  const displayName = useMemo(() => {
+    if (!authUser) return "";
+    const fullName = `${authUser.firstName ?? ""} ${authUser.lastName ?? ""}`.trim();
+    return fullName || authUser.name || "User";
+  }, [authUser]);
+
+  const email = authUser?.email ?? "Not provided";
+  const avatar = authUser?.profileImage || authUser?.avatar || DEFAULT_AVATAR;
+  const initials = useMemo(() => {
+    if (!authUser) return "NA";
+    const first = authUser.firstName?.[0] || authUser.name?.[0] || "U";
+    const last = authUser.lastName?.[0] || "";
+    return `${first}${last}`;
+  }, [authUser]);
+
+  const handleLogout = async () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("auth-user");
+    localStorage.removeItem("currentUser");
+    await logoutAction();
+  };
+
+  if (!authUser) return null;
 
   return (
     <SidebarMenu>
@@ -37,12 +78,12 @@ export function NavUser() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               <Avatar className="rounded-full">
-                <AvatarImage src={userData.avatar} alt={userData.name} />
-                <AvatarFallback className="rounded-lg">JS</AvatarFallback>
+                <AvatarImage src={avatar} alt={displayName} />
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{userData.name}</span>
-                <span className="text-muted-foreground truncate text-xs">{userData.email}</span>
+                <span className="truncate font-medium">{displayName}</span>
+                <span className="text-muted-foreground truncate text-xs">{email}</span>
               </div>
               <DotsVerticalIcon className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -55,12 +96,12 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={userData.avatar} alt={userData.name} />
-                  <AvatarFallback className="rounded-lg">TB</AvatarFallback>
+                  <AvatarImage src={avatar} alt={displayName} />
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{userData.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">{userData.email}</span>
+                  <span className="truncate font-medium">{displayName}</span>
+                  <span className="text-muted-foreground truncate text-xs">{email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -70,17 +111,11 @@ export function NavUser() {
                 <UserCircle2Icon />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                Notifications
-              </DropdownMenuItem>
+        
+             
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOutIcon />
               Log out
             </DropdownMenuItem>

@@ -87,11 +87,11 @@ export const userNavItems: NavGroup[] = [
   {
     title: "Workouts",
     items: [
-      {
-        title: "My Workouts",
-        href: "/dashboard/user/workouts",
-        icon: ActivityIcon
-      },
+      // {
+      //   title: "My Workouts",
+      //   href: "/dashboard/user/workouts",
+      //   icon: ActivityIcon
+      // },
       {
         title: "Exercise Library",
         href: "/dashboard/user/exercises",
@@ -101,12 +101,12 @@ export const userNavItems: NavGroup[] = [
         title: "Workout Plans",
         href: "/dashboard/user/plans",
         icon: ClipboardCheckIcon
-      },
-      {
-        title: "Favorites",
-        href: "/dashboard/user/favorites",
-        icon: HeartIcon
       }
+      // {
+      //   title: "Favorites",
+      //   href: "/dashboard/user/favorites",
+      //   icon: HeartIcon
+      // }
     ]
   },
   {
@@ -117,11 +117,11 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user/personal-training",
         icon: GraduationCapIcon
       },
-      {
-        title: "Group Classes",
-        href: "/dashboard/user/classes",
-        icon: ComponentIcon
-      },
+      // {
+      //   title: "Group Classes",
+      //   href: "/dashboard/user/classes",
+      //   icon: ComponentIcon
+      // },
       {
         title: "Book Session",
         href: "/dashboard/user/booking",
@@ -159,26 +159,26 @@ export const userNavItems: NavGroup[] = [
       }
     ]
   },
-  {
-    title: "Community",
-    items: [
-      {
-        title: "Messages",
-        href: "/dashboard/user/messages",
-        icon: MessageSquareIcon
-      },
-      {
-        title: "Notifications",
-        href: "/dashboard/user/notifications",
-        icon: BellIcon
-      },
-      {
-        title: "Blog",
-        href: "/dashboard/user/blog",
-        icon: BookOpenIcon
-      }
-    ]
-  },
+  // {
+  //   title: "Community",
+  //   items: [
+  //     {
+  //       title: "Messages",
+  //       href: "/dashboard/user/messages",
+  //       icon: MessageSquareIcon
+  //     },
+  //     {
+  //       title: "Notifications",
+  //       href: "/dashboard/user/notifications",
+  //       icon: BellIcon
+  //     },
+  //     {
+  //       title: "Blog",
+  //       href: "/dashboard/user/blog",
+  //       icon: BookOpenIcon
+  //     }
+  //   ]
+  // },
   {
     title: "Account",
     items: [
