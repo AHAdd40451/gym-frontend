@@ -1,18 +1,52 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { Mail, MapPin, PhoneCall, Link2Icon } from "lucide-react";
+import { Mail, MapPin, Link2, FileText, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const languages: Record<string, string> = {
+  en: "English",
+  fr: "French",
+  de: "German",
+  es: "Spanish",
+  pt: "Portuguese",
+  ru: "Russian",
+  ja: "Japanese",
+  ko: "Korean",
+  zh: "Chinese"
+};
+
 export function ProfileCard() {
   const [authUser, setAuthUser] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<string>("USA");
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser"); // localStorage se current auth user
-    if (storedUser) setAuthUser(JSON.parse(storedUser));
-  }, []);
+useEffect(() => {
+  const storedUser = localStorage.getItem("currentUser");
+
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    setAuthUser(user);
+
+    // ✅ Correct way to get location
+    setUserLocation(user?.location?.country || "USA");
+  }
+
+  const handleUserUpdate = () => {
+    const updatedUser = localStorage.getItem("currentUser");
+    if (updatedUser) {
+      const user = JSON.parse(updatedUser);
+      setAuthUser(user);
+      setUserLocation(user?.location?.country || "USA");
+    }
+  };
+
+  window.addEventListener("userUpdated", handleUserUpdate);
+  return () =>
+    window.removeEventListener("userUpdated", handleUserUpdate);
+}, []);
+
 
   if (!authUser) {
     return (
@@ -21,6 +55,8 @@ export function ProfileCard() {
       </Card>
     );
   }
+
+  const userLanguage = languages[authUser.language] || "English";
 
   return (
     <Card className="relative">
@@ -68,22 +104,43 @@ export function ProfileCard() {
             <div className="flex items-center gap-3 text-sm">
               <Mail className="text-muted-foreground size-4" /> {authUser.email}
             </div>
+            
+            {/* Bio */}
+            {authUser.bio && (
+              <div className="flex items-start gap-3 text-sm">
+                <FileText className="text-muted-foreground size-4 mt-0.5" />
+                <span className="flex-1">{authUser.bio}</span>
+              </div>
+            )}
+            
+            {/* Location from localStorage */}
             <div className="flex items-center gap-3 text-sm">
-              <PhoneCall className="text-muted-foreground size-4" /> (+1) 555-1234
+              <MapPin className="text-muted-foreground size-4" /> {userLocation}
             </div>
+
+            {/* Language */}
             <div className="flex items-center gap-3 text-sm">
-              <MapPin className="text-muted-foreground size-4" /> USA
+              <Globe className="text-muted-foreground size-4" /> {userLanguage}
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Link2Icon className="text-muted-foreground size-4" />
-              <a
-                href="https://example.com"
-                className="hover:text-primary hover:underline"
-                target="_blank"
-              >
-                example.com
-              </a>
-            </div>
+            
+            {/* URLs */}
+            {authUser.urls && authUser.urls.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {authUser.urls.map((url: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-3 text-sm">
+                    <Link2 className="text-muted-foreground size-4" />
+                    <a
+                      href={url}
+                      className="hover:text-primary hover:underline truncate"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {url}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

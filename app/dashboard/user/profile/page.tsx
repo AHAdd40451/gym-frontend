@@ -43,12 +43,12 @@ export default async function Page() {
           Profile Page ({user.role})
         </h1>
         <div className="flex items-center space-x-2">
-          <Button asChild>
+          {/* <Button asChild>
             <Link href="/dashboard/pages/settings">
               <Settings />
               Settings
             </Link>
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default async function Page() {
           <LatestActivity user={user} />
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <AboutMe />
-            <Connections />
+            {/* <Connections /> */}
           </div>
         </div>
       </div>
