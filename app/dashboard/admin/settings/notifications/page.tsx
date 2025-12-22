@@ -169,13 +169,55 @@ export default function Page() {
     }
   }
 
-  // Show loading state
+  // Show loading skeleton
   if (fetchingSettings) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading notification settings...</p>
+          <div className="space-y-8">
+            {/* Notify me about... Skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="flex flex-col space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center space-x-3">
+                    <div className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                    <div className="h-4 w-40 animate-pulse rounded bg-muted-foreground/20"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email Notifications Skeleton */}
+            <div>
+              <div className="h-6 w-48 animate-pulse rounded bg-muted-foreground/20 mb-4"></div>
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-row items-center justify-between rounded-lg border p-4"
+                  >
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 w-48 animate-pulse rounded bg-muted-foreground/20"></div>
+                      <div className="h-3 w-64 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </div>
+                    <div className="h-6 w-11 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Settings Checkbox Skeleton */}
+            <div className="flex flex-row items-start space-x-3">
+              <div className="h-4 w-4 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="space-y-2 flex-1">
+                <div className="h-4 w-80 animate-pulse rounded bg-muted-foreground/20"></div>
+                <div className="h-3 w-72 animate-pulse rounded bg-muted-foreground/20"></div>
+              </div>
+            </div>
+
+            {/* Submit Button Skeleton */}
+            <div className="h-10 w-48 animate-pulse rounded-md bg-muted-foreground/20"></div>
           </div>
         </CardContent>
       </Card>

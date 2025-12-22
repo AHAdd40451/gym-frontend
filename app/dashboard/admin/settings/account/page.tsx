@@ -262,13 +262,35 @@ export default function Page() {
     }
   }
 
-  // Show loading state
+  // Show loading skeleton
   if (fetchingAccount) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading account data...</p>
+          <div className="space-y-8">
+            {/* Name Field Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+              <div className="h-3 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Date of Birth Field Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+              <div className="h-3 w-2/3 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Language Field Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+              <div className="h-3 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Submit Button Skeleton */}
+            <div className="h-10 w-40 animate-pulse rounded-md bg-muted-foreground/20"></div>
           </div>
         </CardContent>
       </Card>

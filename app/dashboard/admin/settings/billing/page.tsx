@@ -149,8 +149,99 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        {/* Billing Overview Card Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing</CardTitle>
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
+            <CardAction>
+              <div className="h-10 w-32 animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </CardAction>
+          </CardHeader>
+        </Card>
+
+        {/* Subscription Details Card Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Subscriptions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
+                    <div className="h-5 w-16 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                  </div>
+                  <div className="h-4 w-48 animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+                <div className="h-10 w-24 animate-pulse rounded-md bg-muted-foreground/20"></div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Payment Method Card Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Method</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center py-8">
+              <div className="mx-auto h-4 w-64 animate-pulse rounded bg-muted-foreground/20 mb-4"></div>
+              <div className="mx-auto h-10 w-48 animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transaction History Card Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Transaction History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Currency</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-5 w-20 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="ml-auto h-8 w-8 animate-pulse rounded bg-muted-foreground/20"></div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     );
   }

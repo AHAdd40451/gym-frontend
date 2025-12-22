@@ -28,15 +28,19 @@ export function EcommerceBestSellingProductsCard() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const res = await getAllProducts();
+      try {
+        const res = await getAllProducts();
 
-      // ⚠️ serverFetch pattern
-      if (res?.data?.success) {
-        // TEMP: top 6 products
-        setProducts(res.data.products.slice(0, 6));
+        // ⚠️ serverFetch pattern
+        if (res?.data?.success) {
+          // TEMP: top 6 products
+          setProducts(res.data.products.slice(0, 6));
+        }
+      } catch (error) {
+        console.error("❌ Products fetch error:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchProducts();
@@ -45,7 +49,41 @@ export function EcommerceBestSellingProductsCard() {
   if (loading) {
     return (
       <Card className="h-full">
-        <CardContent className="p-6">Loading products...</CardContent>
+        <CardHeader>
+          <CardTitle>Best Selling Products</CardTitle>
+          <CardDescription>Top products overview</CardDescription>
+          <CardAction>
+            <TooltipProvider>
+              <Tooltip>
+                {/* <TooltipTrigger asChild>
+                  <Button size="icon" variant="outline">
+                    <ChevronRight />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View All</TooltipContent> */}
+              </Tooltip>
+            </TooltipProvider>
+          </CardAction>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-md border px-4 py-3"
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 animate-pulse rounded-md bg-muted-foreground/20"></div>
+                <div className="space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
+                  <div className="h-3 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+              </div>
+
+              <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+          ))}
+        </CardContent>
       </Card>
     );
   }
@@ -58,8 +96,8 @@ export function EcommerceBestSellingProductsCard() {
         <CardAction>
           <TooltipProvider>
             <Tooltip>
-              {/* <TooltipTrigger asChild> */}
-                {/* <Button size="icon" variant="outline">
+              {/* <TooltipTrigger asChild>
+                <Button size="icon" variant="outline">
                   <ChevronRight />
                 </Button>
               </TooltipTrigger>

@@ -29,6 +29,7 @@ export default function StatCards() {
         const token = localStorage.getItem("authToken");
         if (!token) {
           console.error("❌ Token not found");
+          setLoading(false);
           return;
         }
 
@@ -84,10 +85,23 @@ export default function StatCards() {
   // 🔄 Loading Skeleton
   if (loading) {
     return (
-      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="h-[140px] animate-pulse" />
-        ))}
+      <div className="flex w-full items-center justify-center">
+        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="py-0">
+              <CardContent className="space-y-4 p-6">
+                <div className="flex items-start justify-between space-x-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
+                  <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+                <div className="h-9 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+              </CardContent>
+              <CardFooter className="border-border flex justify-end border-t p-0">
+                <div className="h-10 w-28 animate-pulse rounded bg-muted-foreground/20 m-3"></div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -119,7 +133,7 @@ export default function StatCards() {
               </dd>
             </CardContent>
 
-            <CardFooter className="border-border flex justify-end border-t p-0!">
+            <CardFooter className="border-border flex justify-end border-t p-0">
               <Link
                 href={item.href}
                 className="text-primary hover:text-primary/90 flex items-center px-6 py-3 text-sm font-medium"

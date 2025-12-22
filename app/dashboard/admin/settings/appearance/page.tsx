@@ -155,9 +155,73 @@ export default function Page() {
   if (!mounted || fetching) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Customize the appearance of the app. Automatically switch between day and night themes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-8">
+            {/* Font Selection Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+              <div className="h-3 w-64 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Theme Selection Skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-3 w-56 animate-pulse rounded bg-muted-foreground/20"></div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-2 max-w-md">
+                {/* Light Theme Skeleton */}
+                <div className="space-y-2">
+                  <div className="items-center rounded-lg border-2 border-muted p-1">
+                    <div className="space-y-2 rounded-lg bg-[#ecedef] p-2">
+                      <div className="space-y-2 rounded-md bg-white p-2 shadow-sm">
+                        <div className="h-2 w-[80px] rounded-lg bg-[#ecedef] animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-[#ecedef] animate-pulse" />
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-md bg-white p-2 shadow-sm">
+                        <div className="h-4 w-4 rounded-full bg-[#ecedef] animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-[#ecedef] animate-pulse" />
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-md bg-white p-2 shadow-sm">
+                        <div className="h-4 w-4 rounded-full bg-[#ecedef] animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-[#ecedef] animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-4 w-full animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+
+                {/* Dark Theme Skeleton */}
+                <div className="space-y-2">
+                  <div className="items-center rounded-lg border-2 border-muted p-1">
+                    <div className="space-y-2 rounded-lg bg-slate-950 p-2">
+                      <div className="space-y-2 rounded-md bg-slate-800 p-2 shadow-sm">
+                        <div className="h-2 w-[80px] rounded-lg bg-slate-400 animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-slate-400 animate-pulse" />
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-md bg-slate-800 p-2 shadow-sm">
+                        <div className="h-4 w-4 rounded-full bg-slate-400 animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-slate-400 animate-pulse" />
+                      </div>
+                      <div className="flex items-center space-x-2 rounded-md bg-slate-800 p-2 shadow-sm">
+                        <div className="h-4 w-4 rounded-full bg-slate-400 animate-pulse" />
+                        <div className="h-2 w-[100px] rounded-lg bg-slate-400 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-4 w-full animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button Skeleton */}
+            <div className="h-10 w-44 animate-pulse rounded-md bg-muted-foreground/20"></div>
           </div>
         </CardContent>
       </Card>

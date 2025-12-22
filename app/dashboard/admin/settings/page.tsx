@@ -289,13 +289,47 @@ export default function Page() {
 
   const previewUrl = files[0]?.preview || (user as any)?.profileImage || "";
 
-  // Show loading state
+  // Show loading skeleton
   if (fetchingProfile) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading profile...</p>
+          <div className="space-y-6">
+            {/* Avatar Skeleton */}
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 animate-pulse rounded-full bg-muted-foreground/20"></div>
+              <div className="flex gap-2">
+                <div className="h-10 w-32 animate-pulse rounded-md bg-muted-foreground/20"></div>
+                <div className="h-10 w-10 animate-pulse rounded-md bg-muted-foreground/20"></div>
+              </div>
+            </div>
+
+            {/* Full Name Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Email Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Bio Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-24 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </div>
+
+            {/* URLs Skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-10 w-32 animate-pulse rounded-md bg-muted-foreground/20"></div>
+            </div>
+
+            {/* Submit Button Skeleton */}
+            <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
           </div>
         </CardContent>
       </Card>

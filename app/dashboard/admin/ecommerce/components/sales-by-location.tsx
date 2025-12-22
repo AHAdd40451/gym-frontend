@@ -21,8 +21,11 @@ export function EcommerceSalesByLocationCard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-       const token = localStorage.getItem("authToken");
-        if (!token) return;
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          setLoading(false);
+          return;
+        }
 
         const res = await getAdminDashboard(token);
 
@@ -51,7 +54,38 @@ export function EcommerceSalesByLocationCard() {
     fetchData();
   }, []);
 
-  if (loading) return <Card className="h-[320px] animate-pulse" />;
+  if (loading) {
+    return (
+      <Card className="lg:col-span-6 xl:col-span-4">
+        <CardHeader>
+          <CardTitle className="relative">
+            Sales by Location
+            <div className="absolute end-0 top-0">
+              <ExportButton />
+            </div>
+          </CardTitle>
+          <CardDescription>Income in the last 28 days</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+                    <div className="h-5 w-12 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                  </div>
+                  <div className="h-4 w-10 animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+                <div className="h-2 w-full animate-pulse rounded-full bg-muted-foreground/20"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="lg:col-span-6 xl:col-span-4">

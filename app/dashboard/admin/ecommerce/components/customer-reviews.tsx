@@ -29,25 +29,31 @@ export function EcommerceCustomerReviewsCard() {
   const [loading, setLoading] = useState(true);
 
   // 🔹 Fetch ALL reviews (same API as reviews page)
-useEffect(() => {
-  const fetchReviews = async () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          setLoading(false);
+          return;
+        }
 
-    const res = await getAllReviews(token);
+        const res = await getAllReviews(token);
 
-    console.log("REVIEWS RESPONSE 👉", res); // 👈 debug (remove later)
+        console.log("REVIEWS RESPONSE 👉", res); // 👈 debug (remove later)
 
-    if (res?.data?.success) {
-      setReviews(res.data.reviews || []);
-    }
+        if (res?.data?.success) {
+          setReviews(res.data.reviews || []);
+        }
+      } catch (error) {
+        console.error("❌ Reviews fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(false);
-  };
-
-  fetchReviews();
-}, []);
-
+    fetchReviews();
+  }, []);
 
   // 🔹 Dashboard calculations (FRONTEND)
   const stats = useMemo(() => {
@@ -81,7 +87,64 @@ useEffect(() => {
   if (loading) {
     return (
       <Card className="lg:col-span-12 xl:col-span-5">
-        <CardContent className="p-6">Loading reviews...</CardContent>
+        <CardHeader>
+          <CardTitle>Customer Reviews</CardTitle>
+          <CardDescription>Loading reviews...</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* ⭐ Average Skeleton */}
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="h-6 w-6 animate-pulse rounded-full bg-muted-foreground/20"
+                  />
+                ))}
+              </div>
+              <div className="h-9 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            {/* 📊 Distribution Skeleton */}
+            <div className="space-y-3 lg:col-span-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center">
+                  <div className="h-4 w-8 animate-pulse rounded bg-muted-foreground/20"></div>
+                  <div className="mx-2 h-3 flex-1 animate-pulse rounded-full bg-muted-foreground/20"></div>
+                  <div className="h-4 w-10 animate-pulse rounded bg-muted-foreground/20"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 📝 Recent Review Skeleton */}
+          <div className="mt-6 rounded-lg border bg-muted p-4">
+            <div className="mb-2 flex justify-between">
+              <div className="flex-1">
+                <div className="mb-2 flex gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/20"
+                    />
+                  ))}
+                </div>
+                <div className="h-5 w-48 animate-pulse rounded bg-muted-foreground/20"></div>
+              </div>
+              <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            <div className="mb-2 space-y-2">
+              <div className="h-4 w-full animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
+            </div>
+
+            <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
+          </div>
+        </CardContent>
       </Card>
     );
   }

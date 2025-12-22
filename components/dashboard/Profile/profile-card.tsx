@@ -29,7 +29,6 @@ useEffect(() => {
     const user = JSON.parse(storedUser);
     setAuthUser(user);
 
-    // ✅ Correct way to get location
     setUserLocation(user?.location?.country || "USA");
   }
 
