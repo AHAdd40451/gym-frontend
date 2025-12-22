@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,6 +21,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { notificationsApi, type NotificationSettings } from "@/lib/api/services/notifications/notifications";
+import { useAuth } from "@/lib/api/services/auth/context";
 
 const notificationsFormSchema = z.object({
   type: z.enum(["all", "mentions", "none"], {
@@ -34,33 +37,154 @@ const notificationsFormSchema = z.object({
 
 type NotificationsFormValues = z.infer<typeof notificationsFormSchema>;
 
-// This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
-  communication_emails: false,
-  marketing_emails: false,
-  social_emails: true,
-  security_emails: true
-};
+// Helper to safely extract error message
+function getErrorMessage(error: any): string {
+  if (!error) return "An unknown error occurred";
+  
+  if (typeof error === "string") return error;
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  if (error.data?.message) return error.data.message;
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.error) return error.response.data.error;
+  
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "An unknown error occurred";
+  }
+}
+
+function extractSettingsFromResponse(res: any): NotificationSettings | null {
+  const payload = res?.data;
+  return (
+    payload?.data ??
+    payload ??
+    null
+  );
+}
 
 export default function Page() {
+  const { user } = useAuth();
+  const userId = user?._id || user?.id || (user as any)?.userId;
+
+  const [loading, setLoading] = useState(false);
+  const [fetchingSettings, setFetchingSettings] = useState(false);
+
   const form = useForm<NotificationsFormValues>({
     resolver: zodResolver(notificationsFormSchema),
-    defaultValues
+    defaultValues: {
+      type: "all",
+      mobile: false,
+      communication_emails: false,
+      social_emails: true,
+      marketing_emails: false,
+      security_emails: true
+    }
   });
 
-  function onSubmit(data: NotificationsFormValues) {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      )
-    });
+  // Load notification settings
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      if (!userId) {
+        console.log("No userId available yet, waiting...");
+        return;
+      }
+
+      console.log("Loading notification settings for userId:", userId);
+      setFetchingSettings(true);
+      
+      try {
+        const res = await notificationsApi.getSettings(String(userId));
+        console.log("API Response:", res);
+        
+        const settings = extractSettingsFromResponse(res);
+        console.log("Extracted settings:", settings);
+
+        if (settings) {
+          // Reset form with settings data
+          form.reset({
+            type: settings.type || "all",
+            mobile: settings.mobile ?? false,
+            communication_emails: settings.communication_emails ?? false,
+            social_emails: settings.social_emails ?? true,
+            marketing_emails: settings.marketing_emails ?? false,
+            security_emails: settings.security_emails ?? true
+          });
+        }
+      } catch (err: any) {
+        const errorMsg = getErrorMessage(err);
+        console.error("Failed to fetch notification settings:", errorMsg, err);
+        
+        // Don't show error toast on first load if settings don't exist yet
+        // The API will create default settings automatically
+        if (!errorMsg.includes("not found")) {
+          toast.error(`Failed to load settings: ${errorMsg}`);
+        }
+      } finally {
+        setFetchingSettings(false);
+      }
+    };
+
+    loadNotificationSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, form]);
+
+  async function onSubmit(data: NotificationsFormValues) {
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
+    }
+
+    console.log("Submitting notification settings for userId:", userId);
+    console.log("Form data:", data);
+
+    try {
+      setLoading(true);
+
+      const updateData = {
+        type: data.type,
+        mobile: data.mobile ?? false,
+        communication_emails: data.communication_emails ?? false,
+        social_emails: data.social_emails ?? true,
+        marketing_emails: data.marketing_emails ?? false,
+        security_emails: true, // Always true
+      };
+
+      console.log("Update data:", updateData);
+
+      const response = await notificationsApi.updateSettings(String(userId), updateData);
+      console.log("Update response:", response);
+
+      toast.success("Notification settings updated successfully!");
+      
+      // Force a small delay to ensure state propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error: any) {
+      const errorMsg = getErrorMessage(error);
+      console.error("Notification settings update error:", errorMsg, error);
+      toast.error(errorMsg || "Failed to update settings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Show loading state
+  if (fetchingSettings) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <p className="text-muted-foreground">Loading notification settings...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
-      <CardContent>
+      <CardContent className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
@@ -74,19 +198,19 @@ export default function Page() {
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                       className="flex flex-col space-y-1">
-                      <FormItem className="flex items-center">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="all" />
                         </FormControl>
                         <FormLabel className="font-normal">All new messages</FormLabel>
                       </FormItem>
-                      <FormItem className="flex items-center">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="mentions" />
                         </FormControl>
                         <FormLabel className="font-normal">Direct messages and mentions</FormLabel>
                       </FormItem>
-                      <FormItem className="flex items-center">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="none" />
                         </FormControl>
@@ -98,6 +222,7 @@ export default function Page() {
                 </FormItem>
               )}
             />
+            
             <div>
               <h3 className="mb-4 text-lg font-medium">Email Notifications</h3>
               <div className="space-y-4">
@@ -176,11 +301,12 @@ export default function Page() {
                 />
               </div>
             </div>
+            
             <FormField
               control={form.control}
               name="mobile"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start">
+                <FormItem className="flex flex-row items-start space-x-3">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
@@ -188,13 +314,16 @@ export default function Page() {
                     <FormLabel>Use different settings for my mobile devices</FormLabel>
                     <FormDescription>
                       You can manage your mobile notifications in the{" "}
-                      <Link href="/examples/forms">mobile settings</Link> page.
+                      <Link href="/settings/notifications" className="underline">mobile settings</Link> page.
                     </FormDescription>
                   </div>
                 </FormItem>
               )}
             />
-            <Button type="submit">Update notifications</Button>
+            
+            <Button type="submit" disabled={loading}>
+              {loading ? "Updating..." : "Update notifications"}
+            </Button>
           </form>
         </Form>
       </CardContent>

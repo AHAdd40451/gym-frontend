@@ -61,26 +61,26 @@ type NavItem = {
 }[];
 
 export const staffNavItems: NavGroup[] = [
-  {
-    title: "Staff Dashboard",
-    items: [
-      {
-        title: "Overview",
-        href: "/dashboard/staff",
-        icon: GaugeIcon
-      },
-      // {
-      //   title: "My Schedule",
-      //   href: "/dashboard/staff/schedule",
-      //   icon: CalendarIcon
-      // },
-      // {
-      //   title: "Performance",
-      //   href: "/dashboard/staff/performance",
-      //   icon: BarChart3Icon
-      // }
-    ]
-  },
+  // {
+  //   title: "Staff Dashboard",
+  //   items: [
+  //     // {
+  //     //   title: "Overview",
+  //     //   href: "/dashboard/staff",
+  //     //   icon: GaugeIcon
+  //     // },
+  //     // {
+  //     //   title: "My Schedule",
+  //     //   href: "/dashboard/staff/schedule",
+  //     //   icon: CalendarIcon
+  //     // },
+  //     // {
+  //     //   title: "Performance",
+  //     //   href: "/dashboard/staff/performance",
+  //     //   icon: BarChart3Icon
+  //     // }
+  //   ]
+  // },
   {
     title: "Member Management",
     items: [
