@@ -26,7 +26,7 @@ export default async function UserDayDetailPage({ params }: DayDetailPageProps) 
   const dayKey = formatDateKey(dayDate);
 
 
-  console.log(params.day, "dayDate=====");
+  
   const cookieStore = await cookies();
   const storedToken = cookieStore.get("authToken")?.value || cookieStore.get("token")?.value || "";
   const storedUser = cookieStore.get("currentUser")?.value;

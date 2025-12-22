@@ -18,7 +18,7 @@ import { getServerAuth } from "@/lib/api/services/auth/server";
 
 export const metadata: Metadata = {
   title: "Gym Management Dashboard",
- 
+   
 };
 
 export default async function RootLayout({
