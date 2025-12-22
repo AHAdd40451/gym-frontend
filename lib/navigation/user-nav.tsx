@@ -93,7 +93,7 @@ export const userNavItems: NavGroup[] = [
       //   icon: ActivityIcon
       // },
       {
-        title: "Exercise Library",
+        title: "Exercises",
         href: "/dashboard/user/exercises",
         icon: DumbbellIcon
       },
