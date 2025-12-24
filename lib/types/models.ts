@@ -236,6 +236,8 @@ export interface Pagination {
 
 // Filter Types
 export interface FilterOptions {
+  page?: number;
+  limit?: number;
   search?: string;
   category?: string;
   status?: string;

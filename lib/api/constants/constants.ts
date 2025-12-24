@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     UPDATE_SETTINGS: '/notifications/settings', // PUT update settings
     PREFERENCES: '/notifications/preferences', // GET/PUT preferences
     SEND: '/notifications/send', // POST send notification
+    DEVICES_REGISTER: '/notifications/devices/register', // POST register device token
     MARK_READ: (id: string) => `/notifications/${id}/read`, // PUT mark as read
     MARK_ALL_READ: '/notifications/mark-all-read', // PUT mark all as read
     DELETE: (id: string) => `/notifications/${id}`, // DELETE specific notification

@@ -35,6 +35,7 @@ import { useDietCopy, DayDietData } from "../../context/diet-copy-context";
 import { toast } from "sonner";
 import { createMealPlan, getAllMeals, MealPlanPayload } from "@/lib/api/services/meals/meals";
 import { Subscription, getAllSubscriptions } from "@/lib/api/services/subcription/subcription";
+import { notificationsApi } from "@/lib/api/services/notifications/notifications";
 
 interface DayDetailPageProps {
   params: Promise<{
@@ -287,6 +288,17 @@ export default function DayDetailPage({ params }: DayDetailPageProps) {
       const payload = buildPayload();
       await createMealPlan(payload, token);
       toast.success("Diet plan saved");
+
+      notificationsApi
+        .send({
+          userId: userId.trim(),
+          title: "Diet plan updated",
+          message: `Your diet plan for ${dateStr} is ready.`,
+          type: "info"
+        })
+        .catch((error) => {
+          console.warn("Failed to send diet notification", error);
+        });
     } catch (err: any) {
       toast.error(err?.message || "Failed to save diet plan");
     } finally {

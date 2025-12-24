@@ -55,6 +55,8 @@ import AddNewCategory from "@/app/dashboard/(auth)/pages/products/create/add-cat
 import { createProduct } from "@/lib/api/services/product/product";
 import { getCategories } from "@/lib/api/services/category/category";
 import { getSubCategoriesByCategory } from "@/lib/api/services/subcategory/subcategory";
+import { notificationsApi } from "@/lib/api/services/notifications/notifications";
+import { usersApi } from "@/lib/api/services/users/users";
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -102,6 +104,24 @@ interface SubCategory {
 interface AddProductFormProps {
   token: string | null;
 }
+
+const extractUserIds = (payload: any) => {
+  const body = payload?.data ?? payload;
+  const candidates = [
+    body?.data,
+    body?.users,
+    body?.results,
+    body?.data?.users,
+    body?.data?.results,
+    body?.data?.data
+  ];
+  const list = candidates.find((item) => Array.isArray(item));
+  const users = Array.isArray(list) ? list : Array.isArray(body) ? body : [];
+
+  return users
+    .map((user: any) => user?._id || user?.id || user?.userId || user?.user?._id || user?.user?.id)
+    .filter(Boolean);
+};
 
 export default function AddProductForm({ token }: AddProductFormProps) {
   const router = useRouter();
@@ -217,6 +237,42 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     ));
   };
 
+  const notifyUsersAboutNewProduct = async (productName: string) => {
+    const pageSize = 200;
+    const maxPages = 20;
+
+    try {
+      for (let page = 1; page <= maxPages; page += 1) {
+        const response = await usersApi.getByRole("user", { page, limit: pageSize });
+        const userIds = extractUserIds(response);
+
+        if (userIds.length === 0) break;
+
+        for (let i = 0; i < userIds.length; i += 10) {
+          const chunk = userIds.slice(i, i + 10);
+          await Promise.all(
+            chunk.map((id) =>
+              notificationsApi
+                .send({
+                  userId: String(id),
+                  title: "New product added",
+                  message: `${productName} is now available.`,
+                  type: "info"
+                })
+                .catch((error) => {
+                  console.warn("Failed to notify user", id, error);
+                })
+            )
+          );
+        }
+
+        if (userIds.length < pageSize) break;
+      }
+    } catch (error) {
+      console.warn("Failed to notify users about product", error);
+    }
+  };
+
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     if (!token) {
       toast.error("Please login to continue");
@@ -258,6 +314,8 @@ export default function AddProductForm({ token }: AddProductFormProps) {
 
       if (responseData?.success || responseData?.product) {
         toast.success("Product created successfully!");
+        const productName = responseData?.product?.name || productPayload.name;
+        void notifyUsersAboutNewProduct(productName);
         router.push("/dashboard/admin/product-list");
         router.refresh();
       } else {

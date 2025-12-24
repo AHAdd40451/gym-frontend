@@ -38,6 +38,13 @@ export interface NotificationFilters {
   dateTo?: string;
 }
 
+export type NotificationDevicePlatform = 'android' | 'ios' | 'web';
+
+export interface NotificationDeviceRegistration {
+  token: string;
+  platform: NotificationDevicePlatform;
+}
+
 // Notification API functions
 export const notificationsApi = {
   // Get user's notification settings
@@ -117,10 +124,28 @@ export const notificationsApi = {
     }
   },
 
-  // Mark notification as read
-  markAsRead: async (notificationId: string): Promise<Notification> => {
+  // Register device token for push notifications
+  registerDevice: async (
+    payload: NotificationDeviceRegistration
+  ): Promise<{ success: boolean; status: number; data: any }> => {
     try {
-      const response = await apiClient.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(notificationId));
+      const response = await apiClient.post(API_ENDPOINTS.NOTIFICATIONS.DEVICES_REGISTER, payload);
+      return handleApiResponse(response);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Mark notification as read
+  markAsRead: async (
+    notificationId: string,
+    payload?: { userId?: string; isRead?: boolean }
+  ): Promise<Notification> => {
+    try {
+      const response = await apiClient.put(
+        API_ENDPOINTS.NOTIFICATIONS.MARK_READ(notificationId),
+        payload
+      );
       return handleApiResponse(response);
     } catch (error) {
       throw handleApiError(error);
