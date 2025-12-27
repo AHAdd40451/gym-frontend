@@ -78,6 +78,19 @@ export interface SubscriptionPayload {
 
 // ----------------------- API CALLS -----------------------
 
+// Fetch user with subscriptions and transactions (for details UI)
+export async function getUserWithSubscriptionsDetails(userId: string) {
+  const response = await serverFetch(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/${userId}/details`
+  );
+  const data = response?.data || response;
+  if (!data || !data.user) {
+    throw new Error('Failed to fetch user subscription details');
+  }
+  return data;
+}
+
+
 // 1️⃣ Create subscription
 export async function createSubscription(payload: SubscriptionPayload, token: string) {
   return serverFetch<{ message: string; subscription: Subscription }>(
