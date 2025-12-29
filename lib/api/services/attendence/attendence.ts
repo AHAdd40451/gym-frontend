@@ -21,3 +21,22 @@ export async function runDailyAttendanceJob(userId: string, token?: string) {
     }
   );
 }
+
+export async function getAttendanceByUserId(userId: string, token?: string) {
+  const authToken = token || localStorage.getItem("authToken");
+
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<any>(
+    `${API_ENDPOINTS.ATTENDANCE.GET_BY_USER}/${userId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+  );
+}

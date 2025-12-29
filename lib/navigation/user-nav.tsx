@@ -81,6 +81,11 @@ export const userNavItems: NavGroup[] = [
         title: "Achievements",
         href: "/dashboard/user/achievements",
         icon: TrophyIcon
+      },
+       {
+        title: "My Attendance",
+        href: "/dashboard/user/attendance",
+        icon: ClockIcon
       }
     ]
   },
