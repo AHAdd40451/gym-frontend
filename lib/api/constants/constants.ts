@@ -100,7 +100,8 @@ export const API_ENDPOINTS = {
   ATTENDANCE: {
     BASE: "/attendance",
     RUN_DAILY: "/attendance/mark",
-    ALL: "/attendance/all"
+    ALL: "/attendance/all",
+    GET_BY_USER: "/attendance/user"
   },
   EXERCISES: {
     BASE: "/exercises",
