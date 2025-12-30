@@ -72,6 +72,11 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user",
         icon: GaugeIcon
       },
+       {
+        title: "Attendance",
+        href: "/dashboard/user/attendance",
+        icon: ClockIcon
+      },
       // {
       //   title: "Progress",
       //   href: "/dashboard/user/progress",

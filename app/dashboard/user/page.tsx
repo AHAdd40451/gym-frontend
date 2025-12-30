@@ -1,9 +1,88 @@
-import { generateMeta } from "@/lib/utils";
+// import { generateMeta } from "@/lib/utils";
+// import { Button } from "@/components/ui/button";
+// import {
+//   EcommerceBestSellingProductsCard,
+//   EcommerceCustomerReviewsCard,
+//   EcommerceNewCustomersCard,
+//   EcommerceRecentOrdersCard,
+//   EcommerceReturnRateCard,
+//   EcommerceRevenueCard,
+//   EcommerceSalesByLocationCard,
+//   EcommerceSalesCard,
+//   EcommerceTotalRevenueCard,
+//   EcommerceVisitBySourceCard,
+//   EcommerceWelcomeCard
+// } from "@/app/dashboard/user/components";
+// import CustomDateRangePicker from "@/components/custom-date-range-picker";
+// import { Download } from "lucide-react";
+// import StatCards from "@/app/dashboard/user/components/stat-cards";
+// import { useRouter } from "next/navigation";
+
+// export async function generateMetadata() {
+//   return generateMeta({
+//     title: "Ecommerce Admin Dashboard",
+//     description:
+//       "The e-commerce admin dashboard template is an admin template that you can use for your e-commerce website projects. Built with shadcn/ui, Tailwind CSS, Next.js.",
+//     canonical: "/ecommerce"
+//   });
+// }
+
+// const UserDashboardContent = () => {
+//     const router = useRouter();
+
+//   return (
+//     <div className="space-y-4">
+//       <div className="flex flex-row items-center justify-between">
+//         <h1 className="text-xl font-bold tracking-tight lg:text-2xl">E-Commerce Dashboard</h1>
+//         <div className="flex items-center space-x-2">
+//           <CustomDateRangePicker />
+//          <Button onClick={() => router.push("/download")}>
+//       <Download />
+//       <span className="hidden lg:inline ml-2">Download</span>
+//     </Button>
+//         </div>
+//       </div>
+//       <div className="space-y-4">
+//         <div className="grid gap-4 lg:grid-cols-12">
+//           <EcommerceWelcomeCard />
+//           <div className="md:col-span-12 lg:col-span-8">
+//             <StatCards />
+//           </div>
+//         </div>
+//         <div className="space-y-4 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+//           <EcommerceTotalRevenueCard />
+//           <EcommerceReturnRateCard />
+//         </div>
+//         <div className="grid gap-4 lg:grid-cols-12">
+//           <EcommerceSalesByLocationCard />
+//           <EcommerceVisitBySourceCard />
+//           <EcommerceCustomerReviewsCard />
+//         </div>
+//         <div className="space-y-4 xl:grid xl:grid-cols-12 xl:gap-4 xl:space-y-0">
+//           <EcommerceRecentOrdersCard />
+//           <EcommerceBestSellingProductsCard />
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+// export default function Page() {
+//   return (
+//       <UserDashboardContent />
+//   );
+// }
+
+
+
+
+
+"use client";
+
+import { CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   EcommerceBestSellingProductsCard,
   EcommerceCustomerReviewsCard,
-  EcommerceNewCustomersCard,
   EcommerceRecentOrdersCard,
   EcommerceReturnRateCard,
   EcommerceRevenueCard,
@@ -16,29 +95,28 @@ import {
 import CustomDateRangePicker from "@/components/custom-date-range-picker";
 import { Download } from "lucide-react";
 import StatCards from "@/app/dashboard/user/components/stat-cards";
-
-export async function generateMetadata() {
-  return generateMeta({
-    title: "Ecommerce Admin Dashboard",
-    description:
-      "The e-commerce admin dashboard template is an admin template that you can use for your e-commerce website projects. Built with shadcn/ui, Tailwind CSS, Next.js.",
-    canonical: "/ecommerce"
-  });
-}
+import { useRouter } from "next/navigation";
 
 const UserDashboardContent = () => {
+  const router = useRouter();
+
   return (
     <div className="space-y-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">E-Commerce Dashboard</h1>
+        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">
+          E-Commerce Dashboard
+        </h1>
+
         <div className="flex items-center space-x-2">
           <CustomDateRangePicker />
-          <Button>
-            <Download />
-            <span className="hidden lg:inline">Download</span>
+
+          <Button onClick={() => router.push("/dashboard/user/attendancecheck")}>
+            <CalendarCheck/>
+            <span className="hidden lg:inline ml-2">Attendance</span>
           </Button>
         </div>
       </div>
+
       <div className="space-y-4">
         <div className="grid gap-4 lg:grid-cols-12">
           <EcommerceWelcomeCard />
@@ -46,15 +124,18 @@ const UserDashboardContent = () => {
             <StatCards />
           </div>
         </div>
+
         <div className="space-y-4 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
           <EcommerceTotalRevenueCard />
           <EcommerceReturnRateCard />
         </div>
+
         <div className="grid gap-4 lg:grid-cols-12">
           <EcommerceSalesByLocationCard />
           <EcommerceVisitBySourceCard />
           <EcommerceCustomerReviewsCard />
         </div>
+
         <div className="space-y-4 xl:grid xl:grid-cols-12 xl:gap-4 xl:space-y-0">
           <EcommerceRecentOrdersCard />
           <EcommerceBestSellingProductsCard />
@@ -62,14 +143,6 @@ const UserDashboardContent = () => {
       </div>
     </div>
   );
-}
-export default function Page() {
-  return (
-      <UserDashboardContent />
-  );
-}
+};
 
-
-
-
-
+export default UserDashboardContent;
