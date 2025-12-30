@@ -28,6 +28,22 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useTheme } from "next-themes";
+
+// Helper to safely extract error message
+function getErrorMessage(error: any): string {
+  if (!error) return "An unknown error occurred";
+  if (typeof error === "string") return error;
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  if (error.data?.message) return error.data.message;
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.error) return error.response.data.error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "An unknown error occurred";
+  }
+}
 import { useAuth } from "@/lib/api/services/auth/context";
 import apiClient from "@/lib/api/axios";
 import { API_ENDPOINTS } from "@/lib/api/constants/constants";
@@ -47,7 +63,31 @@ type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
 export default function Page() {
   const { user } = useAuth();
-  const userId = user?._id || user?.id;
+  
+  // Get userId from auth context or localStorage as fallback
+  const [userId, setUserId] = useState<string | null>(
+    (user as any)?._id || (user as any)?.id || null
+  );
+
+  // Update userId when user changes or load from localStorage
+  useEffect(() => {
+    const id = (user as any)?._id || (user as any)?.id;
+    if (id) {
+      setUserId(id);
+    } else {
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const storedId = parsedUser?._id || parsedUser?.id;
+          if (storedId) setUserId(storedId);
+        } catch (error) {
+          console.error('Failed to parse user from localStorage:', error);
+        }
+      }
+    }
+  }, [user]);
   const { theme, setTheme } = useTheme();
   
   const [loading, setLoading] = useState(false);
@@ -131,7 +171,7 @@ export default function Page() {
       // Update preferences in backend
       await apiClient.put(`${API_ENDPOINTS.USERS.BASE}/${userId}`, {
         preferences: {
-          ...user?.preferences,
+          ...(user as any)?.preferences,
           theme: data.theme,
           font: data.font
         }
@@ -144,9 +184,42 @@ export default function Page() {
       applyFont(data.font);
 
       toast.success("Appearance settings updated successfully");
-    } catch (error) {
-      console.error("Failed to update preferences:", error);
-      toast.error("Failed to update appearance settings");
+    } catch (error: any) {
+      const errorMsg = getErrorMessage(error);
+      const isCorsError = errorMsg?.includes('CORS') || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error');
+      
+      if (isCorsError) {
+        // CORS error - save to localStorage anyway (optimistic update)
+        console.warn("CORS/Network error - saving to localStorage");
+        
+        // Apply theme and font locally
+        setTheme(data.theme);
+        applyFont(data.font);
+        
+        // Save to localStorage
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            const updatedUser = {
+              ...parsedUser,
+              preferences: {
+                ...(parsedUser as any)?.preferences,
+                theme: data.theme,
+                font: data.font
+              }
+            };
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          } catch (e) {
+            console.error('Failed to update localStorage:', e);
+          }
+        }
+        
+        toast.success("Appearance saved locally (offline mode)");
+      } else {
+        console.error("Failed to update preferences:", error);
+        toast.error("Failed to update appearance settings");
+      }
     } finally {
       setLoading(false);
     }

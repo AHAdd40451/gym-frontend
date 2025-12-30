@@ -110,6 +110,13 @@ function updateAccountInLocalStorage(updatedUser: any) {
       }
     }
     
+    // Dispatch custom event to notify other components (like ProfileCard)
+    if (typeof window !== "undefined") {
+      console.log("📢 Dispatching userUpdated event");
+      window.dispatchEvent(new Event("userUpdated"));
+      console.log("✅ userUpdated event dispatched");
+    }
+    
     console.log("✅ Updated user in localStorage accounts");
   } catch (error) {
     console.error("❌ Failed to update localStorage accounts:", error);
@@ -119,7 +126,30 @@ function updateAccountInLocalStorage(updatedUser: any) {
 export default function Page() {
   const { user, setUser } = useAuth();
 
-  const userId = user?._id || user?.id || (user as any)?.userId;
+  // Get userId from auth context or localStorage as fallback
+  const [userId, setUserId] = useState<string | null>(
+    (user as any)?._id || (user as any)?.id || (user as any)?.userId || null
+  );
+
+  // Update userId when user changes or load from localStorage
+  useEffect(() => {
+    const id = (user as any)?._id || (user as any)?.id || (user as any)?.userId;
+    if (id) {
+      setUserId(id);
+    } else {
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const storedId = parsedUser?._id || parsedUser?.id;
+          if (storedId) setUserId(storedId);
+        } catch (error) {
+          console.error('Failed to parse user from localStorage:', error);
+        }
+      }
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
   const [fetchingProfile, setFetchingProfile] = useState(false);
@@ -181,11 +211,17 @@ export default function Page() {
         }
       } catch (err: any) {
         const errorMsg = getErrorMessage(err);
-        console.error("Failed to fetch user profile:", errorMsg, err);
-        toast.error(`Failed to load profile: ${errorMsg}`);
+        const isCorsError = errorMsg?.includes('CORS') || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error');
         
-        // fallback to auth context user (still allows update)
-        resetFormFromUser(user);
+        if (isCorsError) {
+          console.warn("CORS/Network error - using local data");
+          // Don't show error toast for CORS, just use local data
+          resetFormFromUser(user);
+        } else {
+          console.error("Failed to fetch user profile:", errorMsg, err);
+          toast.error(`Failed to load profile: ${errorMsg}`);
+          resetFormFromUser(user);
+        }
       } finally {
         setFetchingProfile(false);
       }
@@ -250,8 +286,31 @@ export default function Page() {
       toast.success("Profile updated successfully!");
     } catch (error: any) {
       const errorMsg = getErrorMessage(error);
-      console.error("Profile update error:", errorMsg, error);
-      toast.error(errorMsg || "Profile update failed. Please try again.");
+      const isCorsError = errorMsg?.includes('CORS') || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error');
+      
+      if (isCorsError) {
+        // CORS error - save to localStorage anyway (optimistic update)
+        console.warn("CORS/Network error - saving to localStorage");
+        
+        const [firstName, ...lastNameArr] = data.username.trim().split(" ");
+        const updatedUser = {
+          ...user,
+          firstName,
+          lastName: lastNameArr.join(" ") || "",
+          email: data.email,
+          bio: data.bio,
+          urls: data.urls?.map((u) => u.value).filter((url) => url !== ""),
+        };
+        
+        // Update localStorage
+        updateAccountInLocalStorage(updatedUser);
+        setUser(updatedUser as any);
+        
+        toast.success("Profile saved locally (offline mode)");
+      } else {
+        console.error("Profile update error:", errorMsg, error);
+        toast.error(errorMsg || "Profile update failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

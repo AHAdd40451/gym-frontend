@@ -66,7 +66,31 @@ function extractSettingsFromResponse(res: any): NotificationSettings | null {
 
 export default function Page() {
   const { user } = useAuth();
-  const userId = user?._id || user?.id || (user as any)?.userId;
+  
+  // Get userId from auth context or localStorage as fallback
+  const [userId, setUserId] = useState<string | null>(
+    (user as any)?._id || (user as any)?.id || (user as any)?.userId || null
+  );
+
+  // Update userId when user changes or load from localStorage
+  useEffect(() => {
+    const id = (user as any)?._id || (user as any)?.id || (user as any)?.userId;
+    if (id) {
+      setUserId(id);
+    } else {
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const storedId = parsedUser?._id || parsedUser?.id;
+          if (storedId) setUserId(storedId);
+        } catch (error) {
+          console.error('Failed to parse user from localStorage:', error);
+        }
+      }
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
   const [fetchingSettings, setFetchingSettings] = useState(false);
@@ -114,12 +138,17 @@ export default function Page() {
         }
       } catch (err: any) {
         const errorMsg = getErrorMessage(err);
-        console.error("Failed to fetch notification settings:", errorMsg, err);
+        const isCorsError = errorMsg?.includes('CORS') || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error');
         
-        // Don't show error toast on first load if settings don't exist yet
-        // The API will create default settings automatically
-        if (!errorMsg.includes("not found")) {
-          toast.error(`Failed to load settings: ${errorMsg}`);
+        if (isCorsError) {
+          console.warn("CORS/Network error - using default settings");
+          // Don't show error for CORS, just use defaults
+        } else {
+          console.error("Failed to fetch notification settings:", errorMsg, err);
+          // Don't show error toast on first load if settings don't exist yet
+          if (!errorMsg.includes("not found")) {
+            toast.error(`Failed to load settings: ${errorMsg}`);
+          }
         }
       } finally {
         setFetchingSettings(false);

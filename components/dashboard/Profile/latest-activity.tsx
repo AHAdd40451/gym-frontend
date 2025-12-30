@@ -176,34 +176,54 @@ import { Button } from "@/components/ui/button";
 
 import { getMySubscriptions, type Subscription } from "@/lib/api/services/subcription/subcription";
 
-export function LatestActivity() {
-  const [authUser, setAuthUser] = React.useState<any>(null);
+interface LatestActivityProps {
+  user?: any;
+}
+
+export function LatestActivity({ user: propUser }: LatestActivityProps) {
+  const [authUser, setAuthUser] = React.useState<any>(propUser || null);
   const [subscriptions, setSubscriptions] = React.useState<Subscription[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // ⭐ Load user from localStorage (auth-user)
+  // ⭐ Use prop user if provided, otherwise load from localStorage
   React.useEffect(() => {
+    if (propUser) {
+      setAuthUser(propUser);
+      return;
+    }
+    
     const savedUser = localStorage.getItem("currentUser");
     if (savedUser) {
       setAuthUser(JSON.parse(savedUser));
     }
-  }, []);
+  }, [propUser]);
 
   // ⭐ Fetch subscriptions from API
   const fetchSubscriptions = React.useCallback(async () => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getMySubscriptions(); // backend cookies se user pehchan lega
+      // Get user ID from authUser (supports both _id and id)
+      const userId = authUser._id || authUser.id;
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+      
+      const data = await getMySubscriptions(userId);
       setSubscriptions(data);
     } catch (err: any) {
       setError(err?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authUser]);
 
   // Load subscriptions initially
   React.useEffect(() => {
@@ -291,7 +311,7 @@ export function LatestActivity() {
                 </span>
 
                 <h3 className="font-semibold">
-                  {s.plan?.name} 
+                  {typeof s.plan === "object" && s.plan?.name ? s.plan.name : "Unknown Plan"} 
                 </h3>
 
                 <time className="text-muted-foreground flex items-center gap-1.5 text-sm">

@@ -44,13 +44,14 @@ export default function LoginPage() {
         // localStorage.setItem('auth-user', JSON.stringify(result.user));
         localStorage.setItem("currentUser", JSON.stringify(result.user));
 
-        // 🔹 Multi-account support
+        // 🔹 Multi-account support - store user with token
         const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
         const existingIndex = accounts.findIndex((a: any) => a.email === result.user.email);
+        const userWithToken = { ...result.user, token: result.token };
         if (existingIndex === -1) {
-          accounts.push(result.user);
+          accounts.push(userWithToken);
         } else {
-          accounts[existingIndex] = result.user; // update existing
+          accounts[existingIndex] = userWithToken; // update existing with token
         }
         localStorage.setItem("accounts", JSON.stringify(accounts));
 

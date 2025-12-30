@@ -135,7 +135,31 @@ function updateAccountInLocalStorage(updatedUser: any) {
 
 export default function Page() {
   const { user, setUser } = useAuth();
-  const userId = user?._id || user?.id || (user as any)?.userId;
+  
+  // Get userId from auth context or localStorage as fallback
+  const [userId, setUserId] = useState<string | null>(
+    (user as any)?._id || (user as any)?.id || (user as any)?.userId || null
+  );
+
+  // Update userId when user changes or load from localStorage
+  useEffect(() => {
+    const id = (user as any)?._id || (user as any)?.id || (user as any)?.userId;
+    if (id) {
+      setUserId(id);
+    } else {
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const storedId = parsedUser?._id || parsedUser?.id;
+          if (storedId) setUserId(storedId);
+        } catch (error) {
+          console.error('Failed to parse user from localStorage:', error);
+        }
+      }
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
   const [fetchingAccount, setFetchingAccount] = useState(false);
@@ -189,16 +213,28 @@ export default function Page() {
         }
       } catch (err: any) {
         const errorMsg = getErrorMessage(err);
-        console.error("Failed to fetch account data:", errorMsg, err);
-        toast.error(`Failed to load account: ${errorMsg}`);
+        const isCorsError = errorMsg?.includes('CORS') || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error');
         
-        // Fallback to auth context user
-        if (user) {
-          form.reset({
-            name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
-            dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
-            language: (user as any).language || "en"
-          });
+        if (isCorsError) {
+          console.warn("CORS/Network error - using local data");
+          // Don't show error toast for CORS, just use local data
+          if (user) {
+            form.reset({
+              name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
+              dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
+              language: (user as any).language || "en"
+            });
+          }
+        } else {
+          console.error("Failed to fetch account data:", errorMsg, err);
+          toast.error(`Failed to load account: ${errorMsg}`);
+          if (user) {
+            form.reset({
+              name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
+              dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
+              language: (user as any).language || "en"
+            });
+          }
         }
       } finally {
         setFetchingAccount(false);
@@ -255,8 +291,30 @@ export default function Page() {
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error: any) {
       const errorMsg = getErrorMessage(error);
-      console.error("Account update error:", errorMsg, error);
-      toast.error(errorMsg || "Account update failed. Please try again.");
+      const isCorsError = errorMsg?.includes('CORS') || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error');
+      
+      if (isCorsError) {
+        // CORS error - save to localStorage anyway (optimistic update)
+        console.warn("CORS/Network error - saving to localStorage");
+        
+        const [firstName, ...lastNameArr] = data.name.trim().split(" ");
+        const updatedUser = {
+          ...user,
+          firstName,
+          lastName: lastNameArr.join(" ") || "",
+          dateOfBirth: data.dob.toISOString(),
+          language: data.language
+        };
+        
+        // Update localStorage
+        updateAccountInLocalStorage(updatedUser);
+        setUser(updatedUser as any);
+        
+        toast.success("Account saved locally (offline mode)");
+      } else {
+        console.error("Account update error:", errorMsg, error);
+        toast.error(errorMsg || "Account update failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

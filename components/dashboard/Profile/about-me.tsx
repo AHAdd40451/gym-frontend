@@ -23,24 +23,53 @@ interface Transaction {
   createdAt: string;
 }
 
-export function AboutMe() {
+interface AboutMeProps {
+  user?: any;
+}
+
+export function AboutMe({ user: propUser }: AboutMeProps) {
+  const [authUser, setAuthUser] = useState<any>(propUser || null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ⭐ Use prop user if provided, otherwise load from localStorage
+  useEffect(() => {
+    if (propUser) {
+      setAuthUser(propUser);
+      return;
+    }
+    
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) {
+      setAuthUser(JSON.parse(savedUser));
+    }
+  }, [propUser]);
+
   // ⭐ Wrap fetch function in useCallback
   const fetchTransactions = useCallback(async () => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await getMyTransactions();
+      // Get user ID from authUser (supports both _id and id)
+      const userId = authUser._id || authUser.id;
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+      
+      const data = await getMyTransactions(userId);
       setTransactions(data);
     } catch (err: any) {
       setError(err.message || "Failed to load transactions");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authUser]);
 
   // ⭐ Initial load
   useEffect(() => {

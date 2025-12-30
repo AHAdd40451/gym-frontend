@@ -64,26 +64,26 @@ type NavItem = {
 }[];
 
 export const userNavItems: NavGroup[] = [
-  {
-    title: "My Dashboard",
-    items: [
-      {
-        title: "Overview",
-        href: "/dashboard/user",
-        icon: GaugeIcon
-      },
-      // {
-      //   title: "Progress",
-      //   href: "/dashboard/user/progress",
-      //   icon: BarChart3Icon
-      // },
-      // {
-      //   title: "Achievements",
-      //   href: "/dashboard/user/achievements",
-      //   icon: TrophyIcon
-      // }
-    ]
-  },
+  // {
+  //   title: "My Dashboard",
+  //   items: [
+  //     {
+  //       title: "Overview",
+  //       href: "/dashboard/user",
+  //       icon: GaugeIcon
+  //     },
+  //     // {
+  //     //   title: "Progress",
+  //     //   href: "/dashboard/user/progress",
+  //     //   icon: BarChart3Icon
+  //     // },
+  //     // {
+  //     //   title: "Achievements",
+  //     //   href: "/dashboard/user/achievements",
+  //     //   icon: TrophyIcon
+  //     // }
+  //   ]
+  // },
   {
     title: "Workouts",
     items: [

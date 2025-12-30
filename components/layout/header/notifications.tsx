@@ -58,10 +58,16 @@ const Notifications = () => {
     }
     try {
       const res = await notificationsApi.getUnreadCount(String(userId));
-      const data = res?.data ?? res;
-      const count = data?.count ?? data?.data?.count ?? 0;
+      const data = (res as any)?.data ?? res;
+      const count = data?.count ?? (data as any)?.data?.count ?? 0;
       setUnreadCount(Number.isFinite(count) ? count : 0);
-    } catch {
+    } catch (error: any) {
+      // Handle CORS and other errors gracefully
+      if (error?.message?.includes('CORS') || error?.code === 'ERR_NETWORK') {
+        console.warn('Notifications API unavailable (CORS/Network error)');
+      } else {
+        console.error('Failed to fetch unread count:', error);
+      }
       setUnreadCount(0);
     }
   }, [userId]);
@@ -76,7 +82,13 @@ const Notifications = () => {
       const res = await notificationsApi.getAll(String(userId), { page: 1, limit: 10 });
       const list = normalizeNotifications(res);
       setItems(list);
-    } catch {
+    } catch (error: any) {
+      // Handle CORS and other errors gracefully
+      if (error?.message?.includes('CORS') || error?.code === 'ERR_NETWORK') {
+        console.warn('Notifications API unavailable (CORS/Network error)');
+      } else {
+        console.error('Failed to load notifications:', error);
+      }
       setItems([]);
     } finally {
       setLoading(false);
@@ -86,13 +98,21 @@ const Notifications = () => {
   const markAllAsRead = useCallback(async () => {
     if (!userId) return;
     try {
-      const res = await notificationsApi.markAllAsRead(String(userId));
+      const res = await notificationsApi.markAllAsRead(String(userId)) as any;
       if (res?.success || res?.data?.success) {
         setItems((prev) => prev.map((item) => ({ ...item, isRead: true })));
         setUnreadCount(0);
       }
-    } catch {
-      // ignore
+    } catch (error: any) {
+      // Handle CORS and other errors gracefully
+      if (error?.message?.includes('CORS') || error?.code === 'ERR_NETWORK') {
+        console.warn('Notifications API unavailable (CORS/Network error)');
+        // Still update UI optimistically
+        setItems((prev) => prev.map((item) => ({ ...item, isRead: true })));
+        setUnreadCount(0);
+      } else {
+        console.error('Failed to mark all as read:', error);
+      }
     }
   }, [userId]);
 
@@ -102,7 +122,7 @@ const Notifications = () => {
         userId: ownerId,
         isRead: true
       });
-      if (res?.success || res?.data?.success) {
+      if ((res as any)?.success || (res as any)?.data?.success || res) {
         setItems((prev) =>
           prev.map((item) =>
             item._id === notificationId ? { ...item, isRead: true } : item
@@ -110,8 +130,20 @@ const Notifications = () => {
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
-    } catch {
-      // ignore
+    } catch (error: any) {
+      // Handle CORS and other errors gracefully
+      if (error?.message?.includes('CORS') || error?.code === 'ERR_NETWORK') {
+        console.warn('Notifications API unavailable (CORS/Network error)');
+        // Still update UI optimistically
+        setItems((prev) =>
+          prev.map((item) =>
+            item._id === notificationId ? { ...item, isRead: true } : item
+          )
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } else {
+        console.error('Failed to mark as read:', error);
+      }
     }
   }, []);
 

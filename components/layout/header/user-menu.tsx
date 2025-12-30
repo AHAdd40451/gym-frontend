@@ -30,10 +30,68 @@ export default function UserMenu() {
     setAccounts(savedAccounts);
   }, []);
 
-  const handleSwitch = (acc: any) => {
-    localStorage.setItem("currentUser", JSON.stringify(acc));
-    setAuthUser(acc);
-    window.location.reload(); // ya state update se bhi ho sakta
+  const handleSwitch = async (acc: any) => {
+    try {
+      // Update currentUser in localStorage
+      localStorage.setItem("currentUser", JSON.stringify(acc));
+      setAuthUser(acc);
+      
+      // Update accounts array - ensure the switched account is updated in accounts array
+      const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+      const accountIndex = accounts.findIndex((a: any) => {
+        const accId = acc?._id || acc?.id;
+        const aId = a?._id || a?.id;
+        return accId && aId && accId === aId;
+      });
+      
+      if (accountIndex !== -1) {
+        // Update existing account in array
+        accounts[accountIndex] = acc;
+      } else {
+        // If account not found, add it (shouldn't happen but safety check)
+        accounts.push(acc);
+      }
+      
+      localStorage.setItem("accounts", JSON.stringify(accounts));
+      
+      // Get token from account object (stored in accounts array) or localStorage
+      const token = acc.token || localStorage.getItem("authToken");
+      
+      // Update authToken in localStorage
+      if (token) {
+        localStorage.setItem("authToken", token);
+      }
+      
+      // Update server-side cookies if token is available
+      if (token && acc) {
+        try {
+          await fetch('/api/auth/switch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: acc, token }),
+          });
+        } catch (error) {
+          console.error('Failed to update server cookies:', error);
+          // Continue anyway - localStorage is updated
+        }
+      }
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event("auth-changed"));
+      window.dispatchEvent(new Event("userUpdated"));
+      
+      // Redirect to appropriate dashboard based on role
+      let dashboardUrl = `/dashboard/${acc.role || 'user'}`;
+      // For admin, redirect to ecommerce page
+      if (acc.role === 'admin') {
+        dashboardUrl = '/dashboard/admin/ecommerce';
+      }
+      window.location.href = dashboardUrl;
+    } catch (error) {
+      console.error('Error switching account:', error);
+      // Still reload to update UI
+      window.location.reload();
+    }
   };
 
   if (!authUser) return null;
