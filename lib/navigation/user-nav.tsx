@@ -72,16 +72,16 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user",
         icon: GaugeIcon
       },
-      {
-        title: "Progress",
-        href: "/dashboard/user/progress",
-        icon: BarChart3Icon
-      },
-      {
-        title: "Achievements",
-        href: "/dashboard/user/achievements",
-        icon: TrophyIcon
-      }
+      // {
+      //   title: "Progress",
+      //   href: "/dashboard/user/progress",
+      //   icon: BarChart3Icon
+      // },
+      // {
+      //   title: "Achievements",
+      //   href: "/dashboard/user/achievements",
+      //   icon: TrophyIcon
+      // }
     ]
   },
   {
@@ -112,11 +112,11 @@ export const userNavItems: NavGroup[] = [
   {
     title: "Training",
     items: [
-      {
-        title: "Personal Training",
-        href: "/dashboard/user/personal-training",
-        icon: GraduationCapIcon
-      },
+      // {
+      //   title: "Personal Training",
+      //   href: "/dashboard/user/personal-training",
+      //   icon: GraduationCapIcon
+      // },
       // {
       //   title: "Group Classes",
       //   href: "/dashboard/user/classes",
@@ -129,26 +129,26 @@ export const userNavItems: NavGroup[] = [
       }
     ]
   },
-  {
-    title: "Goals & Progress",
-    items: [
-      {
-        title: "My Goals",
-        href: "/dashboard/user/goals",
-        icon: TargetIcon
-      },
-      {
-        title: "Progress Tracking",
-        href: "/dashboard/user/progress",
-        icon: BarChart3Icon
-      },
-      {
-        title: "Body Measurements",
-        href: "/dashboard/user/measurements",
-        icon: UserIcon
-      }
-    ]
-  },
+  // {
+  //   title: "Goals & Progress",
+  //   items: [
+  //     {
+  //       title: "My Goals",
+  //       href: "/dashboard/user/goals",
+  //       icon: TargetIcon
+  //     },
+  //     {
+  //       title: "Progress Tracking",
+  //       href: "/dashboard/user/progress",
+  //       icon: BarChart3Icon
+  //     },
+  //     {
+  //       title: "Body Measurements",
+  //       href: "/dashboard/user/measurements",
+  //       icon: UserIcon
+  //     }
+  //   ]
+  // },
   {
     title: "Nutrition",
     items: [
@@ -187,11 +187,11 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user/profile",
         icon: UserIcon
       },
-      {
-        title: "Settings",
-        href: "/dashboard/user/settings",
-        icon: ComponentIcon
-      },
+      // {
+      //   title: "Settings",
+      //   href: "/dashboard/user/settings",
+      //   icon: ComponentIcon
+      // },
       {
         title: "Membership",
         href: "/dashboard/user/membership",
