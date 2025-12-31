@@ -73,6 +73,14 @@ export default function EventCalendarApp() {
       onEventSelect={(event) =>
         router.push(`/dashboard/admin/all-sub/${event.id}`)
       }
+      onEventCreate={(startTime) => {
+        // Handle event creation - you can customize this behavior
+        console.log("Create event at:", startTime);
+      }}
+      onEventUpdate={(event) => {
+        // Handle event update - you can customize this behavior
+        console.log("Update event:", event);
+      }}
     />
   );
 }

@@ -40,6 +40,8 @@ import {
 export interface EventCalendarProps {
   events?: CalendarEvent[];
   onEventSelect?: (event: CalendarEvent) => void;
+  onEventCreate?: (startTime: Date) => void;
+  onEventUpdate?: (event: CalendarEvent) => void;
   className?: string;
   initialView?: CalendarView;
 }
@@ -47,6 +49,8 @@ export interface EventCalendarProps {
 export function EventCalendar({
   events = [],
   onEventSelect,
+  onEventCreate,
+  onEventUpdate,
   className,
   initialView = "month"
 }: EventCalendarProps) {
@@ -102,7 +106,7 @@ export function EventCalendar({
           "--week-cells-height": `${WeekCellsHeight}px`
         } as React.CSSProperties
       }>
-      <CalendarDndProvider>
+      <CalendarDndProvider onEventUpdate={onEventUpdate || (() => {})}>
         <div className="flex items-center justify-between p-2 sm:p-4">
           <div className="flex items-center gap-1 sm:gap-4">
             <Button variant="outline" onClick={handleToday}>
@@ -124,16 +128,16 @@ export function EventCalendar({
 
         <div className="flex flex-1 flex-col">
           {view === "month" && (
-            <MonthView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+            <MonthView currentDate={currentDate} events={events} onEventSelect={onEventSelect || (() => {})} onEventCreate={onEventCreate || (() => {})} />
           )}
           {view === "week" && (
-            <WeekView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+            <WeekView currentDate={currentDate} events={events} onEventSelect={onEventSelect || (() => {})} onEventCreate={onEventCreate || (() => {})} />
           )}
           {view === "day" && (
-            <DayView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+            <DayView currentDate={currentDate} events={events} onEventSelect={onEventSelect || (() => {})} onEventCreate={onEventCreate || (() => {})} />
           )}
           {view === "agenda" && (
-            <AgendaView currentDate={currentDate} events={events} onEventSelect={onEventSelect} />
+            <AgendaView currentDate={currentDate} events={events} onEventSelect={onEventSelect || (() => {})} />
           )}
         </div>
       </CalendarDndProvider>
