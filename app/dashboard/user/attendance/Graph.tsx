@@ -3,217 +3,185 @@
 import React, { useEffect, useState } from "react";
 import { getAttendanceByUserId } from "../../../../lib/api/services/attendence/attendence";
 
-/* ================= TYPES ================= */
+type CurrentUser = { id: string };
 
-type ContributionDay = {
-  date: string;
-  count: number | null;
-};
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-type CurrentUser = {
-  id: string;
-};
+const CELL = 12; // 🔥 single source of truth
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const getColor = (count: number) =>
+  count === 1 ? "bg-[#39d353]" : "bg-[#161b22]";
 
-const getColor = (count: number) => (count === 1 ? "bg-[#39d353]" : "bg-[#161b22]");
+export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
+  const currentYear = new Date().getFullYear();
 
-/* ================= COMPONENT ================= */
-
-const Graph = ({ currentUser }: { currentUser: CurrentUser }) => {
   const [loading, setLoading] = useState(true);
   const [dateMap, setDateMap] = useState<Map<string, number>>(new Map());
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
-  /* ================= FETCH ATTENDANCE ================= */
-
+  /* ================= FETCH ================= */
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    const toLocalDate = (iso: string) => (iso.includes("T") ? iso.split("T")[0] : iso.slice(0, 10));
-
-    const fetchAttendance = async () => {
+    (async () => {
       try {
         const res = await getAttendanceByUserId(currentUser.id);
-        const attendanceData = res?.data?.attendance || [];
+        const data = res?.data?.attendance || res?.attendance || [];
 
         const map = new Map<string, number>();
-        attendanceData.forEach((item: any) => {
-          const date = toLocalDate(item.date);
-          map.set(date, item.status === "present" ? 1 : 0);
+        data.forEach((i: any) => {
+          const d = new Date(i.date);
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          map.set(key, i.status === "present" ? 1 : 0);
         });
-
         setDateMap(map);
-
-        /* ✅ AUTO SELECT CURRENT / LATEST YEAR */
-        const years = attendanceData.map((i: any) => new Date(i.date).getFullYear());
-        if (years.length > 0) {
-          setSelectedYear(Math.max(...years));
-        }
-      } catch (err) {
-        console.error(err);
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchAttendance();
+    })();
   }, [currentUser.id]);
 
-  if (loading) {
-    return <div className="text-sm text-gray-400">Loading attendance…</div>;
-  }
+  if (loading) return <div className="text-sm text-gray-400">Loading…</div>;
 
   /* ================= YEARS ================= */
+  const years = Array.from(
+    new Set(Array.from(dateMap.keys()).map(d => new Date(d).getFullYear()))
+  ).sort((a,b)=>b-a);
 
-  const allDates = Array.from(dateMap.keys()).map((d) => new Date(d + "T00:00:00"));
-
-  const availableYears = Array.from(new Set(allDates.map((d) => d.getFullYear()))).sort(
-    (a, b) => b - a
-  );
-
-  /* ================= GRID RANGE ================= */
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const gridStart = new Date(selectedYear!, 0, 1);
-  const gridEnd = selectedYear === today.getFullYear() ? today : new Date(selectedYear!, 11, 31);
+  /* ================= RANGE ================= */
+  const gridStart = new Date(selectedYear,0,1);
+  const gridEnd = new Date(selectedYear,11,31,23,59,59);
 
   const start = new Date(gridStart);
-  start.setDate(start.getDate() - start.getDay());
+  const day = start.getDay();
+  start.setDate(start.getDate() + (day === 0 ? -6 : 1 - day));
 
-  const totalDays = (gridEnd.getTime() - start.getTime()) / 86400000;
+  const days =
+    Math.ceil((gridEnd.getTime() - start.getTime()) / 86400000) + 1;
+  const weeksCount = Math.ceil(days / 7);
 
-  const totalWeeks = Math.ceil(totalDays / 7);
+  const weeks: { date: string; count: number }[][] = [];
 
-  /* ================= BUILD GRID ================= */
-
-  const weeks: ContributionDay[][] = [];
-
-  for (let w = 0; w < totalWeeks; w++) {
-    const week: ContributionDay[] = [];
-
+  for (let w = 0; w < weeksCount; w++) {
+    const week = [];
     for (let d = 0; d < 7; d++) {
-      const curr = new Date(start.getTime() + (w * 7 + d) * 86400000);
-      const dateStr = curr.toISOString().slice(0, 10);
-
-      let count: number | null = null;
-
-      if (curr >= gridStart && curr <= gridEnd && curr <= today) {
-        count = dateMap.get(dateStr) ?? 0;
-      }
-
-      week.push({ date: dateStr, count });
+      const curr = new Date(start.getTime() + (w*7 + d)*86400000);
+      const key = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,"0")}-${String(curr.getDate()).padStart(2,"0")}`;
+      const count = curr >= gridStart && curr <= gridEnd ? dateMap.get(key) ?? 0 : 0;
+      week.push({ date: key, count });
     }
-
     weeks.push(week);
   }
 
-  /* ================= MONTH LABELS (FIXED) ================= */
-  const monthLabels: { label: string; index: number }[] = [];
-  let lastMonth = -1;
+  /* ================= MONTH LABELS ================= */
+  const monthLabels: { label: string; col: number }[] = [];
+  let last = "";
 
-  weeks.forEach((week, i) => {
-    // ✅ Always use Thursday (index 4) to decide month
-    const day = week[4];
-    if (!day || day.count === null) return;
-
-    const date = new Date(day.date + "T00:00:00");
-    const month = date.getMonth();
-
-    if (month !== lastMonth) {
-      monthLabels.push({ label: MONTHS[month], index: i });
-      lastMonth = month;
+  weeks.forEach((w,i)=>{
+    const d = new Date(w[0].date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (key !== last) {
+      monthLabels.push({ label: MONTHS[d.getMonth()], col: i });
+      last = key;
     }
   });
 
-  /* ================= UI ================= */
+ return (
+  <div className="bg-[#0d1117] rounded-lg p-4">
 
-  return (
-    <div className="w-full rounded-lg bg-[#0d1117] p-3 text-xs text-[#8b949e] sm:p-6">
-      {/* ===== MOBILE YEAR FILTER ===== */}
-      <div className="mb-4 flex gap-2 overflow-x-auto sm:hidden">
-        {availableYears.map((year) => (
+    {/* ===== MOBILE YEARS ===== */}
+    <div className="flex sm:hidden gap-2 mb-4 overflow-x-auto">
+      {years.map(y => (
+        <button
+          key={y}
+          onClick={() => setSelectedYear(y)}
+          className={`px-3 py-1 text-xs rounded ${
+            selectedYear === y
+              ? "bg-blue-600 text-white"
+              : "bg-[#161b22]"
+          }`}
+        >
+          {y}
+        </button>
+      ))}
+    </div>
+
+    {/* 🔥 inline-flex is the KEY */}
+    <div className="inline-flex gap-6 items-start justify-start">
+
+      {/* ===== GRAPH (GitHub style) ===== */}
+      <div className="overflow-x-auto">
+
+        {/* Month labels */}
+        <div className="relative h-4 ml-[34px] w-[636px]">
+          {monthLabels.map(m => (
+            <span
+              key={m.col}
+              className="absolute text-[10px] text-gray-400"
+              style={{ left: m.col * 12 }}
+            >
+              {m.label}
+            </span>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+
+          {/* Day labels */}
+          <div className="flex flex-col justify-between h-[92px] text-[10px] text-gray-400">
+            <span>Mon</span>
+            <span>Wed</span>
+            <span>Fri</span>
+          </div>
+
+          {/* Grid */}
+          <div
+            className="grid grid-flow-col grid-rows-7 gap-[2px]"
+            style={{
+              gridAutoColumns: "10px",
+              width: "636px"
+            }}
+          >
+            {weeks.map((week, wi) =>
+              week.map((day, di) => (
+                <div
+                  key={`${wi}-${di}`}
+                  title={day.date}
+                  className={`w-[10px] h-[10px] rounded- ${getColor(day.count)}`}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== DESKTOP YEARS ===== */}
+      <div className="hidden sm:flex flex-col gap-1 shrink-0">
+        {years.map(y => (
           <button
-            key={year}
-            onClick={() => setSelectedYear(year)}
-            className={`shrink-0 rounded px-3 py-1 text-xs ${
-              selectedYear === year ? "bg-blue-600 text-white" : "bg-[#161b22]"
-            }`}>
-            {year}
+            key={y}
+            onClick={() => setSelectedYear(y)}
+            className={`px-2 py-1 text-xs rounded text-left ${
+              selectedYear === y
+                ? "bg-blue-600 text-white"
+                : "hover:bg-[#161b22]"
+            }`}
+          >
+            {y}
           </button>
         ))}
       </div>
-
-      <div className="flex flex-col sm:flex-row">
-        {/* ===== GRAPH ===== */}
-        <div className="flex-1 overflow-x-auto sm:overflow-x-hidden">
-          {/* ===== MONTH LABELS ===== */}
-          <div className="relative mb-2 ml-8 h-4 min-w-[680px] sm:ml-10 sm:min-w-0">
-            {monthLabels.map((m) => (
-              <span
-                key={m.index}
-                className="absolute text-[10px] text-[#8b949e]"
-                style={{ left: m.index * 18 }}>
-                {m.label}
-              </span>
-            ))}
-          </div>
-
-          {/* ===== GRID ===== */}
-          <div className="flex min-w-[680px] gap-2 sm:min-w-0">
-            {/* Days */}
-            <div className="flex h-[112px] flex-col justify-between text-[10px]">
-              <span>Mon</span>
-              <span>Wed</span>
-              <span>Fri</span>
-            </div>
-
-            {/* Boxes */}
-            <div
-              className="grid grid-flow-col grid-rows-7 gap-1"
-              style={{ gridAutoColumns: "13.5px" }}>
-              {weeks.map((week, wi) =>
-                week.map(
-                  (day, di) =>
-                    day.count !== null && (
-                      <div
-                        key={`${wi}-${di}`}
-                        title={`${day.count ? "Present" : "Absent"} on ${day.date}`}
-                        className={`h-3 w-3 rounded-sm ${getColor(day.count)}`}
-                      />
-                    )
-                )
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ===== DESKTOP YEAR FILTER ===== */}
-        <div className="mt-4 mr-2 hidden flex-row gap-2 sm:mt-0 sm:ml-4 sm:flex sm:flex-col">
-          {availableYears.map((year) => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className={`cursor-pointer rounded px-3 py-1 text-left text-xs transition-colors ${
-                selectedYear === year ? "bg-blue-600 text-white " : "text-[#8b949e] hover:text-white"
-              }`}>
-              {year}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ===== LEGEND ===== */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
-        <span>Absent</span>
-        <div className="h-3 w-3 bg-[#161b22]" />
-        <div className="h-3 w-3 bg-[#39d353]" />
-        <span>Present</span>
-      </div>
     </div>
-  );
-};
 
-export default Graph;
+    {/* ===== LEGEND ===== */}
+    <div className="flex gap-3 mt-4 text-[10px] text-gray-400">
+      <span>Absent</span>
+      <div className="w-3 h-3 bg-[#161b22]" />
+      <div className="w-3 h-3 bg-[#39d353]" />
+      <span>Present</span>
+    </div>
+  </div>
+);
+
+
+}

@@ -1,6 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Settings } from "lucide-react";
-import { generateMeta } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardSkills } from "../../../../components/dashboard/Profile/card-skills";
@@ -8,25 +10,60 @@ import { LatestActivity } from "../../../../components/dashboard/Profile/latest-
 import { AboutMe } from "../../../../components/dashboard/Profile/about-me";
 import { Connections } from "../../../../components/dashboard/Profile/connections";
 import { ProfileCard } from "../../../../components/dashboard/Profile/profile-card";
-import { getServerAuth } from "@/lib/api/services/auth/server";
+import { useAuth } from "@/lib/api/services/auth/context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompleteYourProfileCard } from "../../../../components/dashboard/Profile/complete-your-profile";
 
-// SEO Metadata
-export async function generateMetadata() {
-  return generateMeta({
-    title: "Profile Page",
-    description:
-      "You can use the profile page template to show user details. Built with shadcn/ui components.",
-    canonical: "/pages/profile"
-  });
-}
+// Client Component - gets user from auth context and localStorage
+export default function Page() {
+  const { user: authUser } = useAuth();
+  const [user, setUser] = useState<any>(authUser || null);
 
-// Server Component
-export default async function Page() {
-  const { user } = await getServerAuth();
-  console.log("profile", user);
-  
+  // Load user from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("Failed to parse user from localStorage:", error);
+        }
+      }
+    }
+  }, []);
+
+  // Update user when auth context changes
+  useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+    }
+  }, [authUser]);
+
+  // Listen to userUpdated events to refresh user data
+  useEffect(() => {
+    const handleUserUpdate = () => {
+      console.log("🔄 userUpdated event received in Profile Page");
+      if (typeof window !== "undefined") {
+        const updatedUserStr = localStorage.getItem("currentUser");
+        if (updatedUserStr) {
+          try {
+            const updatedUser = JSON.parse(updatedUserStr);
+            console.log("✅ Updating Profile Page with new user data");
+            setUser(updatedUser);
+          } catch (error) {
+            console.error("Failed to parse updated user from localStorage:", error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("userUpdated", handleUserUpdate);
+    return () => {
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
+  }, []);
 
   if (!user) {
     return (
@@ -55,13 +92,13 @@ export default async function Page() {
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-1">
           <ProfileCard user={user} />
-          <CompleteYourProfileCard />
+          {/* <CompleteYourProfileCard /> */}
           <CardSkills />
         </div>
         <div className="space-y-4 xl:col-span-2">
           <LatestActivity user={user} />
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <AboutMe />
+            <AboutMe user={user} />
             {/* <Connections /> */}
           </div>
         </div>

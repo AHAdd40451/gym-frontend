@@ -99,6 +99,7 @@ export const API_ENDPOINTS = {
 
   ATTENDANCE: {
     BASE: "/attendance",
+    CREATE: "/attendance/mark",
     RUN_DAILY: "/attendance/mark",
     ALL: "/attendance/all",
     GET_BY_USER: "/attendance/user"

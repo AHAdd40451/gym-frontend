@@ -114,26 +114,27 @@ export async function getAllSubscriptions(params: { page?: number; limit?: numbe
 
 
 
-export async function getMySubscriptions() {
-  let userId: string | null = null;
+export async function getMySubscriptions(userId?: string) {
+  let resolvedUserId: string | null = userId || null;
 
-  if (typeof window !== "undefined") {
+  // If userId not provided, try to get from localStorage
+  if (!resolvedUserId && typeof window !== "undefined") {
     const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        userId = parsedUser?._id || null;
+        resolvedUserId = parsedUser?._id || parsedUser?.id || null;
       } catch (err) {
-        console.error("Error parsing auth-user from localStorage:", err);
+        console.error("Error parsing currentUser from localStorage:", err);
       }
     }
   }
 
-  if (!userId) {
-    throw new Error("No user ID found in localStorage (currentUser)");
+  if (!resolvedUserId) {
+    throw new Error("No user ID found. Please provide userId or ensure user is logged in.");
   }
 
-  const response = await serverFetch(`${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}`);
+  const response = await serverFetch(`${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${resolvedUserId}`);
 
   // ✅ Handle double-layer data structure
   const apiData = response?.data?.data || response?.data || [];
@@ -216,27 +217,28 @@ export function transformSubscriptionsToUI(subs: Subscription[]): UISubscription
   return subs.map(transformSubscriptionToUI);
 }
 
-export async function getMyTransactions() {
-  let userId: string | null = null;
+export async function getMyTransactions(userId?: string) {
+  let resolvedUserId: string | null = userId || null;
 
-  if (typeof window !== "undefined") {
+  // If userId not provided, try to get from localStorage
+  if (!resolvedUserId && typeof window !== "undefined") {
     const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        userId = parsedUser?._id || null;
+        resolvedUserId = parsedUser?._id || parsedUser?.id || null;
       } catch (err) {
-        console.error("Error parsing auth-user from localStorage:", err);
+        console.error("Error parsing currentUser from localStorage:", err);
       }
     }
   }
 
-  if (!userId) {
-    throw new Error("No user ID found in localStorage (auth-user)");
+  if (!resolvedUserId) {
+    throw new Error("No user ID found. Please provide userId or ensure user is logged in.");
   }
 
   const response = await serverFetch(
-    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}/transactions`
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${resolvedUserId}/transactions`
   );
 
   const apiData =

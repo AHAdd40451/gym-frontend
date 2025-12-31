@@ -87,7 +87,7 @@ export function middleware(request: NextRequest) {
 function getDashboardUrl(role: string | null): string {
   switch (role) {
     case 'admin':
-      return '/dashboard/admin';
+      return '/dashboard/admin/ecommerce';
     case 'staff':
       return '/dashboard/staff';
     case 'user':

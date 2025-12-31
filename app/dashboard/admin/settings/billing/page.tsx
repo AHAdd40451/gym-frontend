@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import { Edit2, Plus, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 
+// Helper to safely extract error message
+function getErrorMessage(error: any): string {
+  if (!error) return "An unknown error occurred";
+  if (typeof error === "string") return error;
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  if (error.data?.message) return error.data.message;
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.error) return error.response.data.error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "An unknown error occurred";
+  }
+}
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,7 +78,31 @@ interface UserWithSubscriptions {
 
 export default function Page() {
   const { user } = useAuth();
-  const userId = user?._id || user?.id;
+  
+  // Get userId from auth context or localStorage as fallback
+  const [userId, setUserId] = useState<string | null>(
+    (user as any)?._id || (user as any)?.id || null
+  );
+
+  // Update userId when user changes or load from localStorage
+  useEffect(() => {
+    const id = (user as any)?._id || (user as any)?.id;
+    if (id) {
+      setUserId(id);
+    } else {
+      // Fallback to localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const storedId = parsedUser?._id || parsedUser?.id;
+          if (storedId) setUserId(storedId);
+        } catch (error) {
+          console.error('Failed to parse user from localStorage:', error);
+        }
+      }
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<UserWithSubscriptions | null>(null);
@@ -98,11 +138,19 @@ export default function Page() {
         setAllTransactions(transactions);
 
       } catch (error: any) {
-        console.error("Failed to load billing data:", error);
-        if (error.response?.status === 404) {
-          toast.error("No billing data found");
+        const errorMsg = getErrorMessage(error);
+        const isCorsError = errorMsg?.includes('CORS') || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error');
+        
+        if (isCorsError) {
+          console.warn("CORS/Network error - billing data unavailable");
+          // Don't show error toast for CORS
         } else {
-          toast.error("Failed to load billing information");
+          console.error("Failed to load billing data:", error);
+          if (error.response?.status === 404) {
+            toast.error("No billing data found");
+          } else {
+            toast.error("Failed to load billing information");
+          }
         }
       } finally {
         setLoading(false);

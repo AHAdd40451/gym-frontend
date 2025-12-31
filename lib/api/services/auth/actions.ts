@@ -149,7 +149,7 @@ export async function logoutAction() {
 function getDashboardUrl(role: string): string {
   switch (role) {
     case 'admin':
-      return '/dashboard/admin';
+      return '/dashboard/admin/ecommerce';
     case 'staff':
       return '/dashboard/staff';
     case 'user':

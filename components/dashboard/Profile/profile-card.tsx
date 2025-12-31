@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Mail, MapPin, Link2, FileText, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,33 +18,89 @@ const languages: Record<string, string> = {
   zh: "Chinese"
 };
 
-export function ProfileCard() {
-  const [authUser, setAuthUser] = useState<any>(null);
+interface ProfileCardProps {
+  user?: any;
+}
+
+export function ProfileCard({ user: propUser }: ProfileCardProps) {
+  // Always prioritize propUser if provided
+  const [authUser, setAuthUser] = useState<any>(propUser || null);
   const [userLocation, setUserLocation] = useState<string>("USA");
+  
+  // Use ref to store current user ID for comparison in event listener
+  const currentUserIdRef = useRef<string | null>(null);
 
-useEffect(() => {
-  const storedUser = localStorage.getItem("currentUser");
-
-  if (storedUser) {
-    const user = JSON.parse(storedUser);
-    setAuthUser(user);
-
-    setUserLocation(user?.location?.country || "USA");
-  }
-
-  const handleUserUpdate = () => {
-    const updatedUser = localStorage.getItem("currentUser");
-    if (updatedUser) {
-      const user = JSON.parse(updatedUser);
-      setAuthUser(user);
-      setUserLocation(user?.location?.country || "USA");
+  // Update state when propUser changes
+  useEffect(() => {
+    if (propUser) {
+      setAuthUser(propUser);
+      setUserLocation(propUser?.location?.country || "USA");
+      currentUserIdRef.current = propUser?._id || propUser?.id || null;
     }
-  };
+  }, [propUser]);
 
-  window.addEventListener("userUpdated", handleUserUpdate);
-  return () =>
-    window.removeEventListener("userUpdated", handleUserUpdate);
-}, []);
+  // Update ref whenever authUser changes
+  useEffect(() => {
+    currentUserIdRef.current = authUser?._id || authUser?.id || null;
+  }, [authUser]);
+
+  // Listen to localStorage updates and userUpdated events
+  useEffect(() => {
+    // Read from localStorage initially if no propUser
+    if (!propUser) {
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setAuthUser(user);
+          setUserLocation(user?.location?.country || "USA");
+          currentUserIdRef.current = user?._id || user?.id || null;
+        } catch (error) {
+          console.error("Failed to parse user from localStorage:", error);
+        }
+      }
+    }
+
+    // Listen to userUpdated events to refresh data from localStorage
+    // This works even when propUser is provided, so profile updates reflect immediately
+    const handleUserUpdate = () => {
+      console.log("🔄 userUpdated event received in ProfileCard");
+      const updatedUserStr = localStorage.getItem("currentUser");
+      if (updatedUserStr) {
+        try {
+          const updatedUser = JSON.parse(updatedUserStr);
+          const updatedUserId = updatedUser?._id || updatedUser?.id;
+          const currentUserId = currentUserIdRef.current;
+          
+          console.log("Current User ID:", currentUserId, "Updated User ID:", updatedUserId);
+          
+          // Always update if user IDs match (even when propUser is provided)
+          // This ensures real-time updates from settings page
+          if (currentUserId && updatedUserId && currentUserId === updatedUserId) {
+            console.log("✅ Updating ProfileCard with new user data");
+            setAuthUser(updatedUser);
+            setUserLocation(updatedUser?.location?.country || "USA");
+            currentUserIdRef.current = updatedUserId;
+          } else if (!propUser) {
+            // If no propUser, always update
+            console.log("✅ Updating ProfileCard (no propUser)");
+            setAuthUser(updatedUser);
+            setUserLocation(updatedUser?.location?.country || "USA");
+            currentUserIdRef.current = updatedUserId;
+          } else {
+            console.log("❌ User ID mismatch, not updating");
+          }
+        } catch (error) {
+          console.error("Failed to parse updated user from localStorage:", error);
+        }
+      }
+    };
+
+    window.addEventListener("userUpdated", handleUserUpdate);
+    return () => {
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
+  }, [propUser]);
 
 
   if (!authUser) {
@@ -84,7 +140,9 @@ useEffect(() => {
           <div className="bg-muted grid grid-cols-3 divide-x rounded-md border text-center *:py-3">
             <div>
               <h5 className="text-lg font-semibold">
-                {authUser._id?.slice(0, 4) || "----"}
+                {authUser._id || authUser.id 
+                  ? `${(authUser._id || authUser.id).slice(0, 4)}...` 
+                  : "----"}
               </h5>
               <div className="text-muted-foreground text-sm">User ID</div>
             </div>

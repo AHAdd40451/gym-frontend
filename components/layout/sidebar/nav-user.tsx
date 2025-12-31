@@ -20,6 +20,7 @@ import {
 import { BellIcon, CreditCardIcon, LogOutIcon, UserCircle2Icon } from "lucide-react";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { logoutAction } from "@/lib/api/services/auth/actions";
+import Link from "next/link";
 
 type AuthUser = {
   firstName?: string;
@@ -28,6 +29,7 @@ type AuthUser = {
   profileImage?: string;
   avatar?: string;
   name?: string;
+  role?: string;
 };
 
 const DEFAULT_AVATAR = "/images/avatars/01.png";
@@ -59,6 +61,20 @@ export function NavUser() {
     const last = authUser.lastName?.[0] || "";
     return `${first}${last}`;
   }, [authUser]);
+
+  // Get profile page URL based on user role
+  const getProfileUrl = () => {
+    const role = authUser?.role;
+    switch (role) {
+      case 'admin':
+        return '/dashboard/user/profile';
+      case 'staff':
+        return '/dashboard/user/profile';
+      case 'user':
+      default:
+        return '/dashboard/user/profile';
+    }
+  };
 
   const handleLogout = async () => {
     localStorage.removeItem("authToken");
@@ -107,9 +123,11 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <UserCircle2Icon />
-                Account
+              <DropdownMenuItem asChild>
+                <Link href={getProfileUrl()} className="cursor-pointer">
+                  <UserCircle2Icon />
+                  Account
+                </Link>
               </DropdownMenuItem>
         
              
