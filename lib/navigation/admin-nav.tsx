@@ -221,11 +221,11 @@ export const adminNavItems: NavGroup[] = [
       //   href: "/dashboard/admin/database",
       //   icon: DatabaseIcon
       // },
-      {
-        title: "Logs",
-        href: "/dashboard/admin/logs",
-        icon: FileTextIcon
-      }
+      // {
+      //   title: "Logs",
+      //   href: "/dashboard/admin/logs",
+      //   icon: FileTextIcon
+      // }
       // {
       //   title: "Backup",
       //   href: "/dashboard/admin/backup",

@@ -853,28 +853,68 @@ body {
 
 
 /* Font */
+/* Default font - applied when no data-theme-font is set */
+:root {
+    --font-sans: var(--font-inter);
+}
+
 [data-theme-font="inter"] {
     --font-sans: var(--font-inter);
 }
 
+[data-theme-font="inter"] {
+    --font-sans: var(--font-inter);
+    font-family: var(--font-inter), sans-serif;
+}
+
+[data-theme-font="inter"] body {
+    font-family: var(--font-inter), sans-serif;
+}
+
 [data-theme-font="roboto"] {
     --font-sans: var(--font-roboto);
+    font-family: var(--font-roboto), sans-serif;
+}
+
+[data-theme-font="roboto"] body {
+    font-family: var(--font-roboto), sans-serif;
 }
 
 [data-theme-font="poppins"] {
     --font-sans: var(--font-poppins);
+    font-family: var(--font-poppins), sans-serif;
+}
+
+[data-theme-font="poppins"] body {
+    font-family: var(--font-poppins), sans-serif;
 }
 
 [data-theme-font="montserrat"] {
     --font-sans: var(--font-montserrat);
+    font-family: var(--font-montserrat), sans-serif;
+}
+
+[data-theme-font="montserrat"] body {
+    font-family: var(--font-montserrat), sans-serif;
 }
 
 [data-theme-font="pt-sans"] {
     --font-sans: var(--font-pt-sans);
+    font-family: var(--font-pt-sans), sans-serif;
+}
+
+[data-theme-font="pt-sans"] body {
+    font-family: var(--font-pt-sans), sans-serif;
 }
 
 [data-theme-font="overpass-mono"] {
     --font-sans: var(--font-overpass-mono);
+    letter-spacing: -.05em;
+    font-family: var(--font-overpass-mono), sans-serif;
+}
+
+[data-theme-font="overpass-mono"] body {
+    font-family: var(--font-overpass-mono), sans-serif;
     letter-spacing: -.05em;
 }
 /* Font */

@@ -162,7 +162,7 @@
 
   --font-display: var(--display-family);
   --display-weight: var(--display-weight);
-  --font-sans: var(--text-family);
+  /* --font-sans is set dynamically in themes.css based on data-theme-font attribute */
 }
 
 * {
@@ -174,8 +174,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  /* Apply font using CSS variable - will be overridden by themes.css when data-theme-font is set */
+  html {
+    font-family: var(--font-sans, var(--font-inter)), sans-serif;
+  }
+  
   body {
     @apply bg-background text-foreground;
+    font-family: inherit;
+  }
+  
+  /* Override font-sans utility to use CSS variable */
+  .font-sans {
+    font-family: var(--font-sans, var(--font-inter)), sans-serif;
   }
 
   .font-display {

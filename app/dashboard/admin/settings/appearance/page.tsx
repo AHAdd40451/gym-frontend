@@ -105,6 +105,8 @@ export default function Page() {
   // Handle hydration
   useEffect(() => {
     setMounted(true);
+    // Don't set default font here - let preferences fetch handle it
+    // This prevents overriding saved preferences when navigating back to the page
   }, []);
 
   // Fetch user preferences
@@ -112,6 +114,10 @@ export default function Page() {
     const fetchPreferences = async () => {
       if (!userId) {
         setFetching(false);
+        // If no userId, check if font is already set, otherwise set default
+        if (!document.documentElement.getAttribute('data-theme-font')) {
+          document.documentElement.setAttribute('data-theme-font', 'inter');
+        }
         return;
       }
 
@@ -121,28 +127,49 @@ export default function Page() {
         
         const userPreferences = response.data?.user?.preferences;
         
-        if (userPreferences) {
-          // Get theme from user preferences or current theme
-          const savedTheme = userPreferences.theme || (theme as "light" | "dark") || "light";
-          const savedFont = userPreferences.font || "inter";
-
-          form.reset({
-            theme: savedTheme,
-            font: savedFont
-          });
-
-          // Apply theme
-          if (savedTheme) {
-            setTheme(savedTheme);
+        // Get theme from user preferences or current theme
+        const savedTheme = userPreferences?.theme || (theme as "light" | "dark") || "light";
+        
+        // Get font from preferences, or check localStorage, or check current attribute, or default to inter
+        const currentFontAttribute = document.documentElement.getAttribute('data-theme-font');
+        let savedFont = userPreferences?.font;
+        
+        // If no saved font in preferences, check localStorage
+        if (!savedFont) {
+          try {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              savedFont = parsedUser?.preferences?.font;
+            }
+          } catch (e) {
+            console.error('Failed to parse user from localStorage:', e);
           }
+        }
+        
+        // If still no font, use current attribute or default
+        savedFont = savedFont || currentFontAttribute || "inter";
 
-          // Apply font using data-theme-font attribute
-          if (savedFont) {
-            document.documentElement.setAttribute('data-theme-font', savedFont);
-          }
+        form.reset({
+          theme: savedTheme,
+          font: savedFont
+        });
+
+        // Apply theme
+        if (savedTheme) {
+          setTheme(savedTheme);
+        }
+
+        // Apply font using data-theme-font attribute (preserve if already set correctly)
+        if (currentFontAttribute !== savedFont) {
+          document.documentElement.setAttribute('data-theme-font', savedFont);
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
+        // On error, check if font is already set, otherwise set default
+        if (!document.documentElement.getAttribute('data-theme-font')) {
+          document.documentElement.setAttribute('data-theme-font', 'inter');
+        }
         toast.error("Failed to load appearance settings");
       } finally {
         setFetching(false);
@@ -321,10 +348,7 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>Font</FormLabel>
                   <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      applyFont(value);
-                    }} 
+                    onValueChange={field.onChange}
                     value={field.value}
                   >
                     <FormControl>
@@ -360,10 +384,7 @@ export default function Page() {
                   </FormDescription>
                   <FormMessage />
                   <RadioGroup
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setTheme(value);
-                    }}
+                    onValueChange={field.onChange}
                     value={field.value}
                     className="grid grid-cols-2 gap-4 pt-2 max-w-md"
                   >
