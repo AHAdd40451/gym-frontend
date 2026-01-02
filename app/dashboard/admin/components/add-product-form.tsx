@@ -57,6 +57,7 @@ import { getCategories } from "@/lib/api/services/category/category";
 import { getSubCategoriesByCategory } from "@/lib/api/services/subcategory/subcategory";
 import { notificationsApi } from "@/lib/api/services/notifications/notifications";
 import { usersApi } from "@/lib/api/services/users/users";
+import { uploadImage } from "@/lib/api/services/upload/upload";
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -273,6 +274,14 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     }
   };
 
+  const handleUpload = async (file: File) => {
+    const res = await uploadImage(file, token || undefined);
+
+    if (res.success) {
+      console.log("Image URL:", res.url);
+    }
+  };
+
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     if (!token) {
       toast.error("Please login to continue");
@@ -287,6 +296,18 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     setLoading(true);
 
     try {
+      // Transform variants to match API expected format
+      // Backend expects: optionName, optionValue, price
+      const transformedVariants = variants.length > 0
+        ? variants
+            .filter((variant) => variant.option && variant.value && variant.price)
+            .map((variant) => ({
+              optionName: variant.option.charAt(0).toUpperCase() + variant.option.slice(1).toLowerCase(),
+              optionValue: variant.value,
+              price: parseFloat(variant.price) || 0
+            }))
+        : undefined;
+
       // Prepare product payload with proper stock object
       const productPayload = {
         name: data.name,
@@ -301,7 +322,7 @@ export default function AddProductForm({ token }: AddProductFormProps) {
         ingredients: data.ingredients,
         servingSize: data.servingSize,
         image: files[0].preview,
-        variants: variants.length > 0 ? variants : undefined,
+        variants: transformedVariants,
         status: data.status,
         chargeTax: data.chargeTax,
         discountedPrice: data.discountedPrice ? parseFloat(data.discountedPrice) : undefined

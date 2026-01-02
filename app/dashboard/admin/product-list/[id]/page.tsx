@@ -224,8 +224,8 @@ export default async function Page({ params }: PageProps) {
                     <div className="space-y-4">
                       {productData.variants.map((variant: any, index: number) => (
                         <div key={index} className="flex items-center gap-4 text-sm">
-                          <Badge variant="outline">{variant.option}</Badge>
-                          <span>{variant.value}</span>
+                          <Badge variant="outline">{variant.optionName || variant.option}</Badge>
+                          <span>{variant.optionValue || variant.value}</span>
                           <span className="font-semibold">Rs. {variant.price}</span>
                         </div>
                       ))}
