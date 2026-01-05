@@ -23,6 +23,7 @@ const Notifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const readCurrentUser = () => {
     if (typeof window === "undefined") return null;
@@ -160,11 +161,23 @@ const Notifications = () => {
   }, [loadNotifications, refreshUnreadCount]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (open) {
       loadNotifications();
       refreshUnreadCount();
     }
   }, [open, loadNotifications, refreshUnreadCount]);
+
+  if (!mounted) {
+    return (
+      <Button size="icon" variant="ghost" className="relative" disabled>
+        <BellIcon />
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

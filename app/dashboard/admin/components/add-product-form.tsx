@@ -133,6 +133,7 @@ export default function AddProductForm({ token }: AddProductFormProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingSubCategories, setLoadingSubCategories] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -170,10 +171,25 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     maxFiles: 5
   });
 
+  // Set mounted state to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      // Cleanup will be handled by the useFileUpload hook's removeFile/clearFiles
+      // This is just a safety net
+    };
+  }, []);
+
   // Fetch categories on mount
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (mounted) {
+      fetchCategories();
+    }
+  }, [mounted]);
 
   // Fetch subcategories when category changes
   useEffect(() => {
@@ -357,6 +373,24 @@ export default function AddProductForm({ token }: AddProductFormProps) {
     router.push("/dashboard/admin/product-list");
   };
 
+  if (!mounted) {
+    return (
+      <div className="mb-4 flex flex-col justify-between space-y-4 lg:flex-row lg:items-center lg:space-y-2">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold tracking-tight">Add Product</h1>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="secondary" disabled>
+            Discard
+          </Button>
+          <Button type="button" disabled>
+            Publish
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -529,9 +563,23 @@ export default function AddProductForm({ token }: AddProductFormProps) {
                               key={file.id}
                               className="bg-accent relative aspect-square rounded-md border">
                               <img
-                                src={file.preview}
+                                src={file.preview || ""}
                                 alt={file.file.name}
                                 className="size-full rounded-[inherit] object-cover"
+                                onError={(e) => {
+                                  // Handle blob URL errors gracefully
+                                  const target = e.target as HTMLImageElement;
+                                  if (file.file instanceof File && file.preview?.startsWith("blob:")) {
+                                    try {
+                                      // Try to recreate the blob URL
+                                      const newPreview = URL.createObjectURL(file.file);
+                                      target.src = newPreview;
+                                    } catch (error) {
+                                      // If recreation fails, hide the image
+                                      target.style.display = "none";
+                                    }
+                                  }
+                                }}
                               />
                               <Button
                                 type="button"

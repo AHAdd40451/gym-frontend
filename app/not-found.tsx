@@ -25,12 +25,14 @@ export default function NotFound() {
         </div>
       </div>
       <div className="hidden lg:block">
-        <img
-          src={`/404.svg`}
+        <Image
+          src="/404.svg"
           width={300}
           height={400}
           className="w-full object-contain lg:max-w-2xl"
           alt="not found image"
+          priority={false}
+          unoptimized
         />
       </div>
     </div>

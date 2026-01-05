@@ -21,7 +21,12 @@ import { navItems } from "@/components/layout/sidebar/nav-main";
 
 export default function Search() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -54,35 +59,37 @@ export default function Search() {
           <SearchIcon />
         </Button>
       </div>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <VisuallyHidden>
-          <DialogHeader>
-            <DialogTitle></DialogTitle>
-          </DialogHeader>
-        </VisuallyHidden>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          {navItems.map((route) => (
-            <React.Fragment key={route.title}>
-              <CommandGroup heading={route.title}>
-                {route.items.map((item, key) => (
-                  <CommandItem
-                    key={key}
-                    onSelect={() => {
-                      setOpen(false);
-                      router.push(item.href);
-                    }}>
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandSeparator />
-            </React.Fragment>
-          ))}
-        </CommandList>
-      </CommandDialog>
+      {mounted && (
+        <CommandDialog open={open} onOpenChange={setOpen}>
+          <VisuallyHidden>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+            </DialogHeader>
+          </VisuallyHidden>
+          <CommandInput placeholder="Type a command or search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            {navItems.map((route) => (
+              <React.Fragment key={route.title}>
+                <CommandGroup heading={route.title}>
+                  {route.items.map((item, key) => (
+                    <CommandItem
+                      key={key}
+                      onSelect={() => {
+                        setOpen(false);
+                        router.push(item.href);
+                      }}>
+                      {item.icon && <item.icon />}
+                      <span>{item.title}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandSeparator />
+              </React.Fragment>
+            ))}
+          </CommandList>
+        </CommandDialog>
+      )}
     </div>
   );
 }
