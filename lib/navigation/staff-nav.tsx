@@ -89,16 +89,16 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/members",
         icon: UsersIcon
       },
-      {
-        title: "New Members",
-        href: "/dashboard/staff/members/new-memebers",
-        icon: UserIcon
-      },
-      {
-        title: "Member Check-ins",
-        href: "/dashboard/staff/checkins",
-        icon: ClockIcon
-      },
+      // {
+      //   title: "New Members",
+      //   href: "/dashboard/staff/members/new-memebers",
+      //   icon: UserIcon
+      // },
+      // {
+      //   title: "Member Check-ins",
+      //   href: "/dashboard/staff/checkins",
+      //   icon: ClockIcon
+      // },
       {
         title: "Diet Calendar",
         href: "/dashboard/staff/diet-calendar",
@@ -119,11 +119,11 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/exercises",
         icon: DumbbellIcon
       },
-      {
-        title: "Personal Training",
-        href: "/dashboard/staff/training",
-        icon: GraduationCapIcon
-      }
+      // {
+      //   title: "Personal Training",
+      //   href: "/dashboard/staff/training",
+      //   icon: GraduationCapIcon
+      // }
       // {
       //   title: "Group Classes",
       //   href: "/dashboard/staff/classes",
@@ -131,51 +131,51 @@ export const staffNavItems: NavGroup[] = [
       // }
     ]
   },
-  {
-    title: "Scheduling",
-    items: [
-      {
-        title: "My Schedule",
-        href: "/dashboard/staff/schedule",
-        icon: CalendarIcon
-      },
-      //  {
-      //   title: "Attendence",
-      //   href: "/dashboard/staff/attendence",
-      //   icon: CalendarIcon
-      // },
-      {
-        title: "Book Sessions",
-        href: "/dashboard/staff/booking",
-        icon: ClockIcon
-      },
-      {
-        title: "Availability",
-        href: "/dashboard/staff/availability",
-        icon: CalendarIcon
-      }
-    ]
-  },
-  {
-    title: "Communication",
-    items: [
-      // {
-      //   title: "Messages",
-      //   href: "/dashboard/staff/messages",
-      //   icon: MessageSquareIcon
-      // },
-      // {
-      //   title: "Notifications",
-      //   href: "/dashboard/staff/notifications",
-      //   icon: BellIcon
-      // },
-      {
-        title: "Announcements",
-        href: "/dashboard/staff/announcements",
-        icon: FileTextIcon
-      }
-    ]
-  }
+  // {
+  //   title: "Scheduling",
+  //   items: [
+  //     {
+  //       title: "My Schedule",
+  //       href: "/dashboard/staff/schedule",
+  //       icon: CalendarIcon
+  //     },
+  //     //  {
+  //     //   title: "Attendence",
+  //     //   href: "/dashboard/staff/attendence",
+  //     //   icon: CalendarIcon
+  //     // },
+  //     {
+  //       title: "Book Sessions",
+  //       href: "/dashboard/staff/booking",
+  //       icon: ClockIcon
+  //     },
+  //     {
+  //       title: "Availability",
+  //       href: "/dashboard/staff/availability",
+  //       icon: CalendarIcon
+  //     }
+  //   ]
+  // },
+  // {
+  //   title: "Communication",
+  //   items: [
+  //     {
+  //       title: "Messages",
+  //       href: "/dashboard/staff/messages",
+  //       icon: MessageSquareIcon
+  //     },
+  //     {
+  //       title: "Notifications",
+  //       href: "/dashboard/staff/notifications",
+  //       icon: BellIcon
+  //     },
+  //     {
+  //       title: "Announcements",
+  //       href: "/dashboard/staff/announcements",
+  //       icon: FileTextIcon
+  //     }
+  //   ]
+  // }
 ];
 
 export function StaffNavMain() {
