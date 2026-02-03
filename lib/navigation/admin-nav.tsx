@@ -146,21 +146,21 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/all-users",
         icon: UsersIcon
       },
-      {
-        title: "Staff Management",
-        href: "/dashboard/admin/staff",
-        icon: UserIcon
-      },
+      // {
+      //   title: "Staff Management",
+      //   href: "/dashboard/admin/staff",
+      //   icon: UserIcon
+      // },
       // {
       //   title: "User Roles",
       //   href: "/dashboard/admin/roles",
       //   icon: ShieldIcon
       // },
-      {
-        title: "Permissions",
-        href: "/dashboard/admin/permissions",
-        icon: KeyIcon
-      }
+      // {
+      //   title: "Permissions",
+      //   href: "/dashboard/admin/permissions",
+      //   icon: KeyIcon
+      // }
     ]
   },
   // {

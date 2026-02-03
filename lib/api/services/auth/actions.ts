@@ -151,7 +151,7 @@ function getDashboardUrl(role: string): string {
     case 'admin':
       return '/dashboard/admin/ecommerce';
     case 'staff':
-      return '/dashboard/staff';
+      return '/dashboard/staff/members';
     case 'user':
       return '/dashboard/user';
     default:

@@ -313,10 +313,10 @@ export default function OrdersDataTable({ data }: { data: Order[] }) {
       <>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline">
+            {/* <Button variant="outline">
               <PlusCircle />
               Status
-            </Button>
+            </Button> */}
           </PopoverTrigger>
           <PopoverContent className="w-52 p-0">
             <Command>
@@ -343,10 +343,10 @@ export default function OrdersDataTable({ data }: { data: Order[] }) {
         </Popover>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline">
+            {/* <Button variant="outline">
               <PlusCircle />
               Category
-            </Button>
+            </Button> */}
           </PopoverTrigger>
           <PopoverContent className="w-52 p-0">
             <Command>

@@ -65,6 +65,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
+  // Staff default: /dashboard/staff → /dashboard/staff/members
+  if (pathname === '/dashboard/staff' && isAuthenticated && userRole === 'staff') {
+    return NextResponse.redirect(new URL('/dashboard/staff/members', request.url));
+  }
+
   // Role-based access control for specific dashboard routes
   if (isProtectedRoute && isAuthenticated) {
     const roleBasedRoutes = {
@@ -89,7 +94,7 @@ function getDashboardUrl(role: string | null): string {
     case 'admin':
       return '/dashboard/admin/ecommerce';
     case 'staff':
-      return '/dashboard/staff';
+      return '/dashboard/staff/members';
     case 'user':
       return '/dashboard/user';
     default:

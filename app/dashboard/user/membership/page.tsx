@@ -94,17 +94,48 @@ const MembershipPage = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      setLoading(true)
+      setLoading(true);
       setError("");
       try {
-        let userId = null;
+        let userId: string | null = null;
+        let currentUser: Record<string, unknown> | null = null;
         if (typeof window !== "undefined") {
           const u = localStorage.getItem("currentUser");
-          if (u) { const parsed = JSON.parse(u); userId = parsed?._id || parsed?.id || null; }
+          const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+          if (u) {
+            try {
+              const parsed = JSON.parse(u);
+              currentUser = parsed;
+              userId = parsed?._id ?? parsed?.id ?? null;
+            } catch {
+              userId = null;
+            }
+          }
+          if (!userId) {
+            setError("User not logged in");
+            setLoading(false);
+            return;
+          }
+          try {
+            const res = await getUserWithSubscriptionsDetails(userId, token);
+            setMembership(res);
+          } catch (apiErr) {
+            // Fallback: show page with profile from currentUser, no subscriptions (e.g. backend endpoint missing)
+            const fallback: Membership = {
+              user: currentUser
+                ? {
+                    firstName: (currentUser.firstName as string) ?? "",
+                    lastName: (currentUser.lastName as string) ?? "",
+                    email: (currentUser.email as string) ?? "",
+                    role: (currentUser.role as string) ?? "user",
+                    status: "active",
+                  }
+                : undefined,
+              subscriptions: [],
+            };
+            setMembership(fallback);
+          }
         }
-        if (!userId) throw new Error("User not logged in");
-        const res = await getUserWithSubscriptionsDetails(userId);
-        setMembership(res);
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e);
         setError(errMsg || "Could not fetch membership info");
@@ -116,9 +147,10 @@ const MembershipPage = () => {
   }, []);
 
   if (loading) return <div className="min-h-[300px] flex items-center justify-center text-xl">Loading membership...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error && !membership) return <div className="text-red-500 p-5">{error}</div>;
+  if (!membership) return <div className="min-h-[300px] flex items-center justify-center text-xl text-muted-foreground">Loading membership...</div>;
 
-    const user = membership?.user || {};
+  const user = membership.user || {};
   const subscriptions = membership?.subscriptions || [];
   const activeSub = subscriptions.find((sub) => ["active", "trialing", "pending"].includes(sub.status || ""));
 
@@ -144,9 +176,9 @@ const MembershipPage = () => {
                   <p className="mt-2 text-gray-500 text-xs">Last payment: <span className="font-medium">{activeSub.transactions[activeSub.transactions.length-1]?.createdAt ? new Date(activeSub.transactions[activeSub.transactions.length-1]?.createdAt as string).toLocaleDateString() : "-"}</span></p>
                 )}
               </div>
-              <div className="self-end mt-2 md:mt-0">
+              {/* <div className="self-end mt-2 md:mt-0">
                 <button className="bg-linear-to-r from-green-500 to-green-700 py-2 px-6 rounded text-white font-medium hover:from-green-600 hover:to-green-800 transition">Upgrade Plan</button>
-              </div>
+              </div> */}
             </div>
             {/* Details toggle */}
             <details className="bg-gray-50 rounded p-3 mt-2">

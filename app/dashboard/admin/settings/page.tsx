@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { CircleUserRoundIcon, Trash2Icon } from "lucide-react";
+import { CircleUserRoundIcon, Trash2Icon, Lock } from "lucide-react";
 
 import { usersApi } from "@/lib/api/services/users/users";
 import { useFileUpload } from "@/hooks/use-file-upload";
@@ -443,7 +443,7 @@ export default function Page() {
               )}
             />
 
-            {/* Email */}
+            {/* Email - read-only, cannot be changed */}
             <FormField
               control={form.control}
               name="email"
@@ -451,7 +451,10 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter your email" />
+                    <div className="relative group">
+                      <Input {...field} placeholder="Enter your email" readOnly className="bg-muted cursor-not-allowed pr-10" />
+                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-red-500 transition-colors pointer-events-none" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

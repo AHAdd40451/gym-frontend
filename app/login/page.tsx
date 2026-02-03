@@ -58,8 +58,10 @@ export default function LoginPage() {
         // 🔹 Dispatch event for auth-change listeners
         window.dispatchEvent(new Event("auth-changed"));
 
-        // 🔹 Redirect to dashboard
-        window.location.href = `/dashboard/${result.user.role}`;
+        // 🔹 Redirect to dashboard (staff → /dashboard/staff/members)
+        const role = result.user.role;
+        const dashboardUrl = role === 'admin' ? '/dashboard/admin/ecommerce' : role === 'staff' ? '/dashboard/staff/members' : `/dashboard/${role}`;
+        window.location.href = dashboardUrl;
       } else {
         setError(result?.message || "Login failed");
       }
