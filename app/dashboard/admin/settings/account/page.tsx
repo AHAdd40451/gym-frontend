@@ -415,7 +415,7 @@ export default function Page() {
                 </FormItem>
               )}
             />
-            <FormField
+            {/* <FormField
               control={form.control}
               name="language"
               render={({ field }) => (
@@ -471,7 +471,7 @@ export default function Page() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
             <Button type="submit" disabled={loading}>
               {loading ? "Updating..." : "Update account"}
             </Button>

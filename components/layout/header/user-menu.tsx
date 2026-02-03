@@ -173,9 +173,9 @@ export default function UserMenu() {
         </DropdownMenuGroup>
 
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <BadgeCheck /> Account
-          </DropdownMenuItem>
+          {/* <DropdownMenuItem>
+            <BadgeCheck /> Accountttttt
+          </DropdownMenuItem> */}
      
           {/* <DropdownMenuItem>
             <Bell /> Notifications
