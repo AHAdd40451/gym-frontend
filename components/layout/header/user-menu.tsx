@@ -82,9 +82,10 @@ export default function UserMenu() {
       
       // Redirect to appropriate dashboard based on role
       let dashboardUrl = `/dashboard/${acc.role || 'user'}`;
-      // For admin, redirect to ecommerce page
       if (acc.role === 'admin') {
         dashboardUrl = '/dashboard/admin/ecommerce';
+      } else if (acc.role === 'staff') {
+        dashboardUrl = '/dashboard/staff/members';
       }
       window.location.href = dashboardUrl;
     } catch (error) {
