@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -21,6 +21,7 @@ import {
   LineChart,
   ListChecks
 } from "lucide-react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -50,6 +51,14 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import apiClient from "@/lib/api/axios";
+import { API_ENDPOINTS } from "@/lib/api/constants/constants";
+import {
+  assignWorkout,
+  createWorkout,
+  deleteWorkout,
+  fetchWorkouts
+} from "@/lib/api/services/workouts/workouts";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 type WorkoutType = "Strength" | "Cardio" | "Weight Loss";
@@ -123,226 +132,12 @@ type BuilderForm = {
   exercises: WorkoutExercise[];
 };
 
-const exerciseLibrary: Exercise[] = [
-  {
-    _id: "ex-1",
-    name: "Barbell Back Squat",
-    description: "Lower-body strength staple with braced core and full-depth drive.",
-    muscleGroup: ["Quads", "Glutes", "Core"],
-    equipment: "Barbell",
-    difficulty: "Advanced",
-    videoUrl: "https://youtu.be/YaXPRqUwItQ",
-    imageUrl: "/images/exercises/squat.jpg",
-    isActive: true,
-    createdBy: "coach-lena",
-    createdAt: "2026-01-10T14:00:00Z",
-    updatedAt: "2026-01-28T14:00:00Z"
-  },
-  {
-    _id: "ex-2",
-    name: "Incline Dumbbell Press",
-    description: "Chest emphasis with controlled 2-1-2 tempo on a 30 degree bench.",
-    muscleGroup: ["Chest", "Shoulders", "Triceps"],
-    equipment: "Dumbbell",
-    difficulty: "Intermediate",
-    videoUrl: "https://youtu.be/8iPEnn-ltC8",
-    imageUrl: "/images/exercises/incline-press.jpg",
-    isActive: true,
-    createdBy: "coach-lena",
-    createdAt: "2026-01-12T09:00:00Z",
-    updatedAt: "2026-01-20T09:00:00Z"
-  },
-  {
-    _id: "ex-3",
-    name: "Seated Cable Row",
-    description: "Neutral-grip pull for mid-back thickness and scapular control.",
-    muscleGroup: ["Back", "Rear Delts"],
-    equipment: "Machine",
-    difficulty: "Intermediate",
-    videoUrl: "https://youtu.be/GZbfZ033f74",
-    imageUrl: "/images/exercises/cable-row.jpg",
-    isActive: true,
-    createdBy: "coach-ravi",
-    createdAt: "2026-01-14T07:00:00Z",
-    updatedAt: "2026-01-22T07:00:00Z"
-  },
-  {
-    _id: "ex-4",
-    name: "Assault Bike Intervals",
-    description: "30s on / 30s off power intervals to drive heart rate.",
-    muscleGroup: ["Full Body"],
-    equipment: "Machine",
-    difficulty: "Beginner",
-    videoUrl: "https://youtu.be/TjsB-rF7pJk",
-    imageUrl: "/images/exercises/assault-bike.jpg",
-    isActive: true,
-    createdBy: "coach-ravi",
-    createdAt: "2026-01-18T08:00:00Z",
-    updatedAt: "2026-01-29T08:00:00Z"
-  },
-  {
-    _id: "ex-5",
-    name: "Front Plank Reach",
-    description: "Anti-rotation core drill with shoulder stability.",
-    muscleGroup: ["Core", "Shoulders"],
-    equipment: "Bodyweight",
-    difficulty: "Beginner",
-    videoUrl: "https://youtu.be/B296mZDhrP4",
-    imageUrl: "/images/exercises/plank-reach.jpg",
-    isActive: true,
-    createdBy: "coach-lena",
-    createdAt: "2026-01-19T10:30:00Z",
-    updatedAt: "2026-01-27T10:30:00Z"
-  }
-];
-
-const seededWorkouts: WorkoutPlan[] = [
-  {
-    _id: "wo-1",
-    title: "Push Power 45",
-    description: "Upper-body press day with power focus and tight rest windows.",
-    difficulty: "Intermediate",
-    type: "Strength",
-    createdBy: "coach-lena",
-    isActive: true,
-    isPublic: true,
-    exercises: [
-      { exerciseId: "ex-2", sets: 4, reps: 10, restInSeconds: 90, order: 1 },
-      { exerciseId: "ex-3", sets: 4, reps: 12, restInSeconds: 75, order: 2 },
-      { exerciseId: "ex-5", sets: 3, reps: 12, restInSeconds: 60, order: 3 }
-    ],
-    createdAt: "2026-01-30T14:00:00Z",
-    updatedAt: "2026-02-01T09:00:00Z"
-  },
-  {
-    _id: "wo-2",
-    title: "Metabolic Burn",
-    description: "Low-skill, high-output circuit tuned for weight loss members.",
-    difficulty: "Beginner",
-    type: "Weight Loss",
-    createdBy: "coach-ravi",
-    isActive: true,
-    isPublic: true,
-    exercises: [
-      { exerciseId: "ex-4", sets: 6, reps: 30, restInSeconds: 30, order: 1 },
-      { exerciseId: "ex-5", sets: 3, reps: 20, restInSeconds: 30, order: 2 }
-    ],
-    createdAt: "2026-01-28T12:00:00Z",
-    updatedAt: "2026-02-01T08:30:00Z"
-  },
-  {
-    _id: "wo-3",
-    title: "Strength Foundations",
-    description: "Entry-level full body patterning with controlled tempo.",
-    difficulty: "Beginner",
-    type: "Strength",
-    createdBy: "coach-amelia",
-    isActive: false,
-    isPublic: false,
-    exercises: [
-      { exerciseId: "ex-1", sets: 3, reps: 8, restInSeconds: 120, order: 1 },
-      { exerciseId: "ex-3", sets: 3, reps: 10, restInSeconds: 90, order: 2 },
-      { exerciseId: "ex-5", sets: 2, reps: 30, restInSeconds: 45, order: 3 }
-    ],
-    createdAt: "2026-01-15T17:00:00Z",
-    updatedAt: "2026-01-25T17:00:00Z"
-  }
-];
-
-const seededLogs: ExerciseLog[] = [
-  {
-    _id: "log-1",
-    userId: "member-104",
-    workoutId: "wo-1",
-    exercises: [
-      {
-        exerciseId: "ex-2",
-        sets: [
-          { reps: 10, weight: 22, completed: true },
-          { reps: 10, weight: 22, completed: true },
-          { reps: 8, weight: 22, completed: true },
-          { reps: 8, weight: 20, completed: true }
-        ],
-        notes: "Dropped last set to 8 reps."
-      },
-      {
-        exerciseId: "ex-3",
-        sets: [
-          { reps: 12, weight: 45, completed: true },
-          { reps: 12, weight: 45, completed: true },
-          { reps: 10, weight: 45, completed: true },
-          { reps: 10, weight: 41, completed: true }
-        ]
-      }
-    ],
-    totalDurationInMinutes: 48,
-    caloriesBurned: 420,
-    notes: "Strong energy, next time try 90s rest.",
-    performedAt: "2026-02-01T15:30:00Z",
-    createdAt: "2026-02-01T15:35:00Z",
-    updatedAt: "2026-02-01T15:35:00Z"
-  },
-  {
-    _id: "log-2",
-    userId: "member-088",
-    workoutId: "wo-2",
-    exercises: [
-      {
-        exerciseId: "ex-4",
-        sets: [
-          { reps: 30, weight: 0, completed: true },
-          { reps: 30, weight: 0, completed: true },
-          { reps: 30, weight: 0, completed: true },
-          { reps: 30, weight: 0, completed: true }
-        ],
-        notes: "Held >60 RPM on all rounds."
-      },
-      {
-        exerciseId: "ex-5",
-        sets: [
-          { reps: 20, weight: 0, completed: true },
-          { reps: 18, weight: 0, completed: true },
-          { reps: 18, weight: 0, completed: true }
-        ]
-      }
-    ],
-    totalDurationInMinutes: 32,
-    caloriesBurned: 350,
-    notes: "Kept HR above 155 average.",
-    performedAt: "2026-01-31T12:00:00Z",
-    createdAt: "2026-01-31T12:05:00Z",
-    updatedAt: "2026-01-31T12:05:00Z"
-  },
-  {
-    _id: "log-3",
-    userId: "member-099",
-    workoutId: "wo-3",
-    exercises: [
-      {
-        exerciseId: "ex-1",
-        sets: [
-          { reps: 8, weight: 40, completed: true },
-          { reps: 8, weight: 42, completed: true },
-          { reps: 6, weight: 45, completed: true }
-        ]
-      },
-      {
-        exerciseId: "ex-3",
-        sets: [
-          { reps: 10, weight: 36, completed: true },
-          { reps: 10, weight: 36, completed: true },
-          { reps: 10, weight: 36, completed: true }
-        ]
-      }
-    ],
-    totalDurationInMinutes: 54,
-    caloriesBurned: 480,
-    notes: "Form check approved for next phase.",
-    performedAt: "2026-01-26T17:30:00Z",
-    createdAt: "2026-01-26T17:35:00Z",
-    updatedAt: "2026-01-26T17:35:00Z"
-  }
-];
+type Member = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+};
 
 const initialBuilderState: BuilderForm = {
   title: "",
@@ -367,12 +162,140 @@ const typeTone: Record<WorkoutType, string> = {
 };
 
 export default function WorkoutsPage() {
-  const [workouts, setWorkouts] = useState<WorkoutPlan[]>(seededWorkouts);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutPlan[]>([]);
+  const [workoutLogs, setWorkoutLogs] = useState<ExerciseLog[]>([]);
   const [builder, setBuilder] = useState<BuilderForm>(initialBuilderState);
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>(exerciseLibrary[0]?._id ?? "");
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>("");
   const [exerciseInputs, setExerciseInputs] = useState({ sets: 3, reps: 10, restInSeconds: 60 });
   const [previewPlan, setPreviewPlan] = useState<WorkoutPlan | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
+  const [assigning, setAssigning] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const normalizeWorkout = (plan: any): WorkoutPlan => {
+    const creator =
+      typeof plan.createdBy === "object"
+        ? [plan.createdBy?.firstName, plan.createdBy?.lastName].filter(Boolean).join(" ").trim() ||
+          plan.createdBy?._id ||
+          "staff"
+        : plan.createdBy || "staff";
+
+    const exercises = (plan.exercises || []).map((ex: any, idx: number) => ({
+      exerciseId: typeof ex.exerciseId === "string" ? ex.exerciseId : ex.exerciseId?._id || "",
+      sets: ex.sets ?? 1,
+      reps: ex.reps ?? 1,
+      restInSeconds: ex.restInSeconds ?? 60,
+      order: ex.order ?? idx + 1
+    }));
+
+    return {
+      _id: plan._id,
+      title: plan.title,
+      description: plan.description || "",
+      difficulty: plan.difficulty,
+      type: plan.type,
+      isActive: plan.isActive ?? true,
+      isPublic: plan.isPublic ?? false,
+      exercises,
+      createdBy: creator,
+      createdAt: plan.createdAt || new Date().toISOString(),
+      updatedAt: plan.updatedAt || plan.createdAt || new Date().toISOString()
+    };
+  };
+
+  const load = async () => {
+    try {
+      setLoading(true);
+
+      const [exRes, woRes, logsRes, usersRes] = await Promise.all([
+        apiClient.get(API_ENDPOINTS.EXERCISES.BASE, { params: { isActive: true, limit: 100 } }),
+        fetchWorkouts({}),
+        apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE).catch(() => ({ data: { data: [] } })),
+        // try main users list; fallback to role endpoint if API supports it
+        apiClient
+          .get(API_ENDPOINTS.USERS.BASE, { params: { role: "user", limit: 100 } })
+          .catch(() => ({ data: { users: [] } }))
+      ]);
+
+      const exercises = exRes.data?.data ?? [];
+      setExerciseLibrary(exercises);
+      if (!selectedExerciseId && exercises.length > 0) {
+        setSelectedExerciseId(exercises[0]._id);
+      }
+
+      const workoutsFromApi = Array.isArray(woRes?.data) ? woRes.data.map(normalizeWorkout) : [];
+      setWorkouts(workoutsFromApi);
+      if (!selectedWorkoutId && workoutsFromApi.length > 0) {
+        setSelectedWorkoutId(workoutsFromApi[0]._id);
+      }
+
+      const logs = logsRes?.data?.data ?? [];
+      setWorkoutLogs(logs);
+
+      const usersPayload = usersRes?.data;
+      const users =
+        (Array.isArray(usersPayload?.users) && usersPayload.users) ||
+        (Array.isArray(usersPayload?.data?.users) && usersPayload.data.users) ||
+        (Array.isArray(usersPayload?.data) && usersPayload.data) ||
+        [];
+
+      // if still empty, try role-specific endpoint
+      if (users.length === 0) {
+        try {
+          const alt = await apiClient.get(`${API_ENDPOINTS.USERS.BY_ROLE}/user`, {
+            params: { limit: 100 }
+          });
+          const altData =
+            (Array.isArray(alt?.data?.users) && alt.data.users) ||
+            (Array.isArray(alt?.data?.data) && alt.data.data) ||
+            [];
+          if (altData.length) {
+            setMembers(altData);
+          } else {
+            setMembers([]);
+          }
+        } catch {
+          setMembers([]);
+        }
+      } else {
+        setMembers(users);
+      }
+      setMembers(users);
+    } catch (error: any) {
+      console.error("Failed to load workouts", error);
+      toast.error("Could not load workouts", {
+        description: error?.message || "Check API and token."
+      });
+    } finally {
+      setLoading(false);
+      setReloading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!selectedExerciseId && exerciseLibrary.length > 0) {
+      setSelectedExerciseId(exerciseLibrary[0]._id);
+    }
+  }, [exerciseLibrary, selectedExerciseId]);
+
+  useEffect(() => {
+    if (!selectedWorkoutId && workouts.length > 0) {
+      setSelectedWorkoutId(workouts[0]._id);
+    }
+  }, [workouts, selectedWorkoutId]);
 
   const exerciseLookup = useMemo(
     () =>
@@ -380,7 +303,7 @@ export default function WorkoutsPage() {
         acc[exercise._id] = exercise;
         return acc;
       }, {} as Record<string, Exercise>),
-    []
+    [exerciseLibrary]
   );
 
   const workoutLookup = useMemo(
@@ -401,15 +324,16 @@ export default function WorkoutsPage() {
       activeWorkouts: activeWorkouts.length,
       publicWorkouts: publicWorkouts.length,
       totalExercises: exerciseLibrary.length,
-      logSessions: seededLogs.length,
+      logSessions: workoutLogs.length,
       avgDuration:
-        seededLogs.length === 0
+        workoutLogs.length === 0
           ? 0
           : Math.round(
-              seededLogs.reduce((acc, log) => acc + log.totalDurationInMinutes, 0) / seededLogs.length
+              workoutLogs.reduce((acc, log) => acc + log.totalDurationInMinutes, 0) /
+              workoutLogs.length
             )
     }),
-    [workouts, activeWorkouts, publicWorkouts]
+    [workouts, activeWorkouts, publicWorkouts, exerciseLibrary, workoutLogs]
   );
 
   const addExerciseToPlan = () => {
@@ -482,7 +406,7 @@ export default function WorkoutsPage() {
     });
   };
 
-  const handleSavePlan = () => {
+  const handleSavePlan = async () => {
     if (!builder.title.trim()) {
       toast.error("Add a workout title before saving.");
       return;
@@ -493,23 +417,45 @@ export default function WorkoutsPage() {
       return;
     }
 
-    const now = new Date().toISOString();
-    const newPlan: WorkoutPlan = {
-      ...builder,
-      _id: `local-${Date.now()}`,
-      createdBy: "staff-local",
-      createdAt: now,
-      updatedAt: now
-    };
+    try {
+      setSaving(true);
+      const payload = {
+        title: builder.title.trim(),
+        description: builder.description,
+        difficulty: builder.difficulty,
+        type: builder.type,
+        isPublic: builder.isPublic,
+        exercises: builder.exercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          sets: ex.sets,
+          reps: ex.reps,
+          restInSeconds: ex.restInSeconds,
+          order: ex.order
+        }))
+      };
 
-    setWorkouts((prev) => [newPlan, ...prev]);
-    setBuilder(initialBuilderState);
-    setExerciseInputs({ sets: 3, reps: 10, restInSeconds: 60 });
-    setSelectedExerciseId(exerciseLibrary[0]?._id ?? "");
+      const res = await createWorkout(payload);
+      if (!res?.success || !res?.data) {
+        throw new Error(res?.message || "Failed to create workout");
+      }
 
-    toast.success("Workout drafted", {
-      description: "Saved locally. Wire to your API to persist."
-    });
+      const newPlan = normalizeWorkout(res.data);
+      setWorkouts((prev) => [newPlan, ...prev]);
+      setBuilder(initialBuilderState);
+      setExerciseInputs({ sets: 3, reps: 10, restInSeconds: 60 });
+      setSelectedExerciseId(exerciseLibrary[0]?._id ?? "");
+
+      toast.success("Workout created", {
+        description: res.message || "Workout is live."
+      });
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Could not save workout", {
+        description: error?.message || "Check your API / token."
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const loadAsTemplate = (plan: WorkoutPlan) => {
@@ -534,9 +480,29 @@ export default function WorkoutsPage() {
   };
 
   const sharePlan = (plan: WorkoutPlan) => {
-    toast("Send to member app", {
-      description: `${plan.title} -> ready to push via API endpoint /workouts/${plan._id}/assign`
-    });
+    setSelectedWorkoutId(plan._id);
+    setSelectedMembers(new Set());
+    setAssignModalOpen(true);
+  };
+
+  const handleDeleteWorkout = async (id: string) => {
+    if (!id) return;
+    const ok = window.confirm("Delete this workout? This cannot be undone.");
+    if (!ok) return;
+    try {
+      setDeletingId(id);
+      const res = await deleteWorkout(id);
+      if (res?.success) {
+        setWorkouts((prev) => prev.filter((w) => w._id !== id));
+        toast.success("Workout deleted");
+      } else {
+        toast.error("Delete failed", { description: res?.message || "Try again." });
+      }
+    } catch (error: any) {
+      toast.error("Delete failed", { description: error?.message || "Check API/token." });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const workoutsByTab: Record<string, WorkoutPlan[]> = {
@@ -545,74 +511,29 @@ export default function WorkoutsPage() {
     all: workouts
   };
 
+  if (loading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading workouts...</div>;
+  }
+
   return (
     <div className="space-y-6 pb-10">
       <Card className="border-none bg-gradient-to-r from-[var(--primary)]/10 via-background to-background shadow-md">
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
-            <Badge className="w-fit gap-2 bg-[var(--primary)]/15 text-[var(--primary)]">
-              <Sparkles className="size-4" />
-              Workout Operating System
-            </Badge>
-            <CardTitle className="text-3xl font-semibold">
-              Workout plans that follow the new 3-collection schema
-            </CardTitle>
+            
+            <CardTitle className="text-3xl font-semibold">Workout plans</CardTitle>
             <CardDescription className="max-w-2xl">
-              Staff build plans, members view instantly, users log workouts, and analytics stay clean
-              because exercises stay embedded and logs stay event-based.
+              Build plans, assign to members, and keep logs clean. All calls go through the API proxy.
             </CardDescription>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              className="border-dashed"
-              onClick={() => {
-                setBuilder(initialBuilderState);
-                setExerciseInputs({ sets: 3, reps: 10, restInSeconds: 60 });
-                toast("Builder reset");
-              }}>
-              Reset builder
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/staff/exercises">Add exercise</Link>
             </Button>
-            <Button
-              onClick={() => {
-                const el = document.getElementById("workout-builder");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}>
-              Start a plan
-            </Button>
+           
           </div>
         </CardHeader>
       </Card>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Workouts live"
-          value={`${stats.activeWorkouts}/${stats.totalWorkouts}`}
-          helper="Active now"
-          icon={<Activity className="size-5" />}
-        />
-        <StatCard
-          title="Public plans"
-          value={stats.publicWorkouts}
-          helper="Visible to all members"
-          icon={<Users className="size-5" />}
-          accent="bg-sky-100 text-sky-900 dark:bg-sky-500/20 dark:text-sky-100"
-        />
-        <StatCard
-          title="Exercise library"
-          value={stats.totalExercises}
-          helper="Reusable blocks"
-          icon={<Dumbbell className="size-5" />}
-          accent="bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-100"
-        />
-        <StatCard
-          title="Logged sessions"
-          value={`${stats.logSessions} | ${stats.avgDuration} min avg`}
-          helper="Exercise Log Activity collection"
-          icon={<BarChart3 className="size-5" />}
-          accent="bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-100"
-        />
-      </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card id="workout-builder" className="xl:col-span-2 border border-border/70 shadow-sm">
@@ -693,26 +614,8 @@ export default function WorkoutsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-dashed p-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">Active</p>
-                    <p className="text-xs text-muted-foreground">Controls availability in apps.</p>
-                  </div>
-                  <Switch
-                    checked={builder.isActive}
-                    onCheckedChange={(checked) => setBuilder((prev) => ({ ...prev, isActive: checked }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-dashed p-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">Public</p>
-                    <p className="text-xs text-muted-foreground">Visible to all members.</p>
-                  </div>
-                  <Switch
-                    checked={builder.isPublic}
-                    onCheckedChange={(checked) => setBuilder((prev) => ({ ...prev, isPublic: checked }))}
-                  />
-                </div>
+               
+             
               </div>
 
               <Separator />
@@ -860,18 +763,127 @@ export default function WorkoutsPage() {
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
-                <Button type="submit">Save workout</Button>
+                <Button type="button" onClick={handleSavePlan} disabled={saving}>
+                  {saving ? "Saving..." : "Save workout"}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     setBuilder(initialBuilderState);
                     setExerciseInputs({ sets: 3, reps: 10, restInSeconds: 60 });
+                    setSelectedExerciseId(exerciseLibrary[0]?._id ?? "");
                   }}>
                   Clear form
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/70 shadow-sm">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedWorkoutId}
+                onValueChange={(val) => setSelectedWorkoutId(val)}
+                disabled={!workouts.length}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Select workout" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workouts.map((w) => (
+                    <SelectItem key={w._id} value={w._id}>
+                      {w.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                disabled={!selectedWorkoutId || selectedMembers.size === 0 || assigning}
+                onClick={async () => {
+                  if (!selectedWorkoutId || selectedMembers.size === 0) return;
+                  try {
+                    setAssigning(true);
+                    const res = await assignWorkout(selectedWorkoutId, Array.from(selectedMembers));
+                    if (res?.success) {
+                      toast.success("Workout assigned", {
+                        description: res.message || `${selectedMembers.size} members updated`
+                      });
+                    } else {
+                      toast.error("Assignment failed", { description: res?.message || "Try again." });
+                    }
+                  } catch (error: any) {
+                    toast.error("Assignment failed", { description: error?.message || "Check API/token." });
+                  } finally {
+                    setAssigning(false);
+                  }
+                }}>
+                {assigning ? "Assigning..." : "Assign"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {members.length === 0 ? (
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>No members found. Click refresh after you create/seed users.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => load()}>
+                    Refresh
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/dashboard/staff/exercises">Add exercises</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const el = document.getElementById("workout-builder");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}>
+                    Create workout
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <ScrollArea className="max-h-[420px] pr-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {members.map((m) => {
+                    const fullName = [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || m._id;
+                    const checked = selectedMembers.has(m._id);
+                    return (
+                      <label
+                        key={m._id}
+                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition ${
+                          checked ? "border-[var(--primary)] bg-[var(--primary)]/5" : "border-border/60 bg-muted/30"
+                        }`}>
+                        <div className="space-y-1">
+                          <p className="font-semibold leading-tight">{fullName}</p>
+                          <p className="text-xs text-muted-foreground">{m.email}</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-[var(--primary)]"
+                          checked={checked}
+                          onChange={(e) => {
+                            setSelectedMembers((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) {
+                                next.add(m._id);
+                              } else {
+                                next.delete(m._id);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
           </CardContent>
         </Card>
 
@@ -905,7 +917,7 @@ export default function WorkoutsPage() {
                           {exercise.description}
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          {exercise.muscleGroup.map((muscle) => (
+                          {(exercise.muscleGroup || []).map((muscle) => (
                             <span
                               key={muscle}
                               className="rounded-full bg-background px-2 py-0.5 border border-border/70">
@@ -942,11 +954,7 @@ export default function WorkoutsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs defaultValue="active">
-              <TabsList className="w-full sm:w-auto">
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="public">Public</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
-              </TabsList>
+              
 
               {["active", "public", "all"].map((tab) => (
                 <TabsContent key={tab} value={tab} className="pt-4">
@@ -976,58 +984,55 @@ export default function WorkoutsPage() {
           <CardContent>
             <ScrollArea className="max-h-[520px] pr-3">
               <div className="space-y-3">
-                {seededLogs.map((log) => {
-                  const workout = workoutLookup[log.workoutId];
-                  const totalSets = log.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
-                  return (
-                    <div key={log._id} className="rounded-lg border border-border/70 bg-muted/30 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="font-semibold leading-tight">
-                            {workout?.title || "Workout"} | {log.userId}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Performed {formatDistanceToNow(new Date(log.performedAt), { addSuffix: true })}
-                          </p>
+                {workoutLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No workout logs yet. Users will appear here after they log sessions.
+                  </p>
+                ) : (
+                  workoutLogs.map((log) => {
+                    const workout = workoutLookup[log.workoutId];
+                    const totalSets = log.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+                    return (
+                      <div key={log._id} className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <p className="font-semibold leading-tight">
+                              {workout?.title || "Workout"} | {log.userId}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Performed {formatDistanceToNow(new Date(log.performedAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {log.totalDurationInMinutes} min
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {log.totalDurationInMinutes} min
-                        </Badge>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <ListChecks className="size-4" />
+                            {totalSets} sets
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Flame className="size-4" />
+                            {log.caloriesBurned} kcal
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="size-4" />
+                            {format(new Date(log.performedAt), "MMM d, HH:mm")}
+                          </span>
+                        </div>
+                        {log.notes ? (
+                          <p className="mt-2 text-sm text-foreground italic">"{log.notes}"</p>
+                        ) : null}
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <ListChecks className="size-4" />
-                          {totalSets} sets
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Flame className="size-4" />
-                          {log.caloriesBurned} kcal
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-4" />
-                          {format(new Date(log.performedAt), "MMM d, HH:mm")}
-                        </span>
-                      </div>
-                      {log.notes ? (
-                        <p className="mt-2 text-sm text-foreground italic">"{log.notes}"</p>
-                      ) : null}
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </ScrollArea>
             <Separator className="my-4" />
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <LineChart className="size-4 text-[var(--primary)]" />
-                <span>
-                  Index-ready: userId + performedAt, workoutId keep analytics fast even at scale.
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <ShieldCheck className="size-4 text-[var(--primary)]" />
-                <span>Plan vs Activity separation keeps schema clean for future dashboards.</span>
-              </div>
+            
             </div>
           </CardContent>
         </Card>
@@ -1084,6 +1089,141 @@ export default function WorkoutsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="size-5 text-[var(--primary)]" />
+              Assign workout
+            </DialogTitle>
+        
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">Workout</p>
+              <Select
+                value={selectedWorkoutId}
+                onValueChange={(val) => setSelectedWorkoutId(val)}
+                disabled={!workouts.length}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select workout" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workouts.map((w) => (
+                    <SelectItem key={w._id} value={w._id}>
+                      {w.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Members</p>
+              {members.length === 0 ? (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>No members found. Click refresh after you create/seed users.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => load()}>
+                      Refresh
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href="/dashboard/staff/exercises">Add exercises</Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const el = document.getElementById("workout-builder");
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        setAssignModalOpen(false);
+                      }}>
+                      Create workout
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <ScrollArea className="max-h-[320px] pr-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {members.map((m) => {
+                      const fullName =
+                        [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || m._id;
+                      const checked = selectedMembers.has(m._id);
+                      return (
+                        <label
+                          key={m._id}
+                          className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition ${
+                            checked
+                              ? "border-[var(--primary)] bg-[var(--primary)]/5"
+                              : "border-border/60 bg-muted/30"
+                          }`}>
+                          <div className="space-y-1">
+                            <p className="font-semibold leading-tight">{fullName}</p>
+                            <p className="text-xs text-muted-foreground">{m.email}</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-[var(--primary)]"
+                            checked={checked}
+                            onChange={(e) => {
+                              setSelectedMembers((prev) => {
+                                const next = new Set(prev);
+                                if (e.target.checked) {
+                                  next.add(m._id);
+                                } else {
+                                  next.delete(m._id);
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignModalOpen(false);
+                  setSelectedMembers(new Set());
+                }}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!selectedWorkoutId || selectedMembers.size === 0 || assigning}
+                onClick={async () => {
+                  if (!selectedWorkoutId || selectedMembers.size === 0) return;
+                  try {
+                    setAssigning(true);
+                    const res = await assignWorkout(selectedWorkoutId, Array.from(selectedMembers));
+                    if (res?.success) {
+                      toast.success("Workout assigned", {
+                        description: res.message || `${selectedMembers.size} members updated`
+                      });
+                      setAssignModalOpen(false);
+                      setSelectedMembers(new Set());
+                    } else {
+                      toast.error("Assignment failed", { description: res?.message || "Try again." });
+                    }
+                  } catch (error: any) {
+                    toast.error("Assignment failed", { description: error?.message || "Check API/token." });
+                  } finally {
+                    setAssigning(false);
+                  }
+                }}>
+                {assigning ? "Assigning..." : "Assign workout"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1123,7 +1263,9 @@ function renderWorkoutGrid(
   typeTone: Record<WorkoutType, string>,
   openPreview: (plan: WorkoutPlan) => void,
   loadAsTemplate: (plan: WorkoutPlan) => void,
-  sharePlan: (plan: WorkoutPlan) => void
+  sharePlan: (plan: WorkoutPlan) => void,
+  deletePlan: (id: string) => void,
+  deletingId: string | null
 ) {
   if (!plans.length) {
     return (
@@ -1190,6 +1332,13 @@ function renderWorkoutGrid(
                 </Button>
                 <Button size="sm" onClick={() => sharePlan(plan)}>
                   Send to members
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={deletingId === plan._id}
+                  onClick={() => deletePlan(plan._id)}>
+                  {deletingId === plan._id ? "Deleting..." : "Delete"}
                 </Button>
               </div>
             </div>

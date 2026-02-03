@@ -3,24 +3,40 @@ import { API_ENDPOINTS } from "../../constants/constants";
 
 export interface Exercise {
   _id: string;
-  title: string;
-  points: string[]; // exactly 4
-  videoUrl: string;
+  name: string;
+  description: string;
+  muscleGroup: string[];
+  equipment: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced" | string;
+  videoUrl?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  createdBy?: string | {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
 
+type CreateExercisePayload = Pick<
+  Exercise,
+  "name" | "description" | "muscleGroup" | "equipment" | "difficulty"
+> & {
+  videoUrl?: string;
+  imageUrl?: string;
+};
+
+type UpdateExercisePayload = Partial<CreateExercisePayload> & {
+  isActive?: boolean;
+};
+
 /* =========================
-   Create Exercise (Admin)
+   Create Exercise (Staff/Admin)
 ========================= */
-export async function createExercise(
-  data: {
-    title: string;
-    points: string[];
-    videoUrl: string;
-  },
-  token?: string
-) {
+export async function createExercise(data: CreateExercisePayload, token?: string) {
   return serverFetch<{
     success: boolean;
     message?: string;
@@ -29,47 +45,50 @@ export async function createExercise(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : ""
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify(data)
   });
 }
 
 /* =========================
-   Get All Exercises (Public)
+   Get Exercises (Auth required)
 ========================= */
-export async function getExercises(params: { page?: number; limit?: number } = {}) {
+export async function getExercises(
+  params: {
+    isActive?: boolean;
+    difficulty?: string;
+    equipment?: string;
+    muscleGroup?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {},
+  token?: string
+) {
   const query = buildQueryString(params);
 
   return serverFetch<{
     success: boolean;
     count?: number;
     data: Exercise[];
-  }>(`${API_ENDPOINTS.EXERCISES.BASE}${query}`);
+  }>(`${API_ENDPOINTS.EXERCISES.BASE}${query}`, {}, token);
 }
 
 /* =========================
    Get Single Exercise
 ========================= */
-export async function getExerciseById(id: string) {
+export async function getExerciseById(id: string, token?: string) {
   return serverFetch<{
     success: boolean;
     data: Exercise;
-  }>(`${API_ENDPOINTS.EXERCISES.BASE}/${id}`);
+  }>(`${API_ENDPOINTS.EXERCISES.BASE}/${id}`, {}, token);
 }
 
 /* =========================
-   Update Exercise (Admin)
+   Update Exercise (Staff/Admin)
 ========================= */
-export async function updateExercise(
-  id: string,
-  data: {
-    title?: string;
-    points?: string[];
-    videoUrl?: string;
-  },
-  token?: string
-) {
+export async function updateExercise(id: string, data: UpdateExercisePayload, token?: string) {
   if (!token) {
     return {
       success: false,
@@ -93,7 +112,7 @@ export async function updateExercise(
 }
 
 /* =========================
-   Delete Exercise (Admin)
+   Delete Exercise (Staff/Admin)
 ========================= */
 export async function deleteExercise(id: string, token?: string) {
   if (!token) {

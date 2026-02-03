@@ -1,0 +1,68 @@
+import apiClient from "../../axios";
+import { API_ENDPOINTS } from "../../constants/constants";
+
+export type Difficulty = "Beginner" | "Intermediate" | "Advanced" | string;
+export type WorkoutType = "Strength" | "Cardio" | "Weight Loss" | string;
+
+export type WorkoutExerciseInput = {
+  exerciseId: string;
+  sets: number;
+  reps: number;
+  restInSeconds: number;
+  order: number;
+};
+
+export type WorkoutExercise = WorkoutExerciseInput & {
+  _id?: string;
+};
+
+export type Workout = {
+  _id: string;
+  title: string;
+  description?: string;
+  difficulty: Difficulty;
+  type: WorkoutType;
+  isActive: boolean;
+  isPublic: boolean;
+  exercises: WorkoutExercise[];
+  createdBy?: string | { _id: string; firstName?: string; lastName?: string; email?: string };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchWorkouts(params: Record<string, string | boolean | undefined> = {}) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUTS.BASE, { params });
+  return res.data as { success: boolean; data: Workout[]; count?: number };
+}
+
+export async function fetchWorkoutById(id: string) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUTS.BY_ID(id));
+  return res.data as { success: boolean; data: Workout };
+}
+
+export async function createWorkout(data: {
+  title: string;
+  description?: string;
+  difficulty: Difficulty;
+  type: WorkoutType;
+  isPublic: boolean;
+  exercises: WorkoutExerciseInput[];
+}) {
+  const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.BASE, data);
+  return res.data as { success: boolean; message?: string; data: Workout };
+}
+
+export async function assignWorkout(workoutId: string, userIds: string[]) {
+  const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.ASSIGN(workoutId), { userIds });
+  return res.data as { success: boolean; message?: string; data?: Workout };
+}
+
+export async function deleteWorkout(workoutId: string) {
+  const res = await apiClient.delete(API_ENDPOINTS.WORKOUTS.BY_ID(workoutId));
+  return res.data as { success: boolean; message?: string };
+}
+
+export async function fetchWorkoutStats(params: Record<string, string> = {}) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.STATS, { params });
+  return res.data as { success: boolean; data: any };
+}

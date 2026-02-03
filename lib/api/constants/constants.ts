@@ -105,8 +105,18 @@ export const API_ENDPOINTS = {
     GET_BY_USER: "/attendance/user"
   },
   EXERCISES: {
-    BASE: "/exercises",
-    RUN_DAILY: "/exercises",
-    ALL: "/exercises"
+    // v2 endpoints (JWT protected)
+    BASE: "/exercises-new",
+    ALL: "/exercises-new"
+  },
+  WORKOUTS: {
+    BASE: "/workouts",
+    BY_ID: (id: string) => `/workouts/${id}`,
+    ASSIGN: (id: string) => `/workouts/${id}/assign`,
+    ASSIGNED: "/workouts/assigned"
+  },
+  WORKOUT_LOGS: {
+    BASE: "/workout-logs",
+    STATS: "/workout-logs/stats"
   }
 } as const;

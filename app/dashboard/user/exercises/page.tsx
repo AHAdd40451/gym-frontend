@@ -1,12 +1,21 @@
 import React from "react";
-import { getExercises } from "@/lib/api/services/getexercises/exercises";
-import type { Exercise } from "@/lib/api/services/getexercises/exercises";
+import { getExercises, type Exercise } from "@/lib/api/services/getexercises/exercises";
+import { getServerAuth } from "@/lib/api/services/auth/server";
 import ExerciseCards from "./ExerciseCards";
 
 const ExercisesPage = async () => {
-  const res = await getExercises({ page: 1, limit: 20 });
+  const { token } = await getServerAuth();
 
-  if (!res.data || res.error) {
+  if (!token) {
+    return <p className="text-center mt-10">You must be signed in to view exercises.</p>;
+  }
+
+  const res = await getExercises(
+    { isActive: true, limit: 30, page: 1 },
+    token
+  );
+
+  if (!res.data || res.error || !res.data.data) {
     return <p className="text-center mt-10">Failed to load exercises ❌</p>;
   }
 
