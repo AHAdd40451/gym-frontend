@@ -190,6 +190,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <span className="font-semibold">GYM MANAGEMENT</span>
               <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
+                  
+                  <span className="font-semibold">GYM MANAGEMENT</span>
+                  {/*   <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              {/* <DropdownMenuContent
+                className="mt-4 w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                side={isMobile ? "bottom" : "right"}
+                align="end"
+                sideOffset={4}>
+                <DropdownMenuLabel>Projects</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex items-center gap-3">
+                  <div className="flex size-8 items-center justify-center rounded-md border">
+                    <ShoppingBagIcon className="text-muted-foreground size-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">E-commerce</span>
+                    <span className="text-xs text-green-700">Active</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-3">
+                  <div className="flex size-8 items-center justify-center rounded-md border">
+                    <UserCircle2Icon className="text-muted-foreground size-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Blog Platform</span>
+                    <span className="text-muted-foreground text-xs">Inactive</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <Button className="w-full">
+                  <PlusIcon />
+                  New Project
+                </Button>
+              </DropdownMenuContent> */}
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

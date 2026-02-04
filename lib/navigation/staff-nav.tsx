@@ -31,7 +31,8 @@ import {
   DumbbellIcon,
   FileTextIcon,
   BellIcon,
-  BarChart3Icon
+  BarChart3Icon,
+  SettingsIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -119,6 +120,11 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/exercises",
         icon: DumbbellIcon
       },
+      {
+        title: "Settings",
+        href: "/dashboard/user/settings",
+        icon: SettingsIcon
+      }
       // {
       //   title: "Personal Training",
       //   href: "/dashboard/staff/training",
