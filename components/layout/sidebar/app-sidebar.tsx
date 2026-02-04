@@ -65,10 +65,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
                   
                   <span className="font-semibold">GYM MANAGEMENT</span>
-                  <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
+                  {/*   <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
+              {/* <DropdownMenuContent
                 className="mt-4 w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
                 side={isMobile ? "bottom" : "right"}
                 align="end"
@@ -98,7 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <PlusIcon />
                   New Project
                 </Button>
-              </DropdownMenuContent>
+              </DropdownMenuContent> */}
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>

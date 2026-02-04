@@ -207,12 +207,29 @@ export default function Page() {
       }
 
       const res = await usersApi.getById(String(userId));
-      const freshUser = extractUserFromUsersApiResponse(res);
-
-      if (freshUser) {
-        setUser(freshUser);
-        updateAccountInLocalStorage(freshUser);
+      let freshUser = extractUserFromUsersApiResponse(res);
+      if (!freshUser) {
+        freshUser = {
+          ...(user as any),
+          firstName: updateData.firstName,
+          lastName: updateData.lastName,
+          email: updateData.email,
+          bio: updateData.bio,
+          urls: updateData.urls,
+        };
       }
+
+      setUser(freshUser as any);
+      updateAccountInLocalStorage(freshUser);
+
+      form.reset({
+        username: `${freshUser.firstName ?? ""} ${freshUser.lastName ?? ""}`.trim(),
+        email: freshUser.email ?? "",
+        bio: freshUser.bio ?? "",
+        urls: Array.isArray(freshUser.urls) ? freshUser.urls.map((val: string) => ({ value: val })) : [],
+      });
+
+      if (files[0]?.id) removeFile(files[0].id);
 
       toast.success("Profile updated successfully!");
     } catch (error: any) {

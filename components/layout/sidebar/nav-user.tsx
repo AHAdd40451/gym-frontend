@@ -20,6 +20,7 @@ import {
 import { BellIcon, CreditCardIcon, LogOutIcon, UserCircle2Icon } from "lucide-react";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { logoutAction } from "@/lib/api/services/auth/actions";
+import { useAuth } from "@/lib/api/services/auth/context";
 import Link from "next/link";
 
 type AuthUser = {
@@ -34,17 +35,36 @@ type AuthUser = {
 
 const DEFAULT_AVATAR = "/images/avatars/01.png";
 
+function getStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem("currentUser") || localStorage.getItem("auth-user");
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const { user: contextUser } = useAuth();
+  const [localUser, setLocalUser] = useState<AuthUser | null>(() => getStoredUser());
+
+  const authUser = contextUser ?? localUser;
 
   useEffect(() => {
-    const stored =
-      typeof window !== "undefined"
-        ? localStorage.getItem("currentUser") || localStorage.getItem("auth-user")
-        : null;
+    if (contextUser) setLocalUser(contextUser as AuthUser);
+  }, [contextUser]);
 
-    if (stored) setAuthUser(JSON.parse(stored));
+  useEffect(() => {
+    const onUserUpdated = () => setLocalUser(getStoredUser());
+    window.addEventListener("userUpdated", onUserUpdated);
+    window.addEventListener("auth-changed", onUserUpdated);
+    return () => {
+      window.removeEventListener("userUpdated", onUserUpdated);
+      window.removeEventListener("auth-changed", onUserUpdated);
+    };
   }, []);
 
   const displayName = useMemo(() => {
