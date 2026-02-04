@@ -7,7 +7,7 @@ type CurrentUser = { id: string };
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const CELL = 12; // 🔥 single source of truth
+const CELL = 12; 
 
 const getColor = (count: number) =>
   count === 1 ? "bg-[#39d353]" : "bg-[#161b22]";

@@ -102,7 +102,9 @@ export const API_ENDPOINTS = {
     CREATE: "/attendance/mark",
     RUN_DAILY: "/attendance/mark",
     ALL: "/attendance/all",
-    GET_BY_USER: "/attendance/user"
+    GET_BY_USER: "/attendance/user",
+    CHECK_TODAY: "/attendance/today",
+
   },
   EXERCISES: {
     // v2 endpoints (JWT protected)
