@@ -47,7 +47,7 @@ export default async function UserWorkoutsPage() {
   }
 
   const res = await serverFetch<{ success: boolean; data: Workout[] }>(
-    API_ENDPOINTS.WORKOUTS.ASSIGNED,
+    API_ENDPOINTS.WORKOUTS.BASE,
     {},
     token
   );
@@ -59,8 +59,8 @@ export default async function UserWorkoutsPage() {
       <div className="p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Today's workouts</CardTitle>
-            <CardDescription>No workouts assigned yet.</CardDescription>
+            <CardTitle>Workouts</CardTitle>
+            <CardDescription>No workouts available yet. Check back later.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -70,9 +70,9 @@ export default async function UserWorkoutsPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">Today's workouts</h1>
+        <h1 className="text-2xl font-semibold">Available Workouts</h1>
         <p className="text-sm text-muted-foreground">
-          Plans assigned to you by your coach. Start a session and log your sets.
+          All available workouts. Select a workout to start your session and log your sets.
         </p>
       </div>
 
@@ -89,9 +89,9 @@ export default async function UserWorkoutsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-xs text-muted-foreground">
-                Assigned {formatDistanceToNow(new Date(workout.createdAt), { addSuffix: true })} by{" "}
+                Created {formatDistanceToNow(new Date(workout.createdAt), { addSuffix: true })} by{" "}
                 {[workout.createdBy?.firstName, workout.createdBy?.lastName].filter(Boolean).join(" ") ||
-                  "Coach"}
+                  "Staff"}
               </div>
               <Separator />
               <div className="space-y-2">

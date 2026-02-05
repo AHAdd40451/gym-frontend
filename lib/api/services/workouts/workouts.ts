@@ -22,6 +22,7 @@ export type Workout = {
   description?: string;
   difficulty: Difficulty;
   type: WorkoutType;
+  day?: string;
   isActive: boolean;
   isPublic: boolean;
   exercises: WorkoutExercise[];
@@ -45,11 +46,24 @@ export async function createWorkout(data: {
   description?: string;
   difficulty: Difficulty;
   type: WorkoutType;
-  isPublic: boolean;
+  day: string;
   exercises: WorkoutExerciseInput[];
 }) {
   const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.BASE, data);
   return res.data as { success: boolean; message?: string; data: Workout };
+}
+
+export async function fetchWorkoutsByDay(day: string) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUTS.BY_DAY(day));
+  return res.data as { success: boolean; data: Workout[]; count?: number; day?: string };
+}
+
+export async function checkoutWorkout(workoutId: string, selectedExerciseIds?: string[]) {
+  const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.CHECKOUT, {
+    workoutId,
+    selectedExerciseIds
+  });
+  return res.data as { success: boolean; message?: string; data: any };
 }
 
 export async function assignWorkout(workoutId: string, userIds: string[]) {
@@ -65,4 +79,9 @@ export async function deleteWorkout(workoutId: string) {
 export async function fetchWorkoutStats(params: Record<string, string> = {}) {
   const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.STATS, { params });
   return res.data as { success: boolean; data: any };
+}
+
+export async function fetchTodayUserActivities(params: { userId?: string; date?: string } = {}) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.TODAY, { params });
+  return res.data as { success: boolean; data: any[]; count?: number; date?: string };
 }

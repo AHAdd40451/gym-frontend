@@ -17,13 +17,10 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 const defaultState = {
-  name: "",
   description: "",
   muscleGroup: "",
   equipment: "Barbell",
-  difficulty: "Beginner",
-  videoUrl: "",
-  imageUrl: ""
+  difficulty: "Beginner"
 };
 
 export default function AddExerciseForm() {
@@ -35,23 +32,29 @@ export default function AddExerciseForm() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) {
-      toast.error("Name is required");
+    if (!form.muscleGroup.trim()) {
+      toast.error("Muscle group is required (e.g., Chest, Bicep)");
       return;
     }
     setSaving(true);
     try {
+      // Use first muscle group as name (e.g., "Chest", "Bicep")
+      const muscleGroups = form.muscleGroup
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean);
+      
+      if (muscleGroups.length === 0) {
+        toast.error("Please enter at least one muscle group");
+        return;
+      }
+      
       const payload = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        muscleGroup: form.muscleGroup
-          .split(",")
-          .map((m) => m.trim())
-          .filter(Boolean),
+        name: muscleGroups[0], // Use first muscle group as exercise name
+        description: form.description.trim() || `${muscleGroups[0]} exercise`,
+        muscleGroup: muscleGroups,
         equipment: form.equipment,
-        difficulty: form.difficulty,
-        videoUrl: form.videoUrl.trim() || undefined,
-        imageUrl: form.imageUrl.trim() || undefined
+        difficulty: form.difficulty
       };
       const res = await apiClient.post(API_ENDPOINTS.EXERCISES.BASE, payload);
       if (res?.data?.success) {
@@ -70,30 +73,29 @@ export default function AddExerciseForm() {
   return (
     <Card className="border border-border/70 shadow-sm">
       <CardHeader>
-        <CardTitle>Add exercise</CardTitle>
-        <CardDescription>Create a new exercise and reuse it in workouts.</CardDescription>
+        <CardTitle>Create Exercise</CardTitle>
+        <CardDescription>Add exercises that can be used in workout plans.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Name</label>
-            <Input value={form.name} onChange={(e) => handleChange("name", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Muscle groups (comma separated)</label>
-            <Input
-              value={form.muscleGroup}
-              onChange={(e) => handleChange("muscleGroup", e.target.value)}
-              placeholder="Chest, Shoulders"
-            />
-          </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Muscle Group (e.g., Chest, Bicep, Legs)</label>
+          <Input
+            value={form.muscleGroup}
+            onChange={(e) => handleChange("muscleGroup", e.target.value)}
+            placeholder="Chest"
+            required
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            For multiple muscle groups, use comma: "Chest, Shoulders"
+          </p>
         </div>
         <div className="space-y-1">
-          <label className="text-sm font-medium">Description</label>
+          <label className="text-sm font-medium">Description (optional)</label>
           <Textarea
-            rows={3}
+            rows={2}
             value={form.description}
             onChange={(e) => handleChange("description", e.target.value)}
+            placeholder="Exercise description..."
           />
         </div>
         <div className="grid gap-3 md:grid-cols-3">
@@ -126,24 +128,6 @@ export default function AddExerciseForm() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Video URL (optional)</label>
-            <Input
-              value={form.videoUrl}
-              onChange={(e) => handleChange("videoUrl", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Image URL (optional)</label>
-            <Input
-              value={form.imageUrl}
-              onChange={(e) => handleChange("imageUrl", e.target.value)}
-              placeholder="https://..."
-            />
           </div>
         </div>
         <Button onClick={handleSubmit} disabled={saving} className="w-fit">

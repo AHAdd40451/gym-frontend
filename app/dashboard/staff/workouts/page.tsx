@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
-  Activity,
-  Dumbbell,
-  Sparkles,
   Flame,
   Clock,
   BookOpen,
-  BarChart3,
   CheckCircle2,
   Plus,
   Trash2,
   ArrowUp,
   ArrowDown,
-  Users,
   ShieldCheck,
-  LineChart,
   ListChecks
 } from "lucide-react";
 import Link from "next/link";
@@ -40,10 +34,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -54,7 +46,6 @@ import {
 import apiClient from "@/lib/api/axios";
 import { API_ENDPOINTS } from "@/lib/api/constants/constants";
 import {
-  assignWorkout,
   createWorkout,
   deleteWorkout,
   fetchWorkouts
@@ -93,59 +84,30 @@ type WorkoutPlan = {
   description: string;
   difficulty: Difficulty;
   type: WorkoutType;
+  day: string;
   createdBy: string;
-  isActive: boolean;
-  isPublic: boolean;
   exercises: WorkoutExercise[];
   createdAt: string;
   updatedAt: string;
 };
 
-type ExerciseLog = {
-  _id: string;
-  userId: string;
-  workoutId: string;
-  exercises: {
-    exerciseId: string;
-    sets: {
-      reps: number;
-      weight: number;
-      completed: boolean;
-    }[];
-    notes?: string;
-  }[];
-  totalDurationInMinutes: number;
-  caloriesBurned: number;
-  notes?: string;
-  performedAt: string;
-  createdAt: string;
-  updatedAt: string;
-};
 
 type BuilderForm = {
   title: string;
   description: string;
   difficulty: Difficulty;
   type: WorkoutType;
-  isActive: boolean;
-  isPublic: boolean;
+  day: string;
   exercises: WorkoutExercise[];
 };
 
-type Member = {
-  _id: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-};
 
 const initialBuilderState: BuilderForm = {
   title: "",
   description: "",
   difficulty: "Intermediate",
   type: "Strength",
-  isActive: true,
-  isPublic: true,
+  day: "Monday",
   exercises: []
 };
 
@@ -164,7 +126,6 @@ const typeTone: Record<WorkoutType, string> = {
 export default function WorkoutsPage() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutPlan[]>([]);
-  const [workoutLogs, setWorkoutLogs] = useState<ExerciseLog[]>([]);
   const [builder, setBuilder] = useState<BuilderForm>(initialBuilderState);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>("");
   const [exerciseInputs, setExerciseInputs] = useState({ sets: 3, reps: 10, restInSeconds: 60 });
@@ -172,12 +133,6 @@ export default function WorkoutsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>("");
-  const [assigning, setAssigning] = useState(false);
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [reloading, setReloading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const normalizeWorkout = (plan: any): WorkoutPlan => {
@@ -202,8 +157,7 @@ export default function WorkoutsPage() {
       description: plan.description || "",
       difficulty: plan.difficulty,
       type: plan.type,
-      isActive: plan.isActive ?? true,
-      isPublic: plan.isPublic ?? false,
+      day: plan.day || "Monday",
       exercises,
       createdBy: creator,
       createdAt: plan.createdAt || new Date().toISOString(),
@@ -215,14 +169,9 @@ export default function WorkoutsPage() {
     try {
       setLoading(true);
 
-      const [exRes, woRes, logsRes, usersRes] = await Promise.all([
+      const [exRes, woRes] = await Promise.all([
         apiClient.get(API_ENDPOINTS.EXERCISES.BASE, { params: { isActive: true, limit: 100 } }),
-        fetchWorkouts({}),
-        apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE).catch(() => ({ data: { data: [] } })),
-        // try main users list; fallback to role endpoint if API supports it
-        apiClient
-          .get(API_ENDPOINTS.USERS.BASE, { params: { role: "user", limit: 100 } })
-          .catch(() => ({ data: { users: [] } }))
+        fetchWorkouts({})
       ]);
 
       const exercises = exRes.data?.data ?? [];
@@ -233,42 +182,6 @@ export default function WorkoutsPage() {
 
       const workoutsFromApi = Array.isArray(woRes?.data) ? woRes.data.map(normalizeWorkout) : [];
       setWorkouts(workoutsFromApi);
-      if (!selectedWorkoutId && workoutsFromApi.length > 0) {
-        setSelectedWorkoutId(workoutsFromApi[0]._id);
-      }
-
-      const logs = logsRes?.data?.data ?? [];
-      setWorkoutLogs(logs);
-
-      const usersPayload = usersRes?.data;
-      const users =
-        (Array.isArray(usersPayload?.users) && usersPayload.users) ||
-        (Array.isArray(usersPayload?.data?.users) && usersPayload.data.users) ||
-        (Array.isArray(usersPayload?.data) && usersPayload.data) ||
-        [];
-
-      // if still empty, try role-specific endpoint
-      if (users.length === 0) {
-        try {
-          const alt = await apiClient.get(`${API_ENDPOINTS.USERS.BY_ROLE}/user`, {
-            params: { limit: 100 }
-          });
-          const altData =
-            (Array.isArray(alt?.data?.users) && alt.data.users) ||
-            (Array.isArray(alt?.data?.data) && alt.data.data) ||
-            [];
-          if (altData.length) {
-            setMembers(altData);
-          } else {
-            setMembers([]);
-          }
-        } catch {
-          setMembers([]);
-        }
-      } else {
-        setMembers(users);
-      }
-      setMembers(users);
     } catch (error: any) {
       console.error("Failed to load workouts", error);
       toast.error("Could not load workouts", {
@@ -276,7 +189,6 @@ export default function WorkoutsPage() {
       });
     } finally {
       setLoading(false);
-      setReloading(false);
     }
   };
 
@@ -291,11 +203,6 @@ export default function WorkoutsPage() {
     }
   }, [exerciseLibrary, selectedExerciseId]);
 
-  useEffect(() => {
-    if (!selectedWorkoutId && workouts.length > 0) {
-      setSelectedWorkoutId(workouts[0]._id);
-    }
-  }, [workouts, selectedWorkoutId]);
 
   const exerciseLookup = useMemo(
     () =>
@@ -306,35 +213,7 @@ export default function WorkoutsPage() {
     [exerciseLibrary]
   );
 
-  const workoutLookup = useMemo(
-    () =>
-      workouts.reduce((acc, workout) => {
-        acc[workout._id] = workout;
-        return acc;
-      }, {} as Record<string, WorkoutPlan>),
-    [workouts]
-  );
 
-  const activeWorkouts = useMemo(() => workouts.filter((w) => w.isActive), [workouts]);
-  const publicWorkouts = useMemo(() => workouts.filter((w) => w.isPublic), [workouts]);
-
-  const stats = useMemo(
-    () => ({
-      totalWorkouts: workouts.length,
-      activeWorkouts: activeWorkouts.length,
-      publicWorkouts: publicWorkouts.length,
-      totalExercises: exerciseLibrary.length,
-      logSessions: workoutLogs.length,
-      avgDuration:
-        workoutLogs.length === 0
-          ? 0
-          : Math.round(
-              workoutLogs.reduce((acc, log) => acc + log.totalDurationInMinutes, 0) /
-              workoutLogs.length
-            )
-    }),
-    [workouts, activeWorkouts, publicWorkouts, exerciseLibrary, workoutLogs]
-  );
 
   const addExerciseToPlan = () => {
     if (!selectedExerciseId) {
@@ -424,7 +303,7 @@ export default function WorkoutsPage() {
         description: builder.description,
         difficulty: builder.difficulty,
         type: builder.type,
-        isPublic: builder.isPublic,
+        day: builder.day,
         exercises: builder.exercises.map((ex) => ({
           exerciseId: ex.exerciseId,
           sets: ex.sets,
@@ -464,8 +343,7 @@ export default function WorkoutsPage() {
       description: plan.description,
       difficulty: plan.difficulty,
       type: plan.type,
-      isActive: plan.isActive,
-      isPublic: plan.isPublic,
+      day: (plan as any).day || "Monday",
       exercises: plan.exercises.map((ex) => ({ ...ex }))
     });
 
@@ -479,11 +357,6 @@ export default function WorkoutsPage() {
     setPreviewOpen(true);
   };
 
-  const sharePlan = (plan: WorkoutPlan) => {
-    setSelectedWorkoutId(plan._id);
-    setSelectedMembers(new Set());
-    setAssignModalOpen(true);
-  };
 
   const handleDeleteWorkout = async (id: string) => {
     if (!id) return;
@@ -505,12 +378,6 @@ export default function WorkoutsPage() {
     }
   };
 
-  const workoutsByTab: Record<string, WorkoutPlan[]> = {
-    active: activeWorkouts,
-    public: publicWorkouts,
-    all: workouts
-  };
-
   if (loading) {
     return <div className="p-6 text-sm text-muted-foreground">Loading workouts...</div>;
   }
@@ -523,7 +390,7 @@ export default function WorkoutsPage() {
             
             <CardTitle className="text-3xl font-semibold">Workout plans</CardTitle>
             <CardDescription className="max-w-2xl">
-              Build plans, assign to members, and keep logs clean. All calls go through the API proxy.
+              Create workout plans and assign them to specific days. All workouts are visible to users.
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -543,8 +410,7 @@ export default function WorkoutsPage() {
               Build a workout plan
             </CardTitle>
             <CardDescription>
-              Add the plan metadata, embed exercises (order, sets, reps, rest), choose visibility, and
-              keep everything aligned with the Workout collection.
+              Add the plan metadata, embed exercises (order, sets, reps, rest), and assign to a day.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -614,8 +480,25 @@ export default function WorkoutsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-               
-             
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Day</label>
+                  <Select
+                    value={builder.day}
+                    onValueChange={(value) =>
+                      setBuilder((prev) => ({ ...prev, day: value }))
+                    }>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pick a day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                        <SelectItem key={day} value={day}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator />
@@ -781,111 +664,6 @@ export default function WorkoutsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border/70 shadow-sm">
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedWorkoutId}
-                onValueChange={(val) => setSelectedWorkoutId(val)}
-                disabled={!workouts.length}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Select workout" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workouts.map((w) => (
-                    <SelectItem key={w._id} value={w._id}>
-                      {w.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                disabled={!selectedWorkoutId || selectedMembers.size === 0 || assigning}
-                onClick={async () => {
-                  if (!selectedWorkoutId || selectedMembers.size === 0) return;
-                  try {
-                    setAssigning(true);
-                    const res = await assignWorkout(selectedWorkoutId, Array.from(selectedMembers));
-                    if (res?.success) {
-                      toast.success("Workout assigned", {
-                        description: res.message || `${selectedMembers.size} members updated`
-                      });
-                    } else {
-                      toast.error("Assignment failed", { description: res?.message || "Try again." });
-                    }
-                  } catch (error: any) {
-                    toast.error("Assignment failed", { description: error?.message || "Check API/token." });
-                  } finally {
-                    setAssigning(false);
-                  }
-                }}>
-                {assigning ? "Assigning..." : "Assign"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {members.length === 0 ? (
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>No members found. Click refresh after you create/seed users.</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => load()}>
-                    Refresh
-                  </Button>
-                  <Button size="sm" asChild>
-                    <Link href="/dashboard/staff/exercises">Add exercises</Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const el = document.getElementById("workout-builder");
-                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}>
-                    Create workout
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <ScrollArea className="max-h-[420px] pr-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {members.map((m) => {
-                    const fullName = [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || m._id;
-                    const checked = selectedMembers.has(m._id);
-                    return (
-                      <label
-                        key={m._id}
-                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition ${
-                          checked ? "border-[var(--primary)] bg-[var(--primary)]/5" : "border-border/60 bg-muted/30"
-                        }`}>
-                        <div className="space-y-1">
-                          <p className="font-semibold leading-tight">{fullName}</p>
-                          <p className="text-xs text-muted-foreground">{m.email}</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 accent-[var(--primary)]"
-                          checked={checked}
-                          onChange={(e) => {
-                            setSelectedMembers((prev) => {
-                              const next = new Set(prev);
-                              if (e.target.checked) {
-                                next.add(m._id);
-                              } else {
-                                next.delete(m._id);
-                              }
-                              return next;
-                            });
-                          }}
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
 
         <Card className="border border-border/70 shadow-sm">
           <CardHeader>
@@ -949,102 +727,20 @@ export default function WorkoutsPage() {
                 <ShieldCheck className="size-5 text-[var(--primary)]" />
                 Workout library
               </CardTitle>
-              <CardDescription>Plans saved in the Workout collection, ready to assign.</CardDescription>
+              <CardDescription>All created workout plans are visible to users.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Tabs defaultValue="active">
-              
-
-              {["active", "public", "all"].map((tab) => (
-                <TabsContent key={tab} value={tab} className="pt-4">
-                  {renderWorkoutGrid(
-                    workoutsByTab[tab],
-                    exerciseLookup,
-                    difficultyTone,
-                    typeTone,
-                    openPreview,
-                    loadAsTemplate,
-                    sharePlan,
-                    handleDeleteWorkout,
-                    deletingId
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/70 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="size-5 text-[var(--primary)]" />
-              Recent workout logs
-            </CardTitle>
-            <CardDescription>User Exercise Log Activity entries, newest first.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-[520px] pr-3">
-              <div className="space-y-3">
-                {workoutLogs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No workout logs yet. Users will appear here after they log sessions.
-                  </p>
-                ) : (
-                  workoutLogs.map((log) => {
-                    const workout = workoutLookup[log.workoutId];
-                    const totalSets = log.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
-                    const userIdDisplay = typeof log.userId === "object" && log.userId !== null
-                      ? (() => {
-                          const user = log.userId as any;
-                          if (user.firstName || user.lastName) {
-                            return [user.firstName, user.lastName].filter(Boolean).join(" ") || user._id || String(user);
-                          }
-                          return user._id || user.email || String(user);
-                        })()
-                      : log.userId || "Unknown";
-                    return (
-                      <div key={log._id} className="rounded-lg border border-border/70 bg-muted/30 p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="font-semibold leading-tight">
-                              {workout?.title || "Workout"} | {userIdDisplay}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Performed {formatDistanceToNow(new Date(log.performedAt), { addSuffix: true })}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {log.totalDurationInMinutes} min
-                          </Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <ListChecks className="size-4" />
-                            {totalSets} sets
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Flame className="size-4" />
-                            {log.caloriesBurned} kcal
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="size-4" />
-                            {format(new Date(log.performedAt), "MMM d, HH:mm")}
-                          </span>
-                        </div>
-                        {log.notes ? (
-                          <p className="mt-2 text-sm text-foreground italic">"{log.notes}"</p>
-                        ) : null}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
-            <Separator className="my-4" />
-            <div className="space-y-2">
-            
-            </div>
+            {renderWorkoutGrid(
+              workouts,
+              exerciseLookup,
+              difficultyTone,
+              typeTone,
+              openPreview,
+              loadAsTemplate,
+              handleDeleteWorkout,
+              deletingId
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1063,8 +759,9 @@ export default function WorkoutsPage() {
               <div className="flex flex-wrap gap-2">
                 <Badge className={difficultyTone[previewPlan.difficulty]}>{previewPlan.difficulty}</Badge>
                 <Badge className={typeTone[previewPlan.type]}>{previewPlan.type}</Badge>
-                <Badge variant="outline">{previewPlan.isActive ? "Active" : "Paused"}</Badge>
-                <Badge variant="outline">{previewPlan.isPublic ? "Public" : "Private"}</Badge>
+                {(previewPlan as any).day && (
+                  <Badge variant="outline">{(previewPlan as any).day}</Badge>
+                )}
               </div>
               <Separator />
               <div className="space-y-3">
@@ -1109,169 +806,7 @@ export default function WorkoutsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="size-5 text-[var(--primary)]" />
-              Assign workout
-            </DialogTitle>
-        
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold">Workout</p>
-              <Select
-                value={selectedWorkoutId}
-                onValueChange={(val) => setSelectedWorkoutId(val)}
-                disabled={!workouts.length}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select workout" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workouts.map((w) => (
-                    <SelectItem key={w._id} value={w._id}>
-                      {w.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-semibold">Members</p>
-              {members.length === 0 ? (
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>No members found. Click refresh after you create/seed users.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => load()}>
-                      Refresh
-                    </Button>
-                    <Button size="sm" asChild>
-                      <Link href="/dashboard/staff/exercises">Add exercises</Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const el = document.getElementById("workout-builder");
-                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                        setAssignModalOpen(false);
-                      }}>
-                      Create workout
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <ScrollArea className="max-h-[320px] pr-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {members.map((m) => {
-                      const fullName =
-                        [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || m._id;
-                      const checked = selectedMembers.has(m._id);
-                      return (
-                        <label
-                          key={m._id}
-                          className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition ${
-                            checked
-                              ? "border-[var(--primary)] bg-[var(--primary)]/5"
-                              : "border-border/60 bg-muted/30"
-                          }`}>
-                          <div className="space-y-1">
-                            <p className="font-semibold leading-tight">{fullName}</p>
-                            <p className="text-xs text-muted-foreground">{m.email}</p>
-                          </div>
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-[var(--primary)]"
-                            checked={checked}
-                            onChange={(e) => {
-                              setSelectedMembers((prev) => {
-                                const next = new Set(prev);
-                                if (e.target.checked) {
-                                  next.add(m._id);
-                                } else {
-                                  next.delete(m._id);
-                                }
-                                return next;
-                              });
-                            }}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setAssignModalOpen(false);
-                  setSelectedMembers(new Set());
-                }}>
-                Cancel
-              </Button>
-              <Button
-                disabled={!selectedWorkoutId || selectedMembers.size === 0 || assigning}
-                onClick={async () => {
-                  if (!selectedWorkoutId || selectedMembers.size === 0) return;
-                  try {
-                    setAssigning(true);
-                    const res = await assignWorkout(selectedWorkoutId, Array.from(selectedMembers));
-                    if (res?.success) {
-                      toast.success("Workout assigned", {
-                        description: res.message || `${selectedMembers.size} members updated`
-                      });
-                      setAssignModalOpen(false);
-                      setSelectedMembers(new Set());
-                    } else {
-                      toast.error("Assignment failed", { description: res?.message || "Try again." });
-                    }
-                  } catch (error: any) {
-                    toast.error("Assignment failed", { description: error?.message || "Check API/token." });
-                  } finally {
-                    setAssigning(false);
-                  }
-                }}>
-                {assigning ? "Assigning..." : "Assign workout"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
-  );
-}
-
-type StatCardProps = {
-  title: string;
-  value: string | number;
-  helper: string;
-  icon: ReactNode;
-  accent?: string;
-};
-
-function StatCard({ title, value, helper, icon, accent }: StatCardProps) {
-  return (
-    <Card className="border border-border/70 bg-card/80 shadow-xs">
-      <CardContent className="flex items-start justify-between gap-3 p-4">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-2xl font-semibold leading-tight">{value}</p>
-          <p className="text-xs text-muted-foreground">{helper}</p>
-        </div>
-        <div
-          className={`rounded-full p-2 ${
-            accent || "bg-[var(--primary)]/12 text-[var(--primary)]"
-          }`}>
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -1282,7 +817,6 @@ function renderWorkoutGrid(
   typeTone: Record<WorkoutType, string>,
   openPreview: (plan: WorkoutPlan) => void,
   loadAsTemplate: (plan: WorkoutPlan) => void,
-  sharePlan: (plan: WorkoutPlan) => void,
   deletePlan: (id: string) => void,
   deletingId: string | null
 ) {
@@ -1302,12 +836,11 @@ function renderWorkoutGrid(
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={difficultyTone[plan.difficulty]}>{plan.difficulty}</Badge>
               <Badge className={typeTone[plan.type]}>{plan.type}</Badge>
-              <Badge variant="outline" className="text-xs">
-                {plan.isActive ? "Active" : "Paused"}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {plan.isPublic ? "Public" : "Private"}
-              </Badge>
+              {(plan as any).day && (
+                <Badge variant="outline" className="text-xs">
+                  {(plan as any).day}
+                </Badge>
+              )}
             </div>
             <CardTitle className="text-lg leading-tight">{plan.title}</CardTitle>
             <CardDescription className="line-clamp-2">{plan.description}</CardDescription>
@@ -1348,9 +881,6 @@ function renderWorkoutGrid(
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => openPreview(plan)}>
                   Preview
-                </Button>
-                <Button size="sm" onClick={() => sharePlan(plan)}>
-                  Send to members
                 </Button>
                 <Button
                   size="sm"

@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Dumbbell, PlayCircle } from "lucide-react";
+import { Dumbbell, PlayCircle } from "lucide-react";
 import type { Exercise } from "@/lib/api/services/getexercises/exercises";
 
 interface Props {
@@ -60,12 +58,6 @@ const ExerciseCards = ({ exercises }: Props) => {
                 </Badge>
               ))}
             </div>
-
-            <Button variant="outline" size="sm" asChild className="w-full">
-              <Link href={`/dashboard/staff/exercises/${ex._id}`}>
-                View Details <ArrowRight className="size-4 ml-1" />
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       ))}

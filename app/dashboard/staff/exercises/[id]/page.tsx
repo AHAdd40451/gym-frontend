@@ -33,7 +33,6 @@ const ExerciseDetailPage = async ({ params }: PageProps) => {
             <h1 className="text-3xl font-bold">{exercise.name}</h1>
             <Badge variant="outline">{exercise.difficulty}</Badge>
             {exercise.equipment ? <Badge variant="secondary">{exercise.equipment}</Badge> : null}
-            {exercise.isActive === false && <Badge variant="destructive">Inactive</Badge>}
           </div>
 
           <p className="text-muted-foreground leading-relaxed">{exercise.description}</p>

@@ -95,7 +95,7 @@ export const userNavItems: NavGroup[] = [
       //   icon: ActivityIcon
       // },
       {
-        title: "Exercises",
+        title: "My Workout",
         href: "/dashboard/user/exercises",
         icon: DumbbellIcon
       },
@@ -104,11 +104,11 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user/attendance",
         icon: ClockIcon
       },
-      {
-        title: "Workout Plans",
-        href: "/dashboard/user/plans",
-        icon: ClipboardCheckIcon
-      }
+      // {
+      //   title: "Workout Plans",
+      //   href: "/dashboard/user/plans",
+      //   icon: ClipboardCheckIcon
+      // }
       // {
       //   title: "Favorites",
       //   href: "/dashboard/user/favorites",

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, Dumbbell, Play } from "lucide-react";
+import { Calendar, Dumbbell } from "lucide-react";
 import Link from "next/link";
 import {
   Card,
@@ -18,21 +18,6 @@ import { fetchWorkoutsByDay } from "@/lib/api/services/workouts/workouts";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-type Exercise = {
-  _id: string;
-  name: string;
-  muscleGroup?: string[];
-  equipment?: string;
-};
-
-type WorkoutExercise = {
-  exerciseId: string | Exercise;
-  sets: number;
-  reps: number;
-  restInSeconds: number;
-  order: number;
-};
-
 type Workout = {
   _id: string;
   title: string;
@@ -40,11 +25,11 @@ type Workout = {
   difficulty: string;
   type: string;
   day: string;
-  exercises: WorkoutExercise[];
+  exercises: any[];
   createdBy?: { firstName?: string; lastName?: string };
 };
 
-export default function UserExercisesPage() {
+export default function WorkoutsByDayPage() {
   const [selectedDay, setSelectedDay] = useState<string>(() => {
     const today = new Date().getDay();
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -77,21 +62,17 @@ export default function UserExercisesPage() {
     loadWorkouts(selectedDay);
   }, [selectedDay]);
 
-  const getExerciseName = (exercise: string | Exercise): string => {
-    if (typeof exercise === "string") return "Exercise";
-    return exercise.name || "Exercise";
-  };
 
   return (
     <div className="space-y-6 pb-10">
       <Card className="border-none bg-gradient-to-r from-[var(--primary)]/10 via-background to-background shadow-md">
         <CardHeader>
           <CardTitle className="text-3xl font-semibold flex items-center gap-2">
-            <Dumbbell className="size-6" />
-            My Workouts
+            <Calendar className="size-6" />
+            Weekly Workouts
           </CardTitle>
           <CardDescription>
-            View your workouts organized by day. Click on a workout to see exercises and start your session.
+            View workouts organized by day. Select a workout to see exercises and start your session.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -132,40 +113,15 @@ export default function UserExercisesPage() {
                         <CardDescription className="line-clamp-2">{workout.description}</CardDescription>
                       )}
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        {workout.exercises.slice(0, 3).map((ex, idx) => {
-                          return (
-                            <div
-                              key={idx}
-                              className="flex items-start justify-between rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-                              <div className="flex-1">
-                                <p className="font-semibold">{getExerciseName(ex.exerciseId)}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {ex.sets} x {ex.reps} reps • {ex.restInSeconds}s rest
-                                </p>
-                              </div>
-                              <Badge variant="outline" className="text-xs ml-2">
-                                #{ex.order}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                        {workout.exercises.length > 3 && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            +{workout.exercises.length - 3} more exercises
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
+                    <CardContent>
+                      <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Dumbbell className="size-3" />
                           <span>{workout.exercises.length} exercises</span>
                         </div>
                         <Button asChild size="sm">
                           <Link href={`/dashboard/user/workouts/${workout._id}`}>
-                            <Play className="size-4 mr-1" />
-                            Checkout
+                            Start Workout
                           </Link>
                         </Button>
                       </div>
@@ -180,3 +136,4 @@ export default function UserExercisesPage() {
     </div>
   );
 }
+

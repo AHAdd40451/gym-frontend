@@ -115,10 +115,13 @@ export const API_ENDPOINTS = {
     BASE: "/workouts",
     BY_ID: (id: string) => `/workouts/${id}`,
     ASSIGN: (id: string) => `/workouts/${id}/assign`,
-    ASSIGNED: "/workouts/assigned"
+    ASSIGNED: "/workouts/assigned",
+    BY_DAY: (day: string) => `/workouts/day/${day}`,
+    CHECKOUT: "/workouts/checkout"
   },
   WORKOUT_LOGS: {
     BASE: "/workout-logs",
-    STATS: "/workout-logs/stats"
+    STATS: "/workout-logs/stats",
+    TODAY: "/workout-logs/today"
   }
 } as const;
