@@ -136,14 +136,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/layout/logo";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { RoleBasedNavMain } from "@/lib/navigation/role-based-nav";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
 // Fake function to get current user role — replace with your auth logic
 function useCurrentUserRole() {
@@ -196,13 +189,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="hover:text-foreground cursor-pointer h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5"
             >
               <span className="font-semibold">GYM MANAGEMENT</span>
-              <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" />
+              {/* <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
                   
-                  <span className="font-semibold">GYM MANAGEMENT</span>
+                  {/* <span className="font-semibold">GYM MANAGEMENT</span> */}
                   {/*   <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
