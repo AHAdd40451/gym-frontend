@@ -65,6 +65,7 @@ export default function OrderStatusUpdate({
         toast.success("Order status updated successfully");
         setOpen(false);
         router.refresh();
+        router.push("/dashboard/admin/orders");
       } else {
         toast.error("Failed to update order status");
       }
