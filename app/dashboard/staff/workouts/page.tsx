@@ -965,7 +965,9 @@ export default function WorkoutsPage() {
                     typeTone,
                     openPreview,
                     loadAsTemplate,
-                    sharePlan
+                    sharePlan,
+                    handleDeleteWorkout,
+                    deletingId
                   )}
                 </TabsContent>
               ))}
@@ -992,12 +994,21 @@ export default function WorkoutsPage() {
                   workoutLogs.map((log) => {
                     const workout = workoutLookup[log.workoutId];
                     const totalSets = log.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+                    const userIdDisplay = typeof log.userId === "object" && log.userId !== null
+                      ? (() => {
+                          const user = log.userId as any;
+                          if (user.firstName || user.lastName) {
+                            return [user.firstName, user.lastName].filter(Boolean).join(" ") || user._id || String(user);
+                          }
+                          return user._id || user.email || String(user);
+                        })()
+                      : log.userId || "Unknown";
                     return (
                       <div key={log._id} className="rounded-lg border border-border/70 bg-muted/30 p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <p className="font-semibold leading-tight">
-                              {workout?.title || "Workout"} | {log.userId}
+                              {workout?.title || "Workout"} | {userIdDisplay}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Performed {formatDistanceToNow(new Date(log.performedAt), { addSuffix: true })}
@@ -1083,7 +1094,15 @@ export default function WorkoutsPage() {
                 })}
               </div>
               <div className="text-xs text-muted-foreground">
-                Created {format(new Date(previewPlan.createdAt), "MMM d, yyyy")} by {previewPlan.createdBy}
+                Created {format(new Date(previewPlan.createdAt), "MMM d, yyyy")} by {typeof previewPlan.createdBy === "object" && previewPlan.createdBy !== null
+                  ? (() => {
+                      const creator = previewPlan.createdBy as any;
+                      if (creator.firstName || creator.lastName) {
+                        return [creator.firstName, creator.lastName].filter(Boolean).join(" ") || creator._id || String(creator);
+                      }
+                      return creator._id || creator.email || String(creator);
+                    })()
+                  : previewPlan.createdBy || "Unknown"}
               </div>
             </>
           ) : null}
