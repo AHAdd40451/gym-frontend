@@ -83,7 +83,7 @@ const MembersPage = () => {
               //   onClick={() => userId && router.push(`/dashboard/staff/members/${userId}`)}
               //   className="cursor-pointer hover:shadow-lg transition"
               // >
-              <Card className="cursor-pointer transition hover:shadow-lg">
+              <Card key={sub._id || userId || (sub as any)?.id || `sub-${subs.indexOf(sub)}`} className="cursor-pointer transition hover:shadow-lg">
                 <CardContent className="flex flex-col items-center space-y-4 pt-6 pb-8">
                   <Avatar className="size-20">
                     <AvatarFallback>{userName[0]}</AvatarFallback>
