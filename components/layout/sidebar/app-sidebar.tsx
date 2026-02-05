@@ -136,6 +136,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/layout/logo";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { RoleBasedNavMain } from "@/lib/navigation/role-based-nav";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 // Fake function to get current user role — replace with your auth logic
 function useCurrentUserRole() {
