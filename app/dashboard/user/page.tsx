@@ -127,6 +127,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CalendarCheck, Dumbbell, User, Target, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -270,9 +271,11 @@ const UserDashboardContent = () => {
                   : "Mark Attendance"}
             </Button>
 
-            <Button className="w-full justify-start" variant="outline">
-              <User className="mr-2 h-4 w-4" />
-              My Profile
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link href="/dashboard/user/profile">
+                <User className="mr-2 h-4 w-4" />
+                My Profile
+              </Link>
             </Button>
           </CardContent>
         </Card>

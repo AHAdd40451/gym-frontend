@@ -43,7 +43,7 @@ type Pagination = {
   hasPrev?: boolean;
 };
 
-const LIMIT = 20;
+const LIMIT = 7;
 
 function normalizeNotifications(payload: any): Notification[] {
   const body = payload?.data ?? payload;
@@ -81,18 +81,6 @@ function formatRelativeTime(timestamp?: string | null) {
   } catch {
     return "just now";
   }
-}
-
-function mergeUniqueById(existing: Notification[], incoming: Notification[]) {
-  const seen = new Set(existing.map((n) => n._id));
-  const merged = [...existing];
-  for (const item of incoming) {
-    if (item?._id && !seen.has(item._id)) {
-      merged.push(item);
-      seen.add(item._id);
-    }
-  }
-  return merged;
 }
 
 function getTypeBadgeVariant(type: Notification["type"]): ComponentProps<typeof Badge>["variant"] {
@@ -157,7 +145,7 @@ export default function NotificationsPage() {
   }, [userId]);
 
   const loadPage = useCallback(
-    async (targetPage: number, options?: { append?: boolean }) => {
+    async (targetPage: number) => {
       if (!userId) {
         setItems([]);
         setPagination(null);
@@ -183,7 +171,7 @@ export default function NotificationsPage() {
         const nextPagination = extractPagination(res);
 
         setPagination(nextPagination);
-        setItems((prev) => (options?.append ? mergeUniqueById(prev, list) : list));
+        setItems(list);
 
         const deriveHasMore = () => {
           if (nextPagination) {
@@ -219,7 +207,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     setPage(1);
-    loadPage(1, { append: false });
+    loadPage(1);
     refreshUnreadCount();
   }, [loadPage, refreshUnreadCount]);
 
@@ -251,6 +239,12 @@ export default function NotificationsPage() {
     return typeof total === "number" ? total : null;
   }, [pagination]);
 
+  const totalPages = useMemo(() => {
+    if (typeof pagination?.totalPages === "number") return pagination.totalPages;
+    if (typeof totalCount === "number") return Math.max(1, Math.ceil(totalCount / LIMIT));
+    return null;
+  }, [pagination, totalCount]);
+
   const derivedUnreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items]);
 
   const statsTotal = totalCount ?? items.length;
@@ -258,14 +252,23 @@ export default function NotificationsPage() {
   const statsRead = Math.max(0, statsTotal - statsUnread);
 
   const handleRefresh = async () => {
-    setPage(1);
-    await loadPage(1, { append: false });
+    await loadPage(page);
     await refreshUnreadCount();
   };
 
-  const handleLoadMore = async () => {
+  const handlePrevPage = async () => {
+    if (page <= 1) return;
+
+    const prevPage = page - 1;
+    await loadPage(prevPage);
+    setPage(prevPage);
+  };
+
+  const handleNextPage = async () => {
+    if (!hasMore) return;
+
     const nextPage = page + 1;
-    await loadPage(nextPage, { append: true });
+    await loadPage(nextPage);
     setPage(nextPage);
   };
 
@@ -379,8 +382,6 @@ export default function NotificationsPage() {
                 </Button>
               </div>
 
-             
-
               <div className="relative w-full sm:w-[260px]">
                 <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
@@ -407,14 +408,8 @@ export default function NotificationsPage() {
                 Mark all read
               </Button>
 
-              <Button
-                onClick={handleClearAll}
-               
-                size="sm"
-                disabled={loading || items.length === 0}
-              >
+              <Button onClick={handleClearAll} size="sm" disabled={loading || items.length === 0}>
                 <Trash2Icon className="size-4" />
-                
               </Button>
             </div>
           </div>
@@ -509,10 +504,11 @@ export default function NotificationsPage() {
 
                             <Button
                               size="sm"
-                             
+                              variant="destructive"
                               onClick={() => handleDelete(item._id)}
                             >
-                            <Trash2Icon className="size-4" />
+                              <Trash2Icon className="size-4" />
+                              <span className="sr-only">Delete</span>
                             </Button>
                           </div>
                         </div>
@@ -531,17 +527,34 @@ export default function NotificationsPage() {
                 </div>
               </ScrollArea>
 
-              <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-muted-foreground text-xs">
                   Showing {sortedItems.length}
                   {totalCount !== null ? ` of ${totalCount}` : ""} notifications
                 </p>
 
-                {hasMore ? (
-                  <Button onClick={handleLoadMore} variant="outline" size="sm" disabled={loading}>
-                    {loading ? "Loading..." : "Load more"}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    onClick={handlePrevPage}
+                    variant="outline"
+                    size="sm"
+                    disabled={loading || page <= 1}
+                  >
+                    Previous
                   </Button>
-                ) : null}
+                  <Badge variant="secondary" className="text-xs">
+                    Page {page}
+                    {totalPages ? ` / ${totalPages}` : ""}
+                  </Badge>
+                  <Button
+                    onClick={handleNextPage}
+                    variant="outline"
+                    size="sm"
+                    disabled={loading || !hasMore}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             </>
           )}

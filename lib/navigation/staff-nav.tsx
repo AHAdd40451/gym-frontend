@@ -105,7 +105,7 @@ export const staffNavItems: NavGroup[] = [
         title: "Diet Calendar",
         href: "/dashboard/staff/diet-calendar",
         icon: CalendarIcon
-      },
+      }
     ]
   },
   {
@@ -143,6 +143,16 @@ export const staffNavItems: NavGroup[] = [
       // }
     ]
   },
+  {
+    title: "Communication",
+    items: [
+      {
+        title: "Notifications",
+        href: "/dashboard/staff/notifications",
+        icon: BellIcon
+      }
+    ]
+  }
   // {
   //   title: "Scheduling",
   //   items: [
@@ -217,13 +227,15 @@ export function StaffNavMain() {
                           <DropdownMenuContent
                             side={isMobile ? "bottom" : "right"}
                             align={isMobile ? "end" : "start"}
-                            className="min-w-48 rounded-lg">
+                            className="min-w-48 rounded-lg"
+                          >
                             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
                             {item.items?.map((item) => (
                               <DropdownMenuItem
                                 className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10! active:bg-[var(--primary)]/10!"
                                 asChild
-                                key={item.title}>
+                                key={item.title}
+                              >
                                 <a href={item.href}>{item.title}</a>
                               </DropdownMenuItem>
                             ))}
@@ -234,7 +246,8 @@ export function StaffNavMain() {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
                             className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
-                            tooltip={item.title}>
+                            tooltip={item.title}
+                          >
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -247,7 +260,8 @@ export function StaffNavMain() {
                                 <SidebarMenuSubButton
                                   className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
                                   isActive={pathname === subItem.href}
-                                  asChild>
+                                  asChild
+                                >
                                   <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
                                     <span>{subItem.title}</span>
                                   </Link>
@@ -263,7 +277,8 @@ export function StaffNavMain() {
                       className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
                       isActive={pathname === item.href}
                       tooltip={item.title}
-                      asChild>
+                      asChild
+                    >
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
