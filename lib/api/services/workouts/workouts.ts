@@ -85,3 +85,8 @@ export async function fetchTodayUserActivities(params: { userId?: string; date?:
   const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.TODAY, { params });
   return res.data as { success: boolean; data: any[]; count?: number; date?: string };
 }
+
+export async function fetchWorkoutLogs(params: Record<string, string | undefined> = {}) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE, { params });
+  return res.data as { success: boolean; data: any[]; count?: number };
+}
