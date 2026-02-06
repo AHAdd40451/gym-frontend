@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Dumbbell, Clock, Flame } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Dumbbell, Clock, Flame, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import {
   Card,
@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { fetchWorkoutById, checkoutWorkout } from "@/lib/api/services/workouts/workouts";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchWorkoutById, checkoutWorkout, checkWorkoutCompletedToday, type Workout, type WorkoutExercise } from "@/lib/api/services/workouts/workouts";
 
 type Exercise = {
   _id: string;
@@ -28,24 +29,6 @@ type Exercise = {
   imageUrl?: string;
 };
 
-type WorkoutExercise = {
-  exerciseId: string | Exercise;
-  sets: number;
-  reps: number;
-  restInSeconds: number;
-  order: number;
-};
-
-type Workout = {
-  _id: string;
-  title: string;
-  description?: string;
-  difficulty: string;
-  type: string;
-  exercises: WorkoutExercise[];
-  createdBy?: { firstName?: string; lastName?: string };
-};
-
 export default function WorkoutDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -55,12 +38,32 @@ export default function WorkoutDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [checkingOut, setCheckingOut] = useState(false);
+  const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+  const [checkingCompletion, setCheckingCompletion] = useState(true);
+  
+  // Store selected exercise data with complete info
+  const [selectedExerciseData, setSelectedExerciseData] = useState<Map<string, WorkoutExercise>>(new Map());
 
   useEffect(() => {
     if (workoutId) {
       loadWorkout();
+      checkIfAlreadyCompleted();
     }
   }, [workoutId]);
+
+  const checkIfAlreadyCompleted = async () => {
+    try {
+      setCheckingCompletion(true);
+      const completed = await checkWorkoutCompletedToday(workoutId);
+      setAlreadyCompleted(completed);
+      // No toast notification - UI Alert component will show the message
+    } catch (error: any) {
+      console.error("Failed to check workout completion", error);
+      // Don't show error toast, just allow workout to proceed
+    } finally {
+      setCheckingCompletion(false);
+    }
+  };
 
   const loadWorkout = async () => {
     try {
@@ -101,12 +104,56 @@ export default function WorkoutDetailPage() {
       return;
     }
 
+    // Check again before saving (in case user somehow bypassed the check)
+    if (alreadyCompleted) {
+      toast.error("You have already completed this workout today", {
+        description: "Please try again tomorrow."
+      });
+      return;
+    }
+
     try {
       setCheckingOut(true);
-      const selectedIds = Array.from(selectedExercises);
-      const res = await checkoutWorkout(workoutId, selectedIds);
+      // Get complete exercise data for selected exercises
+      const selectedExerciseArray: WorkoutExercise[] = Array.from(selectedExercises).map(exerciseId => {
+        const exerciseData = selectedExerciseData.get(exerciseId);
+        if (!exerciseData) {
+          // Fallback: find from workout exercises
+          const workoutEx = workout?.exercises.find(ex => {
+            const id = getExerciseId(ex.exerciseId);
+            return id === exerciseId;
+          });
+          if (workoutEx) {
+            return {
+              exerciseId: exerciseId,
+              sets: workoutEx.sets,
+              reps: workoutEx.reps,
+              restInSeconds: workoutEx.restInSeconds,
+              order: workoutEx.order
+            } as WorkoutExercise;
+          }
+        }
+        return exerciseData;
+      }).filter((ex): ex is WorkoutExercise => ex !== undefined && ex !== null);
+
+      // Log the payload being sent
+      console.log('Sending payload with selectedExercises:', selectedExerciseArray);
+      console.log('Payload structure:', {
+        workoutId,
+        selectedExercises: selectedExerciseArray.map(ex => ({
+          exerciseId: ex.exerciseId,
+          sets: ex.sets, // This should be a number (count)
+          reps: ex.reps, // This should be a number (count)
+          restInSeconds: ex.restInSeconds, // This should be a number
+          order: ex.order
+        }))
+      });
+
+      const res = await checkoutWorkout(workoutId, selectedExerciseArray);
       
       if (res.success) {
+        // Mark as completed after successful save
+        setAlreadyCompleted(true);
         toast.success("Workout saved successfully!", {
           description: res.message || "Staff has been notified about your workout."
         });
@@ -134,9 +181,10 @@ export default function WorkoutDetailPage() {
     return null;
   };
 
-  const getExerciseId = (exercise: string | Exercise): string => {
+  const getExerciseId = (exercise: string | Exercise | null | undefined): string => {
+    if (!exercise) return "";
     if (typeof exercise === "string") return exercise;
-    return exercise._id;
+    return exercise._id || "";
   };
 
   const toggleExercise = (exerciseId: string) => {
@@ -144,8 +192,32 @@ export default function WorkoutDetailPage() {
       const next = new Set(prev);
       if (next.has(exerciseId)) {
         next.delete(exerciseId);
+        // Remove from selectedExerciseData
+        setSelectedExerciseData((prevData) => {
+          const nextData = new Map(prevData);
+          nextData.delete(exerciseId);
+          return nextData;
+        });
       } else {
         next.add(exerciseId);
+        // Add complete exercise data
+        const workoutEx = workout?.exercises.find(ex => {
+          const id = getExerciseId(ex.exerciseId);
+          return id === exerciseId;
+        });
+        if (workoutEx) {
+          setSelectedExerciseData((prevData) => {
+            const nextData = new Map(prevData);
+            nextData.set(exerciseId, {
+              exerciseId: exerciseId,
+              sets: workoutEx.sets,
+              reps: workoutEx.reps,
+              restInSeconds: workoutEx.restInSeconds,
+              order: workoutEx.order
+            } as WorkoutExercise);
+            return nextData;
+          });
+        }
       }
       return next;
     });
@@ -188,7 +260,17 @@ export default function WorkoutDetailPage() {
         </div>
       </div>
 
-      <Card className="border border-border/70 shadow-sm">
+      {alreadyCompleted && (
+        <Alert className="border-yellow-200 bg-yellow-50/50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-800">Workout Already Completed</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            You have already completed this workout today. You can do this workout again tomorrow.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className={`border border-border/70 shadow-sm ${alreadyCompleted ? 'opacity-60' : ''}`}>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{workout.difficulty}</Badge>
@@ -221,7 +303,7 @@ export default function WorkoutDetailPage() {
                   </Button>
                 </div>
               ) : (
-                workout.exercises.map((ex, idx) => {
+                workout.exercises.filter(ex => ex && ex.exerciseId).map((ex, idx) => {
                   const exercise = getExerciseDetails(ex.exerciseId);
                   const exerciseId = getExerciseId(ex.exerciseId);
                   const isSelected = selectedExercises.has(exerciseId);
@@ -242,17 +324,20 @@ export default function WorkoutDetailPage() {
                   return (
                   <Card
                     key={idx}
-                    className={`border transition-all cursor-pointer ${
+                    className={`border transition-all ${
+                      alreadyCompleted ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                    } ${
                       isSelected
                         ? "border-[var(--primary)] bg-[var(--primary)]/5"
                         : "border-border/70 bg-muted/30"
                     }`}
-                    onClick={() => toggleExercise(exerciseId)}>
+                    onClick={() => !alreadyCompleted && toggleExercise(exerciseId)}>
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         <Checkbox
                           checked={isSelected}
-                          onCheckedChange={() => toggleExercise(exerciseId)}
+                          disabled={alreadyCompleted}
+                          onCheckedChange={() => !alreadyCompleted && toggleExercise(exerciseId)}
                           onClick={(e) => e.stopPropagation()}
                         />
                         <div className="flex-1 space-y-2">
@@ -304,15 +389,19 @@ export default function WorkoutDetailPage() {
 
             <div className="flex items-center justify-between pt-4">
               <div className="text-sm text-muted-foreground">
-                Select exercises you completed, then save. Staff will be notified.
+                {alreadyCompleted 
+                  ? "You have already completed this workout today. Try again tomorrow."
+                  : "Select exercises you completed, then save. Staff will be notified."}
               </div>
               <Button
                 onClick={handleSave}
-                disabled={selectedExercises.size === 0 || checkingOut}
+                disabled={selectedExercises.size === 0 || checkingOut || alreadyCompleted}
                 size="lg"
                 className="gap-2">
                 {checkingOut ? (
                   "Saving..."
+                ) : alreadyCompleted ? (
+                  "Already Completed"
                 ) : (
                   <>
                     <CheckCircle2 className="size-4" />

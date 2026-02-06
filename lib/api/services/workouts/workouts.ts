@@ -58,11 +58,31 @@ export async function fetchWorkoutsByDay(day: string) {
   return res.data as { success: boolean; data: Workout[]; count?: number; day?: string };
 }
 
-export async function checkoutWorkout(workoutId: string, selectedExerciseIds?: string[]) {
-  const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.CHECKOUT, {
-    workoutId,
-    selectedExerciseIds
-  });
+export async function checkoutWorkout(workoutId: string, selectedExercises?: WorkoutExercise[] | string[]) {
+  // Check if it's an array of exercise objects or just IDs (for backward compatibility)
+  const isExerciseObjects = selectedExercises && selectedExercises.length > 0 && typeof selectedExercises[0] === 'object' && 'exerciseId' in selectedExercises[0];
+  
+  const payload: any = {
+    workoutId
+  };
+  
+  if (isExerciseObjects) {
+    // Explicitly map to ensure correct structure with numbers (not arrays)
+    payload.selectedExercises = (selectedExercises as WorkoutExercise[]).map(ex => ({
+      exerciseId: ex.exerciseId,
+      sets: typeof ex.sets === 'number' ? ex.sets : Number(ex.sets) || 0, // Ensure it's a number
+      reps: typeof ex.reps === 'number' ? ex.reps : Number(ex.reps) || 0, // Ensure it's a number
+      restInSeconds: typeof ex.restInSeconds === 'number' ? ex.restInSeconds : Number(ex.restInSeconds) || 0, // Ensure it's a number
+      order: typeof ex.order === 'number' ? ex.order : Number(ex.order) || 0 // Ensure it's a number
+    }));
+    
+    console.log('API Service - Sending payload:', JSON.stringify(payload, null, 2));
+  } else {
+    // Backward compatibility: if it's an array of strings, treat as IDs
+    payload.selectedExerciseIds = selectedExercises as string[];
+  }
+  
+  const res = await apiClient.post(API_ENDPOINTS.WORKOUTS.CHECKOUT, payload);
   return res.data as { success: boolean; message?: string; data: any };
 }
 
@@ -104,4 +124,32 @@ export async function fetchUserWorkoutHistory(userId: string) {
     count?: number;
     data: any[];
   };
+}
+
+// Check if a workout was already completed today by the current user
+export async function checkWorkoutCompletedToday(workoutId: string) {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE, {
+      params: {
+        workoutId,
+        startDate: startOfDay.toISOString(),
+        endDate: endOfDay.toISOString()
+      }
+    });
+    
+    const data = res.data as { success: boolean; data: any[]; count?: number };
+    
+    // Check if there's at least one log for this workout today
+    // The API automatically filters by current user for regular users
+    return data.success && data.data && data.data.length > 0;
+  } catch (error) {
+    console.error('Error checking workout completion:', error);
+    return false; // Return false on error to allow workout
+  }
 }

@@ -35,6 +35,10 @@ type WorkoutLog = {
       weight: number;
       completed: boolean;
     }>;
+    setsCount?: number;
+    repsCount?: number;
+    restInSeconds?: number;
+    order?: number;
     notes?: string;
   }>;
   totalDurationInMinutes?: number;
@@ -115,6 +119,13 @@ export default function UserWorkoutHistoryDetailPage() {
           logsRes.data || 
           [];
         const validLogs = Array.isArray(logs) ? logs.filter(log => log && log.performedAt) : [];
+        
+        console.log("Workout Logs Response:", logsRes.data);
+        console.log("Valid Logs:", validLogs);
+        if (validLogs.length > 0 && validLogs[0].exercises) {
+          console.log("First Exercise Data:", validLogs[0].exercises[0]);
+        }
+        
         setWorkoutLogs(validLogs);
         
         // If there are workouts, set the first workout date as selected
@@ -307,8 +318,15 @@ export default function UserWorkoutHistoryDetailPage() {
                                       className="rounded-lg border bg-muted/30 p-3 space-y-2"
                                     >
                                       <div className="flex items-start justify-between">
-                                        <div>
-                                          <p className="font-medium">{exercise.exerciseId?.name || "Exercise"}</p>
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            {exercise.order && (
+                                              <Badge variant="outline" className="text-xs">
+                                                #{exercise.order}
+                                              </Badge>
+                                            )}
+                                            <p className="font-medium">{exercise.exerciseId?.name || "Exercise"}</p>
+                                          </div>
                                           <div className="flex flex-wrap gap-1 mt-1">
                                             {exercise.exerciseId?.muscleGroup?.map((muscle, i) => (
                                               <Badge key={i} variant="outline" className="text-xs">
@@ -323,21 +341,28 @@ export default function UserWorkoutHistoryDetailPage() {
                                           )}
                                         </div>
                                       </div>
-                                      {/* Sets */}
-                                      {exercise.sets && exercise.sets.length > 0 && (
+                                      
+                                      {/* Sets Performed */}
+                                      {(exercise.setsCount || exercise.repsCount || exercise.restInSeconds) && (
                                         <div className="mt-2 space-y-1">
-                                          <p className="text-xs font-medium text-muted-foreground">Sets:</p>
+                                          <p className="text-xs font-medium text-muted-foreground">Sets Performed:</p>
                                           <div className="flex flex-wrap gap-2">
-                                            {exercise.sets.map((set, setIdx) => (
-                                              <Badge
-                                                key={setIdx}
-                                                variant={set.completed ? "default" : "outline"}
-                                                className="text-xs"
-                                              >
-                                                {set.reps} reps
-                                                {set.weight && ` @ ${set.weight}kg`}
+                                            {exercise.setsCount && (
+                                              <Badge variant="outline" className="text-xs">
+                                                {exercise.setsCount} sets
                                               </Badge>
-                                            ))}
+                                            )}
+                                            {exercise.repsCount && (
+                                              <Badge variant="outline" className="text-xs">
+                                                {exercise.repsCount} reps
+                                              </Badge>
+                                            )}
+                                            {exercise.restInSeconds && (
+                                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                                <Clock className="size-3" />
+                                                {exercise.restInSeconds}s rest
+                                              </Badge>
+                                            )}
                                           </div>
                                         </div>
                                       )}

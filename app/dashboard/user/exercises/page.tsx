@@ -90,7 +90,8 @@ export default function UserExercisesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getExerciseName = (exercise: string | Exercise): string => {
+  const getExerciseName = (exercise: string | Exercise | null | undefined): string => {
+    if (!exercise) return "Exercise";
     if (typeof exercise === "string") return "Exercise";
     return exercise.name || "Exercise";
   };
@@ -136,7 +137,7 @@ export default function UserExercisesPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
-                  {workout.exercises.slice(0, 3).map((ex, idx) => {
+                  {workout.exercises.filter(ex => ex && ex.exerciseId).slice(0, 3).map((ex, idx) => {
                     return (
                       <div
                         key={idx}
