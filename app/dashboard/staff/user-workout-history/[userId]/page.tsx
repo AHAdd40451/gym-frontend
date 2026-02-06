@@ -70,13 +70,43 @@ export default function UserWorkoutHistoryDetailPage() {
           apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.HISTORY(userId))
         ]);
 
-        // Handle user response - could be nested
-        const userData = 
-          (userRes as any)?.data?.user || 
-          (userRes as any)?.user || 
-          (userRes as any)?.data || 
-          userRes;
-        setUser(userData);
+        console.log("User API Response:", userRes); // Debug log
+
+        // Handle user response - try multiple structures
+        let userData: any = null;
+        
+        if (userRes) {
+          // Try different response structures
+          if ((userRes as any)?.data?.user) {
+            userData = (userRes as any).data.user;
+          } else if ((userRes as any)?.data && !Array.isArray((userRes as any).data) && (userRes as any).data.firstName) {
+            // If data is an object with firstName, it's the user itself
+            userData = (userRes as any).data;
+          } else if ((userRes as any)?.user) {
+            userData = (userRes as any).user;
+          } else if (typeof (userRes as any)?.firstName === 'string') {
+            // If response itself has firstName, it's the user
+            userData = userRes;
+          } else if ((userRes as any)?.data?.data?.user) {
+            userData = (userRes as any).data.data.user;
+          }
+        }
+
+        console.log("Extracted User Data:", userData); // Debug log
+
+        if (userData && (userData.firstName || userData.lastName || userData.email)) {
+          setUser({
+            _id: userData._id || userData.id || userId,
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            email: userData.email || ''
+          });
+        } else {
+          console.error("Invalid user data structure:", userRes);
+          toast.error("Failed to load user data", {
+            description: "User information could not be retrieved."
+          });
+        }
 
         // Handle workout logs response
         const logs = 
@@ -175,7 +205,7 @@ export default function UserWorkoutHistoryDetailPage() {
     );
   }
 
-  const userName = `${user.firstName} ${user.lastName}`;
+  const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User';
 
   return (
     <div className="space-y-6 pb-10">
@@ -203,9 +233,9 @@ export default function UserWorkoutHistoryDetailPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         {/* Main Content - Workout Details */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-4 min-w-0">
           {selectedDate ? (
             <>
               <Card>
@@ -349,31 +379,31 @@ export default function UserWorkoutHistoryDetailPage() {
         </div>
 
         {/* Calendar Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Select Date</CardTitle>
-              <CardDescription>Click on a date to view workouts</CardDescription>
+        <div>
+          <Card className="w-full sticky top-6 border border-border/70 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Pick a day</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                View workouts by date
+              </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col items-center gap-2">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 modifiers={modifiers}
                 modifiersClassNames={modifiersClassNames}
-                className="rounded-md border-0"
-                classNames={{
-                  day_selected: "bg-[var(--primary)] text-primary-foreground hover:bg-[var(--primary)] hover:text-primary-foreground",
-                  day_today: "bg-accent text-accent-foreground"
-                }}
+                showOutsideDays
+                showYearSwitcher={false}
+                className="rounded-md border-0 p-0 w-full"
               />
-              <div className="mt-4 space-y-2">
+              <div className="mt-2 w-full space-y-2 pt-2 border-t">
                 <div className="flex items-center gap-2 text-sm">
                   <div className="size-3 rounded-md bg-[var(--primary)]/20"></div>
-                  <span className="text-muted-foreground">Date with workout</span>
+                  <span className="text-muted-foreground text-xs">Date with workout</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-3">
+                <div className="text-xs text-muted-foreground">
                   Total workouts: <strong>{workoutLogs.length}</strong>
                 </div>
               </div>
