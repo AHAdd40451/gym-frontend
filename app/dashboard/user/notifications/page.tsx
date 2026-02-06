@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -44,6 +43,7 @@ type Pagination = {
 };
 
 const LIMIT = 7;
+const FETCH_LIMIT = 100;
 
 function normalizeNotifications(payload: any): Notification[] {
   const body = payload?.data ?? payload;
@@ -144,8 +144,8 @@ export default function NotificationsPage() {
     }
   }, [userId]);
 
-  const loadPage = useCallback(
-    async (targetPage: number) => {
+  const loadNotifications = useCallback(
+    async (resetPage = true) => {
       if (!userId) {
         setItems([]);
         setPagination(null);
@@ -156,11 +156,12 @@ export default function NotificationsPage() {
 
       setLoading(true);
       setErrorMessage(null);
+      if (resetPage) setPage(1);
 
       try {
         const filters: any = {
-          page: targetPage,
-          limit: LIMIT
+          page: 1,
+          limit: FETCH_LIMIT
         };
 
         if (showUnreadOnly) filters.isRead = false;
@@ -172,22 +173,7 @@ export default function NotificationsPage() {
 
         setPagination(nextPagination);
         setItems(list);
-
-        const deriveHasMore = () => {
-          if (nextPagination) {
-            if (typeof nextPagination.hasNext === "boolean") return nextPagination.hasNext;
-            if (typeof nextPagination.totalPages === "number") {
-              return targetPage < nextPagination.totalPages;
-            }
-            if (typeof nextPagination.total === "number") {
-              const perPage = Number(nextPagination.limit || LIMIT);
-              return targetPage * perPage < nextPagination.total;
-            }
-          }
-          return list.length >= LIMIT;
-        };
-
-        setHasMore(deriveHasMore());
+        setHasMore(list.length >= LIMIT);
       } catch (error: any) {
         const message = error?.message || "Could not load notifications. Check API and token.";
         setErrorMessage(message);
@@ -206,10 +192,13 @@ export default function NotificationsPage() {
   );
 
   useEffect(() => {
-    setPage(1);
-    loadPage(1);
+    loadNotifications(true);
     refreshUnreadCount();
-  }, [loadPage, refreshUnreadCount]);
+  }, [loadNotifications, refreshUnreadCount]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const filteredItems = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -234,16 +223,16 @@ export default function NotificationsPage() {
     return list;
   }, [filteredItems]);
 
-  const totalCount = useMemo(() => {
-    const total = pagination?.total;
-    return typeof total === "number" ? total : null;
-  }, [pagination]);
+  const totalFilteredCount = sortedItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalFilteredCount / LIMIT));
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * LIMIT;
+    return sortedItems.slice(start, start + LIMIT);
+  }, [sortedItems, page]);
 
-  const totalPages = useMemo(() => {
-    if (typeof pagination?.totalPages === "number") return pagination.totalPages;
-    if (typeof totalCount === "number") return Math.max(1, Math.ceil(totalCount / LIMIT));
-    return null;
-  }, [pagination, totalCount]);
+  const totalCount = totalFilteredCount;
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
 
   const derivedUnreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items]);
 
@@ -251,25 +240,23 @@ export default function NotificationsPage() {
   const statsUnread = unreadCount ?? derivedUnreadCount;
   const statsRead = Math.max(0, statsTotal - statsUnread);
 
+  useEffect(() => {
+    if (page > totalPages && totalPages >= 1) setPage(totalPages);
+  }, [page, totalPages]);
+
   const handleRefresh = async () => {
-    await loadPage(page);
+    await loadNotifications(true);
     await refreshUnreadCount();
   };
 
-  const handlePrevPage = async () => {
+  const handlePrevPage = () => {
     if (page <= 1) return;
-
-    const prevPage = page - 1;
-    await loadPage(prevPage);
-    setPage(prevPage);
+    setPage((p) => p - 1);
   };
 
-  const handleNextPage = async () => {
-    if (!hasMore) return;
-
-    const nextPage = page + 1;
-    await loadPage(nextPage);
-    setPage(nextPage);
+  const handleNextPage = () => {
+    if (page >= totalPages) return;
+    setPage((p) => p + 1);
   };
 
   const handleMarkAllRead = async () => {
@@ -445,10 +432,10 @@ export default function NotificationsPage() {
               </p>
             </div>
           ) : (
-            <>
-              <ScrollArea className="max-h-[650px] pr-4">
-                <div className="space-y-3">
-                  {sortedItems.map((item) => (
+            <div className="flex flex-col gap-0 min-h-0">
+              <div className="overflow-auto max-h-[65vh] min-h-0 pr-2">
+                <div className="space-y-3 pb-2">
+                  {paginatedItems.map((item) => (
                     <Card
                       key={item._id}
                       className={cn(
@@ -458,40 +445,40 @@ export default function NotificationsPage() {
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="size-9">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <Avatar className="size-9 shrink-0">
                               <AvatarFallback>
                                 {item.title?.trim?.()?.charAt(0)?.toUpperCase?.() || "N"}
                               </AvatarFallback>
                             </Avatar>
 
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="leading-none font-semibold">{item.title}</p>
                                 <Badge
                                   variant={getTypeBadgeVariant(item.type)}
-                                  className="text-[11px]"
+                                  className="text-[11px] shrink-0"
                                 >
                                   {item.type}
                                 </Badge>
                                 {!item.isRead ? (
-                                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs shrink-0">
                                     <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
                                     Unread
                                   </span>
                                 ) : null}
                               </div>
 
-                              <p className="text-muted-foreground text-sm">{item.message}</p>
+                              <p className="text-muted-foreground text-sm break-words">{item.message}</p>
 
                               <div className="text-muted-foreground flex items-center gap-1 text-xs">
-                                <ClockIcon className="size-3" />
+                                <ClockIcon className="size-3 shrink-0" />
                                 {formatRelativeTime(item.createdAt || item.updatedAt)}
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-end gap-2">
+                          <div className="flex flex-col items-end gap-2 shrink-0">
                             {!item.isRead ? (
                               <Button
                                 size="sm"
@@ -525,38 +512,37 @@ export default function NotificationsPage() {
                     </Card>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
 
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-muted-foreground text-xs">
-                  Showing {sortedItems.length}
-                  {totalCount !== null ? ` of ${totalCount}` : ""} notifications
+              <Separator className="my-0 shrink-0" />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-4 shrink-0 bg-muted/30 rounded-b-lg -mx-px -mb-px px-4 border-t border-border/70">
+                <p className="text-muted-foreground text-xs order-2 sm:order-1">
+                  Showing {(page - 1) * LIMIT + paginatedItems.length} of {totalCount} notifications
                 </p>
 
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2 order-1 sm:order-2">
                   <Button
                     onClick={handlePrevPage}
                     variant="outline"
                     size="sm"
-                    disabled={loading || page <= 1}
+                    disabled={loading || !hasPrevPage}
                   >
                     Previous
                   </Button>
                   <Badge variant="secondary" className="text-xs">
-                    Page {page}
-                    {totalPages ? ` / ${totalPages}` : ""}
+                    Page {page} / {totalPages}
                   </Badge>
                   <Button
                     onClick={handleNextPage}
                     variant="outline"
                     size="sm"
-                    disabled={loading || !hasMore}
+                    disabled={loading || !hasNextPage}
                   >
                     Next
                   </Button>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </CardContent>
       </Card>
