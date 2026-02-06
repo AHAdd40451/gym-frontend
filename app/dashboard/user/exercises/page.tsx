@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, Dumbbell, Play } from "lucide-react";
+import { Dumbbell, Play } from "lucide-react";
 import Link from "next/link";
 import {
   Card,
@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchWorkoutsByDay } from "@/lib/api/services/workouts/workouts";
+import { fetchWorkouts, fetchWorkoutsByDay } from "@/lib/api/services/workouts/workouts";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -39,30 +38,43 @@ type Workout = {
   description?: string;
   difficulty: string;
   type: string;
-  day: string;
+  day?: string;
   exercises: WorkoutExercise[];
   createdBy?: { firstName?: string; lastName?: string };
 };
 
 export default function UserExercisesPage() {
-  const [selectedDay, setSelectedDay] = useState<string>(() => {
-    const today = new Date().getDay();
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    return dayNames[today] || "Monday";
-  });
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadWorkouts = async (day: string) => {
+  const loadWorkouts = async () => {
     try {
       setLoading(true);
-      const res = await fetchWorkoutsByDay(day);
+      const res = await fetchWorkouts({ isPublic: true, isActive: true });
       if (res.success && res.data) {
         setWorkouts(res.data);
       } else {
         setWorkouts([]);
       }
     } catch (error: any) {
+      const status = error?.response?.status;
+      const fallbackReason = status === 403 ? "403 on /workouts" : null;
+
+      if (fallbackReason) {
+        try {
+          const results = await Promise.all(days.map((day) => fetchWorkoutsByDay(day)));
+          const allWorkouts = results.flatMap((r) => (r?.success && Array.isArray(r.data) ? r.data : []));
+          const unique = new Map<string, Workout>();
+          for (const workout of allWorkouts) {
+            if (workout?._id) unique.set(workout._id, workout);
+          }
+          setWorkouts(Array.from(unique.values()));
+          return;
+        } catch (fallbackError: any) {
+          console.error("Failed to load workouts (fallback)", fallbackError);
+        }
+      }
+
       console.error("Failed to load workouts", error);
       toast.error("Could not load workouts", {
         description: error?.message || "Check API and token."
@@ -74,8 +86,9 @@ export default function UserExercisesPage() {
   };
 
   useEffect(() => {
-    loadWorkouts(selectedDay);
-  }, [selectedDay]);
+    loadWorkouts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getExerciseName = (exercise: string | Exercise): string => {
     if (typeof exercise === "string") return "Exercise";
@@ -88,95 +101,81 @@ export default function UserExercisesPage() {
         <CardHeader>
           <CardTitle className="text-3xl font-semibold flex items-center gap-2">
             <Dumbbell className="size-6" />
-            My Workouts
+            Workouts
           </CardTitle>
           <CardDescription>
-            View your workouts organized by day. Click on a workout to see exercises and start your session.
+            Browse all available workouts. Checkout a workout to select exercises you completed and save your session.
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          {days.map((day) => (
-            <TabsTrigger key={day} value={day} className="text-xs sm:text-sm">
-              {day.slice(0, 3)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {days.map((day) => (
-          <TabsContent key={day} value={day} className="mt-6">
-            {loading && selectedDay === day ? (
-              <div className="p-6 text-sm text-muted-foreground text-center">
-                Loading workouts for {day}...
-              </div>
-            ) : selectedDay === day && workouts.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center text-muted-foreground">
-                  <p className="text-sm">No workouts available for {day}.</p>
-                  <p className="text-xs mt-2">Check back later or contact your trainer.</p>
-                </CardContent>
-              </Card>
-            ) : selectedDay === day ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {workouts.map((workout) => (
-                  <Card key={workout._id} className="border border-border/70 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">{workout.difficulty}</Badge>
-                        <Badge variant="outline">{workout.type}</Badge>
-                      </div>
-                      <CardTitle className="text-lg leading-tight">{workout.title}</CardTitle>
-                      {workout.description && (
-                        <CardDescription className="line-clamp-2">{workout.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        {workout.exercises.slice(0, 3).map((ex, idx) => {
-                          return (
-                            <div
-                              key={idx}
-                              className="flex items-start justify-between rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-                              <div className="flex-1">
-                                <p className="font-semibold">{getExerciseName(ex.exerciseId)}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {ex.sets} x {ex.reps} reps • {ex.restInSeconds}s rest
-                                </p>
-                              </div>
-                              <Badge variant="outline" className="text-xs ml-2">
-                                #{ex.order}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                        {workout.exercises.length > 3 && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            +{workout.exercises.length - 3} more exercises
+      {loading ? (
+        <div className="p-6 text-sm text-muted-foreground text-center">Loading workouts...</div>
+      ) : workouts.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <p className="text-sm">No workouts available right now.</p>
+            <p className="text-xs mt-2">Check back later or contact your trainer.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {workouts.map((workout) => (
+            <Card
+              key={workout._id}
+              className="border border-border/70 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{workout.difficulty}</Badge>
+                  <Badge variant="outline">{workout.type}</Badge>
+                </div>
+                <CardTitle className="text-lg leading-tight">{workout.title}</CardTitle>
+                {workout.description && (
+                  <CardDescription className="line-clamp-2">{workout.description}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  {workout.exercises.slice(0, 3).map((ex, idx) => {
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-start justify-between rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
+                        <div className="flex-1">
+                          <p className="font-semibold">{getExerciseName(ex.exerciseId)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {ex.sets} x {ex.reps} reps • {ex.restInSeconds}s rest
                           </p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Dumbbell className="size-3" />
-                          <span>{workout.exercises.length} exercises</span>
                         </div>
-                        <Button asChild size="sm">
-                          <Link href={`/dashboard/user/workouts/${workout._id}`}>
-                            <Play className="size-4 mr-1" />
-                            Checkout
-                          </Link>
-                        </Button>
+                        <Badge variant="outline" className="text-xs ml-2">
+                          #{ex.order}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : null}
-          </TabsContent>
-        ))}
-      </Tabs>
+                    );
+                  })}
+                  {workout.exercises.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{workout.exercises.length - 3} more exercises
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Dumbbell className="size-3" />
+                    <span>{workout.exercises.length} exercises</span>
+                  </div>
+                  <Button asChild size="sm">
+                    <Link href={`/dashboard/user/workouts/${workout._id}`}>
+                      <Play className="size-4 mr-1" />
+                      Checkout
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

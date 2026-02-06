@@ -85,38 +85,8 @@ export async function fetchTodayUserActivities(params: { userId?: string; date?:
   const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.TODAY, { params });
   return res.data as { success: boolean; data: any[]; count?: number; date?: string };
 }
-// export async function fetchUserWorkoutHistory() {
-//   const user = localStorage.getItem("user");
-//   const parsedUser = user ? JSON.parse(user) : null;
-//   const userId = parsedUser?._id;
 
-//   if (!userId) {
-//     throw new Error("User ID not found in localStorage");
-//   }
-
-//   const res = await apiClient.get(
-//     API_ENDPOINTS.WORKOUT_LOGS.HISTORY(userId)
-//   );
-
-//   return res.data as {
-//     success: boolean;
-//     count?: number;
-//     data: any[];
-//   };
-// }
-
-export async function fetchUserWorkoutHistory(userId: string) {
-  if (!userId) {
-    throw new Error('User ID is required');
-  }
-
-  const res = await apiClient.get(
-    API_ENDPOINTS.WORKOUT_LOGS.HISTORY(userId)
-  );
-
-  return res.data as {
-    success: boolean;
-    count?: number;
-    data: any[];
-  };
+export async function fetchWorkoutLogs(params: Record<string, string | undefined> = {}) {
+  const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE, { params });
+  return res.data as { success: boolean; data: any[]; count?: number };
 }

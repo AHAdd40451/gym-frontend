@@ -29,7 +29,7 @@ export default function Page() {
   return (
     <div className="space-y-4">
       <div className="flex flex-row items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">E-Commerce Dashboard</h1>
+        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">Gym Dashboard</h1>
         {/* <div className="flex items-center space-x-2">
           <CustomDateRangePicker />
           <Button>

@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { CheckCircle2 } from "lucide-react";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getAttendanceByUserId } from "../../../../lib/api/services/attendence/attendence";
 
 type CurrentUser = { id: string };
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const CELL = 12; 
-
 const getColor = (count: number) =>
-  count === 1 ? "bg-[#39d353]" : "bg-[#161b22]";
+  count === 1 ? "bg-emerald-500 dark:bg-emerald-500" : "bg-muted";
 
 export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
   const currentYear = new Date().getFullYear();
@@ -41,12 +43,28 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
     })();
   }, [currentUser.id]);
 
-  if (loading) return <div className="text-sm text-gray-400">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-2 w-2 rounded-full bg-muted animate-pulse"
+              style={{ animationDelay: `${i * 120}ms`, animationDuration: "1.2s" }}
+            />
+          ))}
+        </div>
+        <span className="text-sm text-muted-foreground">Loading attendance…</span>
+      </div>
+    );
+  }
 
   /* ================= YEARS ================= */
   const years = Array.from(
     new Set(Array.from(dateMap.keys()).map(d => new Date(d).getFullYear()))
   ).sort((a,b)=>b-a);
+  const yearsList = years.length ? years : [currentYear];
 
   /* ================= RANGE ================= */
   const gridStart = new Date(selectedYear,0,1);
@@ -86,19 +104,39 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
     }
   });
 
+  /* ================= STATS ================= */
+  const presentCount = weeks
+    .flat()
+    .filter((d) => {
+      const dt = new Date(d.date);
+      return d.count === 1 && dt >= gridStart && dt <= gridEnd;
+    })
+    .length;
+
  return (
-  <div className="bg-[#0d1117] rounded-lg p-4">
+  <div className="rounded-lg space-y-6">
+
+    {/* ===== STATS BAR ===== */}
+    <div className="flex flex-wrap items-center gap-4">
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2">
+        <CheckCircle2 className="size-4 text-emerald-500" />
+        <span className="text-sm font-medium">
+          <span className="text-foreground">{presentCount}</span>
+          <span className="text-muted-foreground ml-1">days present in {selectedYear}</span>
+        </span>
+      </div>
+    </div>
 
     {/* ===== MOBILE YEARS ===== */}
-    <div className="flex sm:hidden gap-2 mb-4 overflow-x-auto">
-      {years.map(y => (
+    <div className="flex sm:hidden gap-2 overflow-x-auto pb-2 -mx-1">
+      {yearsList.map(y => (
         <button
           key={y}
           onClick={() => setSelectedYear(y)}
-          className={`px-3 py-1 text-xs rounded ${
+          className={`shrink-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
             selectedYear === y
-              ? "bg-blue-600 text-white"
-              : "bg-[#161b22]"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-muted hover:bg-muted/80 text-muted-foreground"
           }`}
         >
           {y}
@@ -117,7 +155,7 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
           {monthLabels.map(m => (
             <span
               key={m.col}
-              className="absolute text-[10px] text-gray-400"
+              className="absolute text-[10px] text-muted-foreground"
               style={{ left: m.col * 12 }}
             >
               {m.label}
@@ -128,7 +166,7 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
         <div className="flex gap-2">
 
           {/* Day labels */}
-          <div className="flex flex-col justify-between h-[92px] text-[10px] text-gray-400">
+          <div className="flex flex-col justify-between h-[92px] text-[10px] text-muted-foreground">
             <span>Mon</span>
             <span>Wed</span>
             <span>Fri</span>
@@ -143,28 +181,40 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
             }}
           >
             {weeks.map((week, wi) =>
-              week.map((day, di) => (
-                <div
-                  key={`${wi}-${di}`}
-                  title={day.date}
-                  className={`w-[10px] h-[10px] rounded- ${getColor(day.count)}`}
-                />
-              ))
+              week.map((day, di) => {
+                const isInRange = new Date(day.date) >= gridStart && new Date(day.date) <= gridEnd;
+                const label = isInRange
+                  ? format(new Date(day.date), "MMM d, yyyy")
+                  : day.date;
+                const status = day.count === 1 ? "Present" : "Absent";
+                return (
+                  <Tooltip key={`${wi}-${di}`}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`w-[10px] h-[10px] rounded-[3px] transition-all duration-150 cursor-default hover:scale-125 hover:ring-2 hover:ring-foreground/20 hover:ring-offset-1 hover:ring-offset-background ${getColor(day.count)} ${isInRange ? "" : "opacity-40"}`}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="font-medium">
+                      {label} — {status}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })
             )}
           </div>
         </div>
       </div>
 
       {/* ===== DESKTOP YEARS ===== */}
-      <div className="hidden sm:flex flex-col gap-1 shrink-0">
-        {years.map(y => (
+      <div className="hidden sm:flex flex-col gap-1.5 shrink-0">
+        {yearsList.map(y => (
           <button
             key={y}
             onClick={() => setSelectedYear(y)}
-            className={`px-2 py-1 text-xs rounded text-left ${
+            className={`px-3 py-2 text-sm font-medium rounded-lg text-left transition-all ${
               selectedYear === y
-                ? "bg-blue-600 text-white"
-                : "hover:bg-[#161b22]"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {y}
@@ -174,11 +224,17 @@ export default function Graph({ currentUser }: { currentUser: CurrentUser }) {
     </div>
 
     {/* ===== LEGEND ===== */}
-    <div className="flex gap-3 mt-4 text-[10px] text-gray-400">
-      <span>Absent</span>
-      <div className="w-3 h-3 bg-[#161b22]" />
-      <div className="w-3 h-3 bg-[#39d353]" />
-      <span>Present</span>
+    <div className="flex items-center gap-6 rounded-lg border border-border/50 bg-muted/20 px-4 py-3 w-fit">
+      <span className="text-xs text-muted-foreground">Less</span>
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 rounded-[3px] bg-muted" title="Absent" />
+        <span className="text-xs text-muted-foreground">Absent</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 rounded-[3px] bg-emerald-500" title="Present" />
+        <span className="text-xs text-muted-foreground">Present</span>
+      </div>
+      <span className="text-xs text-muted-foreground">More</span>
     </div>
   </div>
 );

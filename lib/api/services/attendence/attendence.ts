@@ -2,7 +2,7 @@ import { serverFetch } from "../../api-actions/server";
 import { API_ENDPOINTS } from "../../constants/constants";
 
 export async function runDailyAttendanceJob(userId: string, token?: string) {
-  const authToken = token || localStorage.getItem("authToken");
+  const authToken = token || localStorage.getItem("authToken") || localStorage.getItem("token");
 
   if (!authToken) {
     throw new Error("Access denied. No token provided.");
@@ -22,7 +22,7 @@ export async function runDailyAttendanceJob(userId: string, token?: string) {
 }
 
 export async function getAttendanceByUserId(userId: string, token?: string) {
-  const authToken = token || localStorage.getItem("authToken");
+  const authToken = token || localStorage.getItem("authToken") || localStorage.getItem("token");
 
   if (!authToken) {
     throw new Error("Access denied. No token provided.");
@@ -47,7 +47,7 @@ export async function createAttendance(
   status: "present" | "absent",
   token?: string
 ) {
-  const authToken = token || localStorage.getItem("authToken");
+  const authToken = token || localStorage.getItem("authToken") || localStorage.getItem("token");
 
   if (!authToken) {
     throw new Error("Access denied. No token provided.");
@@ -70,7 +70,7 @@ export async function checkTodayAttendance(
   userId: string,
   token?: string
 ) {
-  const authToken = token || localStorage.getItem("authToken");
+  const authToken = token || localStorage.getItem("authToken") || localStorage.getItem("token");
 
   if (!authToken) {
     throw new Error("Access denied. No token provided.");

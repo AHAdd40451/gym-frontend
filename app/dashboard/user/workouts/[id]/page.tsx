@@ -42,7 +42,6 @@ type Workout = {
   description?: string;
   difficulty: string;
   type: string;
-  day?: string;
   exercises: WorkoutExercise[];
   createdBy?: { firstName?: string; lastName?: string };
 };
@@ -112,7 +111,7 @@ export default function WorkoutDetailPage() {
           description: res.message || "Staff has been notified about your workout."
         });
         // Redirect back to workouts
-        router.push("/dashboard/user/workouts-by-day");
+        router.push("/dashboard/user/exercises");
       } else {
         toast.error("Save failed", {
           description: res.message || "Please try again."
@@ -167,7 +166,7 @@ export default function WorkoutDetailPage() {
           <CardContent className="p-6 text-center text-muted-foreground">
             <p className="text-sm">Workout not found.</p>
             <Button asChild className="mt-4">
-              <Link href="/dashboard/user/workouts-by-day">Back to Workouts</Link>
+              <Link href="/dashboard/user/exercises">Back to Workouts</Link>
             </Button>
           </CardContent>
         </Card>
@@ -179,18 +178,13 @@ export default function WorkoutDetailPage() {
     <div className="space-y-6 pb-10">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/user/workouts-by-day">
+          <Link href="/dashboard/user/exercises">
             <ArrowLeft className="size-4 mr-2" />
             Back
           </Link>
         </Button>
         <div>
           <h1 className="text-3xl font-semibold">{workout.title}</h1>
-          {workout.day && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Scheduled for {workout.day}
-            </p>
-          )}
         </div>
       </div>
 
@@ -199,7 +193,6 @@ export default function WorkoutDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{workout.difficulty}</Badge>
             <Badge variant="outline">{workout.type}</Badge>
-            {workout.day && <Badge variant="outline">{workout.day}</Badge>}
           </div>
           {workout.description && (
             <CardDescription className="mt-2">{workout.description}</CardDescription>
