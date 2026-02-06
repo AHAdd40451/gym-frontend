@@ -42,7 +42,7 @@ const Page = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
+    <div className="flex min-h-screen items-center justify-center ">
       <Graph currentUser={currentUser} />
     </div>
   );
