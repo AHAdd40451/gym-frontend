@@ -122,6 +122,8 @@ export const API_ENDPOINTS = {
   WORKOUT_LOGS: {
     BASE: "/workout-logs",
     STATS: "/workout-logs/stats",
-    TODAY: "/workout-logs/today"
+    TODAY: "/workout-logs/today",
+      HISTORY: (userId: string) => `/workouts/user/${userId}`,
+
   }
 } as const;
