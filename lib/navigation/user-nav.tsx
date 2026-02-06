@@ -35,7 +35,8 @@ import {
   TargetIcon,
   TrophyIcon,
   BookOpenIcon,
-  SettingsIcon
+  SettingsIcon,
+  History
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -208,6 +209,11 @@ export const userNavItems: NavGroup[] = [
         title: "Settings",
         href: "/dashboard/user/settings",
         icon: SettingsIcon
+      },
+      {
+        title: "Training History",
+        href: "/dashboard/user/training",
+        icon: History
       }
     ]
   }
