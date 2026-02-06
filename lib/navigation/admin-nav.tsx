@@ -5,6 +5,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -90,7 +91,7 @@ export const adminNavItems: NavGroup[] = [
       //   href: "/dashboard/admin",
       //   icon: ChartPieIcon
       // },
-       {
+      {
         title: "Overview",
         href: "/dashboard/admin/ecommerce",
         icon: ChartPieIcon
@@ -125,7 +126,7 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/sub-category",
         icon: BarChart3Icon
       },
-     
+
       // {
       //   title: "Contact",
       //   href: "/dashboard/admin/contact",
@@ -145,7 +146,7 @@ export const adminNavItems: NavGroup[] = [
         title: "All Users",
         href: "/dashboard/admin/all-users",
         icon: UsersIcon
-      },
+      }
       // {
       //   title: "Staff Management",
       //   href: "/dashboard/admin/staff",
@@ -161,6 +162,16 @@ export const adminNavItems: NavGroup[] = [
       //   href: "/dashboard/admin/permissions",
       //   icon: KeyIcon
       // }
+    ]
+  },
+  {
+    title: "Communication",
+    items: [
+      {
+        title: "Notifications",
+        href: "/dashboard/admin/notifications",
+        icon: BellIcon
+      }
     ]
   },
   // {
@@ -215,7 +226,7 @@ export const adminNavItems: NavGroup[] = [
         title: "Settings",
         href: "/dashboard/admin/settings",
         icon: SettingsIcon
-      },
+      }
       // {
       //   title: "Database",
       //   href: "/dashboard/admin/database",
@@ -262,13 +273,15 @@ export function AdminNavMain() {
                           <DropdownMenuContent
                             side={isMobile ? "bottom" : "right"}
                             align={isMobile ? "end" : "start"}
-                            className="min-w-48 rounded-lg">
+                            className="min-w-48 rounded-lg"
+                          >
                             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
                             {item.items?.map((item) => (
                               <DropdownMenuItem
                                 className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10! active:bg-[var(--primary)]/10!"
                                 asChild
-                                key={item.title}>
+                                key={item.title}
+                              >
                                 <a href={item.href}>{item.title}</a>
                               </DropdownMenuItem>
                             ))}
@@ -279,7 +292,8 @@ export function AdminNavMain() {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
                             className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
-                            tooltip={item.title}>
+                            tooltip={item.title}
+                          >
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -292,7 +306,8 @@ export function AdminNavMain() {
                                 <SidebarMenuSubButton
                                   className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
                                   isActive={pathname === subItem.href}
-                                  asChild>
+                                  asChild
+                                >
                                   <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
                                     <span>{subItem.title}</span>
                                   </Link>
@@ -308,7 +323,8 @@ export function AdminNavMain() {
                       className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
                       isActive={pathname === item.href}
                       tooltip={item.title}
-                      asChild>
+                      asChild
+                    >
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
