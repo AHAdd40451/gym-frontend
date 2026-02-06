@@ -90,3 +90,18 @@ export async function fetchWorkoutLogs(params: Record<string, string | undefined
   const res = await apiClient.get(API_ENDPOINTS.WORKOUT_LOGS.BASE, { params });
   return res.data as { success: boolean; data: any[]; count?: number };
 }
+export async function fetchUserWorkoutHistory(userId: string) {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  const res = await apiClient.get(
+    API_ENDPOINTS.WORKOUT_LOGS.HISTORY(userId)
+  );
+
+  return res.data as {
+    success: boolean;
+    count?: number;
+    data: any[];
+  };
+}
