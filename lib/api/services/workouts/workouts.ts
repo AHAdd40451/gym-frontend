@@ -53,6 +53,21 @@ export async function createWorkout(data: {
   return res.data as { success: boolean; message?: string; data: Workout };
 }
 
+export async function updateWorkout(
+  workoutId: string,
+  data: {
+    title: string;
+    description?: string;
+    difficulty: Difficulty;
+    type: WorkoutType;
+    day: string;
+    exercises: WorkoutExerciseInput[];
+  }
+) {
+  const res = await apiClient.put(API_ENDPOINTS.WORKOUTS.BY_ID(workoutId), data);
+  return res.data as { success: boolean; message?: string; data?: Workout };
+}
+
 export async function fetchWorkoutsByDay(day: string) {
   const res = await apiClient.get(API_ENDPOINTS.WORKOUTS.BY_DAY(day));
   return res.data as { success: boolean; data: Workout[]; count?: number; day?: string };

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Plus,
   Trash2,
+  Pencil,
   ArrowUp,
   ArrowDown,
   ShieldCheck,
@@ -49,7 +50,8 @@ import { API_ENDPOINTS } from "@/lib/api/constants/constants";
 import {
   createWorkout,
   deleteWorkout,
-  fetchWorkouts
+  fetchWorkouts,
+  updateWorkout
 } from "@/lib/api/services/workouts/workouts";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
@@ -132,6 +134,16 @@ export default function WorkoutsPage() {
   const [exerciseInputs, setExerciseInputs] = useState({ sets: 3, reps: 10, restInSeconds: 60 });
   const [previewPlan, setPreviewPlan] = useState<WorkoutPlan | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<BuilderForm>(initialBuilderState);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSelectedExerciseId, setEditSelectedExerciseId] = useState<string>("");
+  const [editExerciseInputs, setEditExerciseInputs] = useState({
+    sets: 3,
+    reps: 10,
+    restInSeconds: 60
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -369,6 +381,122 @@ export default function WorkoutsPage() {
   const openPreview = (plan: WorkoutPlan) => {
     setPreviewPlan(plan);
     setPreviewOpen(true);
+  };
+
+  const openEditModal = (plan: WorkoutPlan) => {
+    setEditingPlan(plan);
+    setEditForm({
+      title: plan.title,
+      description: plan.description || "",
+      difficulty: plan.difficulty,
+      type: plan.type,
+      day: (plan as any).day || "Monday",
+      exercises: plan.exercises.map((ex) => ({ ...ex }))
+    });
+    setEditSelectedExerciseId(exerciseLibrary[0]?._id ?? "");
+    setEditExerciseInputs({ sets: 3, reps: 10, restInSeconds: 60 });
+    setEditOpen(true);
+  };
+
+  const addExerciseToEditPlan = () => {
+    if (!editSelectedExerciseId) {
+      toast.error("Choose an exercise to add.");
+      return;
+    }
+
+    const picked = exerciseLookup[editSelectedExerciseId];
+    if (!picked) {
+      toast.error("Exercise not found.");
+      return;
+    }
+
+    setEditForm((prev) => {
+      const existingIndex = prev.exercises.findIndex((ex) => ex.exerciseId === editSelectedExerciseId);
+      const nextExercises = [...prev.exercises];
+      const payload: WorkoutExercise = {
+        exerciseId: editSelectedExerciseId,
+        sets: Math.max(1, editExerciseInputs.sets),
+        reps: Math.max(1, editExerciseInputs.reps),
+        restInSeconds: Math.max(15, editExerciseInputs.restInSeconds),
+        order: existingIndex === -1 ? nextExercises.length + 1 : nextExercises[existingIndex].order
+      };
+
+      if (existingIndex === -1) {
+        nextExercises.push(payload);
+      } else {
+        nextExercises[existingIndex] = payload;
+      }
+
+      const normalized = nextExercises
+        .sort((a, b) => a.order - b.order)
+        .map((item, idx) => ({ ...item, order: idx + 1 }));
+
+      return { ...prev, exercises: normalized };
+    });
+
+    toast.success("Exercise added", {
+      description: `${picked.name} added to the plan.`
+    });
+  };
+
+  const removeExerciseFromEditPlan = (exerciseId: string) => {
+    setEditForm((prev) => {
+      const normalized = prev.exercises
+        .filter((ex) => ex.exerciseId !== exerciseId)
+        .map((ex, idx) => ({ ...ex, order: idx + 1 }));
+      return { ...prev, exercises: normalized };
+    });
+  };
+
+  const handleUpdatePlan = async () => {
+    if (!editingPlan) return;
+    if (!editForm.title.trim()) {
+      toast.error("Add a workout title before saving.");
+      return;
+    }
+
+    try {
+      setEditSaving(true);
+      const payload = {
+        title: editForm.title.trim(),
+        description: editForm.description,
+        difficulty: editForm.difficulty,
+        type: editForm.type,
+        day: editForm.day,
+        exercises: editForm.exercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          sets: ex.sets,
+          reps: ex.reps,
+          restInSeconds: ex.restInSeconds,
+          order: ex.order
+        }))
+      };
+
+      const res = await updateWorkout(editingPlan._id, payload);
+      if (!res?.success) {
+        throw new Error(res?.message || "Failed to update workout");
+      }
+
+      const updatedPlan = normalizeWorkout(
+        res?.data ?? {
+          ...editingPlan,
+          ...payload,
+          updatedAt: new Date().toISOString()
+        }
+      );
+
+      setWorkouts((prev) => prev.map((plan) => (plan._id === editingPlan._id ? updatedPlan : plan)));
+      setEditOpen(false);
+      setEditingPlan(null);
+      toast.success("Workout updated", { description: res?.message || "Changes saved." });
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Could not update workout", {
+        description: error?.message || "Check API / token."
+      });
+    } finally {
+      setEditSaving(false);
+    }
   };
 
 
@@ -784,6 +912,7 @@ export default function WorkoutsPage() {
               difficultyTone,
               typeTone,
               openPreview,
+              openEditModal,
               loadAsTemplate,
               handleDeleteWorkout,
               deletingId
@@ -791,6 +920,207 @@ export default function WorkoutsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setEditingPlan(null);
+        }}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="size-5 text-primary" />
+              Edit workout
+            </DialogTitle>
+            <DialogDescription>Update the workout details and save your changes.</DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4 pb-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleUpdatePlan();
+            }}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium">Title</label>
+                <Input
+                  value={editForm.title}
+                  onChange={(event) => setEditForm((prev) => ({ ...prev, title: event.target.value }))}
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Difficulty</label>
+                <Select
+                  value={editForm.difficulty}
+                  onValueChange={(value) =>
+                    setEditForm((prev) => ({ ...prev, difficulty: value as Difficulty }))
+                  }>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pick a level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["Beginner", "Intermediate", "Advanced"] as Difficulty[]).map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select
+                  value={editForm.type}
+                  onValueChange={(value) =>
+                    setEditForm((prev) => ({ ...prev, type: value as WorkoutType }))
+                  }>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pick a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["Strength", "Cardio", "Weight Loss"] as WorkoutType[]).map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Exercises</p>
+              <div className="rounded-md border border-border/70 bg-muted/20 p-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+                  <div className="sm:col-span-2 lg:col-span-2 space-y-1.5">
+                    <label className="text-xs font-medium">Exercise</label>
+                    <Select
+                      value={editSelectedExerciseId}
+                      onValueChange={(value) => setEditSelectedExerciseId(value)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pick exercise" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {exerciseLibrary.map((ex) => (
+                          <SelectItem key={ex._id} value={ex._id}>
+                            {ex.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">Sets</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editExerciseInputs.sets}
+                      onChange={(e) =>
+                        setEditExerciseInputs((prev) => ({
+                          ...prev,
+                          sets: Number(e.target.value) || 1
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">Reps</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editExerciseInputs.reps}
+                      onChange={(e) =>
+                        setEditExerciseInputs((prev) => ({
+                          ...prev,
+                          reps: Number(e.target.value) || 1
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">Rest (sec)</label>
+                    <Input
+                      type="number"
+                      min={15}
+                      value={editExerciseInputs.restInSeconds}
+                      onChange={(e) =>
+                        setEditExerciseInputs((prev) => ({
+                          ...prev,
+                          restInSeconds: Number(e.target.value) || 30
+                        }))
+                      }
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="w-full sm:col-span-2 lg:col-span-1"
+                    onClick={addExerciseToEditPlan}>
+                    <Plus className="size-4" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border border-border/70 bg-muted/20 p-3">
+                {editForm.exercises.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No exercises in this plan.</p>
+                ) : (
+                  editForm.exercises
+                    .sort((a, b) => a.order - b.order)
+                    .map((item) => {
+                      const exercise = exerciseLookup[item.exerciseId];
+                      return (
+                        <div
+                          key={item.exerciseId}
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2 text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{exercise?.name || "Exercise"}</span>
+                            <span className="text-muted-foreground">
+                              {item.sets}x{item.reps} • {item.restInSeconds}s • #{item.order}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => removeExerciseFromEditPlan(item.exerciseId)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditOpen(false);
+                  setEditingPlan(null);
+                }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving}>
+                {editSaving ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl">
@@ -863,6 +1193,7 @@ function renderWorkoutGrid(
   difficultyTone: Record<Difficulty, string>,
   typeTone: Record<WorkoutType, string>,
   openPreview: (plan: WorkoutPlan) => void,
+  openEdit: (plan: WorkoutPlan) => void,
   loadAsTemplate: (plan: WorkoutPlan) => void,
   deletePlan: (id: string) => void,
   deletingId: string | null
@@ -880,14 +1211,24 @@ function renderWorkoutGrid(
       {plans.map((plan) => (
         <Card key={plan._id} className="flex h-full flex-col border border-border/70">
           <CardHeader className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className={difficultyTone[plan.difficulty]}>{plan.difficulty}</Badge>
-              <Badge className={typeTone[plan.type]}>{plan.type}</Badge>
-              {(plan as any).day && (
-                <Badge variant="outline" className="text-xs">
-                  {(plan as any).day}
-                </Badge>
-              )}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={difficultyTone[plan.difficulty]}>{plan.difficulty}</Badge>
+                <Badge className={typeTone[plan.type]}>{plan.type}</Badge>
+                {(plan as any).day && (
+                  <Badge variant="outline" className="text-xs">
+                    {(plan as any).day}
+                  </Badge>
+                )}
+              </div>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                onClick={() => openEdit(plan)}
+                aria-label="Edit workout">
+                <Pencil className="size-4" />
+              </Button>
             </div>
             <CardTitle className="text-lg leading-tight">{plan.title}</CardTitle>
             <CardDescription className="line-clamp-2">{plan.description}</CardDescription>
