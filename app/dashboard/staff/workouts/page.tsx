@@ -13,7 +13,9 @@ import {
   ArrowUp,
   ArrowDown,
   ShieldCheck,
-  ListChecks
+  ListChecks,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -35,7 +37,6 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -134,6 +135,19 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exerciseLibraryPage, setExerciseLibraryPage] = useState(1);
+
+  const EXERCISES_PER_PAGE = 4;
+  const exerciseLibraryTotalPages = Math.max(1, Math.ceil(exerciseLibrary.length / EXERCISES_PER_PAGE));
+  const paginatedExercises = useMemo(() => {
+    const start = (exerciseLibraryPage - 1) * EXERCISES_PER_PAGE;
+    return exerciseLibrary.slice(start, start + EXERCISES_PER_PAGE);
+  }, [exerciseLibrary, exerciseLibraryPage]);
+
+  useEffect(() => {
+    const total = Math.max(1, Math.ceil(exerciseLibrary.length / EXERCISES_PER_PAGE));
+    if (exerciseLibraryPage > total) setExerciseLibraryPage(total);
+  }, [exerciseLibrary.length, exerciseLibraryPage]);
 
   const normalizeWorkout = (plan: any): WorkoutPlan => {
     const creator =
@@ -665,7 +679,7 @@ export default function WorkoutsPage() {
         </Card>
 
 
-        <Card className="border border-border/70 shadow-sm">
+        <Card className="border border-border/70 shadow-sm flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="size-5 text-[var(--primary)]" />
@@ -673,48 +687,81 @@ export default function WorkoutsPage() {
             </CardTitle>
             <CardDescription>Re-usable building blocks from the Exercise collection.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-[520px] pr-3">
-              <div className="space-y-3">
-                {exerciseLibrary.map((exercise) => (
-                  <div
-                    key={exercise._id}
-                    className="rounded-lg border border-border/70 bg-muted/30 p-3 transition hover:border-[var(--primary)]/60">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className={difficultyTone[exercise.difficulty]}>
-                            {exercise.difficulty}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {exercise.equipment}
-                          </Badge>
-                        </div>
-                        <p className="font-semibold leading-tight">{exercise.name}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {exercise.description}
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          {(exercise.muscleGroup || []).map((muscle) => (
-                            <span
-                              key={muscle}
-                              className="rounded-full bg-background px-2 py-0.5 border border-border/70">
-                              {muscle}
-                            </span>
-                          ))}
-                        </div>
+          <CardContent className="flex flex-col gap-4 flex-1">
+            <div className="space-y-3 min-h-[320px]">
+              {paginatedExercises.map((exercise) => (
+                <div
+                  key={exercise._id}
+                  className="rounded-lg border border-border/70 bg-muted/30 p-3 transition hover:border-[var(--primary)]/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className={difficultyTone[exercise.difficulty]}>
+                          {exercise.difficulty}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {exercise.equipment}
+                        </Badge>
                       </div>
-                      <Button
-                        size="sm"
-                        variant={selectedExerciseId === exercise._id ? "default" : "outline"}
-                        onClick={() => setSelectedExerciseId(exercise._id)}>
-                        Use
-                      </Button>
+                      <p className="font-semibold leading-tight">{exercise.name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {exercise.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {(exercise.muscleGroup || []).map((muscle) => (
+                          <span
+                            key={muscle}
+                            className="rounded-full bg-background px-2 py-0.5 border border-border/70">
+                            {muscle}
+                          </span>
+                        ))}
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      variant={selectedExerciseId === exercise._id ? "default" : "outline"}
+                      onClick={() => setSelectedExerciseId(exercise._id)}>
+                      Use
+                    </Button>
                   </div>
+                </div>
+              ))}
+            </div>
+            {exerciseLibraryTotalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-1 pt-2 border-t border-border/70">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-8"
+                  disabled={exerciseLibraryPage <= 1}
+                  onClick={() => setExerciseLibraryPage((p) => Math.max(1, p - 1))}>
+                  <ChevronLeft className="size-4" />
+                </Button>
+                {Array.from({ length: exerciseLibraryTotalPages }, (_, i) => i + 1).map((num) => (
+                  <Button
+                    key={num}
+                    type="button"
+                    variant={exerciseLibraryPage === num ? "default" : "outline"}
+                    size="icon"
+                    className="size-8"
+                    onClick={() => setExerciseLibraryPage(num)}>
+                    {num}
+                  </Button>
                 ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-8"
+                  disabled={exerciseLibraryPage >= exerciseLibraryTotalPages}
+                  onClick={() =>
+                    setExerciseLibraryPage((p) => Math.min(exerciseLibraryTotalPages, p + 1))
+                  }>
+                  <ChevronRight className="size-4" />
+                </Button>
               </div>
-            </ScrollArea>
+            )}
           </CardContent>
         </Card>
       </div>
