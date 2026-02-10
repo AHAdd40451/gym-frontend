@@ -84,6 +84,16 @@ export const staffNavItems: NavGroup[] = [
   //   ]
   // },
   {
+    title: "Communication",
+    items: [
+      {
+        title: "Notifications",
+        href: "/dashboard/staff/notifications",
+        icon: BellIcon
+      }
+    ]
+  },
+  {
     title: "Member Management",
     items: [
       {
@@ -143,16 +153,7 @@ export const staffNavItems: NavGroup[] = [
       // }
     ]
   },
-  {
-    title: "Communication",
-    items: [
-      {
-        title: "Notifications",
-        href: "/dashboard/staff/notifications",
-        icon: BellIcon
-      }
-    ]
-  }
+  
   // {
   //   title: "Scheduling",
   //   items: [
