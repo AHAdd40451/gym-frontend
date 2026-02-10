@@ -97,26 +97,7 @@ export const userNavItems: NavGroup[] = [
       // }
     ]
   },
-  {
-    title: "Training",
-    items: [
-      // {
-      //   title: "Personal Training",
-      //   href: "/dashboard/user/personal-training",
-      //   icon: GraduationCapIcon
-      // },
-      // {
-      //   title: "Group Classes",
-      //   href: "/dashboard/user/classes",
-      //   icon: ComponentIcon
-      // },
-      {
-        title: "Book Session",
-        href: "/dashboard/user/booking",
-        icon: CalendarIcon
-      }
-    ]
-  },
+ 
   // {
   //   title: "Goals & Progress",
   //   items: [
@@ -181,11 +162,7 @@ export const userNavItems: NavGroup[] = [
         href: "/dashboard/user/notifications",
         icon: BellIcon
       },
-      {
-        title: "Settings",
-        href: "/dashboard/user/settings",
-        icon: SettingsIcon
-      },
+     
       {
         title: "Training History",
         href: "/dashboard/user/training",
@@ -193,16 +170,43 @@ export const userNavItems: NavGroup[] = [
       }
     ]
   },
+  
   {
-    title: "Nutrition",
+    title: "Training",
     items: [
       {
         title: "Diet Calendar",
         href: "/dashboard/user/diet-calendar",
         icon: CalendarIcon
+      },
+      // {
+      //   title: "Personal Training",
+      //   href: "/dashboard/user/personal-training",
+      //   icon: GraduationCapIcon
+      // },
+      // {
+      //   title: "Group Classes",
+      //   href: "/dashboard/user/classes",
+      //   icon: ComponentIcon
+      // },
+      {
+        title: "Book Session",
+        href: "/dashboard/user/booking",
+        icon: CalendarIcon
       }
     ]
   },
+ 
+  {
+    title: "System",
+    items: [
+      {
+        title: "Settings",
+        href: "/dashboard/user/settings",
+        icon: SettingsIcon
+      }
+    ]
+  }
 ];
 
 export function UserNavMain() {
