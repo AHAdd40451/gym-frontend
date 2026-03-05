@@ -1,55 +1,51 @@
 import { generateMeta } from "@/lib/utils";
-import { AlertCircleIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Metadata } from "next";
+import { ReservationsCard } from "./components/reservations-card";
+import { CampaignOverview } from "./components/campaign-overview";
+import { RecentActivities } from "./components/recent-activities";
+import { RevenueStat } from "./components/revenue-stat";
+import { StatCards } from "./components/stat-cards";
+import { BookingsCard } from "./components/bookings-card";
+import { BookingList } from "./components/booking-list";
+import { ClipboardMinusIcon, PlusIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export async function generateMetadata(): Promise<Metadata> {
   return generateMeta({
     title: "Hotel Admin Dashboard",
     description:
-      "On the hotel admin dashboard, you can see your turnover, manage reservations, and view your customers. Built with shadcn/ui, Tailwind CSS, Next.js.",
+      "On the hotel management admin dashboard, you can see your turnover, manage reservations, and view your customers. Built with shadcn/ui, Tailwind CSS, Next.js.",
     canonical: "/hotel"
   });
 }
 
 export default function Page() {
   return (
-    <div className="flex h-[90vh] items-center justify-center">
-      <div className="max-w-(--breakpoint-sm) space-y-4 lg:space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="mb-4 flex items-center gap-3">
-              <svg
-                className="size-6 animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <h1 className="text-xl">Hotel Dashboard</h1>
-            </CardTitle>
-            <CardDescription>
-              It is a template used to manage reservations, rooms, guests, and hotel operations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="border-t pt-4">
-            <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-              <AlertCircleIcon className="size-4 text-orange-400" />
-              This page is currently under construction.
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-4">
+      <div className="flex flex-row items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight lg:text-2xl">Hotel Management</h1>
+        <div className="flex gap-2">
+          <Button>
+            <PlusIcon /> <span className="hidden md:flex">Add New</span>
+          </Button>
+          <Button variant="outline">
+            <ClipboardMinusIcon /> <span className="hidden md:flex">Reports</span>
+          </Button>
+        </div>
       </div>
+      <StatCards />
+      <div className="gap-4 space-y-4 xl:grid xl:grid-cols-3 xl:space-y-0">
+        <ReservationsCard />
+        <div className="xl:col-span-2">
+          <CampaignOverview />
+        </div>
+      </div>
+      <div className="gap-4 space-y-4 xl:grid xl:grid-cols-3 xl:space-y-0">
+        <RecentActivities />
+        <RevenueStat />
+        <BookingsCard />
+      </div>
+      <BookingList />
     </div>
   );
 }
