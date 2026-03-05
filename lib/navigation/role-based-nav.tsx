@@ -19,12 +19,12 @@ export function RoleBasedNavMain() {
 
   switch (user?.role) {
     case 'admin':
-      return <AdminNavMain />;
+      return <AdminNavMain user={user}/>;
     case 'staff':
-      return <StaffNavMain />;
+      return <StaffNavMain user={user}/>;
     case 'user':
-      return <UserNavMain />;
+      return <UserNavMain user={user}/>;
     default:
-      return <UserNavMain />; // Default to user navigation
+      return <UserNavMain user={user}/>; // Default to user navigation
   }
 }
