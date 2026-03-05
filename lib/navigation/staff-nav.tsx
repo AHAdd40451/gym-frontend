@@ -32,7 +32,6 @@ import {
   FileTextIcon,
   BellIcon,
   BarChart3Icon,
-  SettingsIcon,
   History
 } from "lucide-react";
 import Link from "next/link";
@@ -136,11 +135,6 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/user-workout-history",
         icon: History
       },
-      {
-        title: "Settings",
-        href: "/dashboard/user/settings",
-        icon: SettingsIcon
-      }
       // {
       //   title: "Personal Training",
       //   href: "/dashboard/staff/training",
@@ -151,6 +145,16 @@ export const staffNavItems: NavGroup[] = [
       //   href: "/dashboard/staff/classes",
       //   icon: ComponentIcon
       // }
+    ]
+  },
+  {
+    title: "Account",
+    items: [
+      {
+        title: "Profile",
+        href: "/dashboard/staff/profile",
+        icon: UserIcon
+      }
     ]
   },
   

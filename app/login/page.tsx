@@ -104,134 +104,64 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">Gym Management System</CardTitle>
-          <CardDescription className="text-center">
-            Sign in to access your dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {(error || urlError) && (
-              <Alert variant="destructive">
-                <AlertDescription>{error || urlError}</AlertDescription>
-              </Alert>
-            )}
+    <div className="min-h-screen w-full md:grid md:grid-cols-2">
+      <div className="hidden items-center justify-center bg-black text-white md:flex">
+        <div className="text-center">
+          <div className="text-4xl font-semibold tracking-wide">Gym Management</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center bg-gray-50 px-6 py-10">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Sign In</CardTitle>
+            <CardDescription className="text-center">
+              Access your dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(error || urlError) && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error || urlError}</AlertDescription>
+                </Alert>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Account Type</Label>
-              <Select
-                value={role}
-                onValueChange={(value: "user" | "staff" | "admin") => setRole(value)}
-                disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Member</div>
-                        <div className="text-muted-foreground text-xs">
-                          Personal fitness tracking
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="staff">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Staff</div>
-                        <div className="text-muted-foreground text-xs">
-                          Member management and training
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Admin</div>
-                        <div className="text-muted-foreground text-xs">Full system access</div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={handleKeyDown}
-                required
-                disabled={isLoading}
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={handleKeyDown}
-                required
-                disabled={isLoading}
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <div className="bg-muted rounded-lg p-3">
-              <div className="flex items-center gap-2 text-sm">
-                {getRoleIcon(role)}
-                <span className="font-medium capitalize">{role} Account</span>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  required
+                  disabled={isLoading}
+                  placeholder="Enter your email"
+                />
               </div>
-              <p className="text-muted-foreground mt-1 text-xs">{getRoleDescription(role)}</p>
-            </div>
 
-            <Button type="button" className="w-full" disabled={isLoading} onClick={handleLogin}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In as {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Button>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  required
+                  disabled={isLoading}
+                  placeholder="Enter your password"
+                />
+              </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              Don't have an account?{" "}
-              <Button variant="link" className="h-auto p-0">
-                Contact your administrator
+              <Button type="button" className="w-full" disabled={isLoading} onClick={handleLogin}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign in
               </Button>
-            </p>
-
-            {/* Debug button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => {
-                console.log("Current localStorage:", {
-                  authToken: localStorage.getItem("currentUser"),
-                  authUser: localStorage.getItem("currentUser"),
-                  accounts: JSON.parse(localStorage.getItem("accounts") || "[]")
-                });
-              }}>
-              Debug localStorage
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
