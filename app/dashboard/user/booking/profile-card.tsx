@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DetailsDrawer } from "@/components/DetailsDrawer";
+import {
+  DrawerProfileHeader,
+  DrawerProfileAbout,
+  DrawerProfileGallery,
+} from "@/app/dashboard/user/booking/drawer-profile";
 import { getUsersByRole } from "@/lib/api/services/getstaff/staff";
 import {
   CalendarDays,
@@ -26,6 +31,16 @@ type StaffUser = {
   role?: string;
   status?: string;
   profileImage?: string;
+  bio?: string;
+  phone?: string | null;
+  language?: string;
+  createdAt?: string;
+  location?: {
+    country?: string;
+    city?: string;
+  };
+  gallery?: string[];
+  coverImage?: string | null;
   trainerProfile?: {
     qualities?: string[];
     availability?: { days?: string[] | string };
@@ -298,33 +313,22 @@ const BookingUsers = () => {
       <DetailsDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        title={selectedUser ? fullName(selectedUser) : "Trainer details"}
+        title={selectedUser ? undefined : "Trainer details"}
       >
         {selectedUser && (
-          <div className="space-y-6">
-            <div className="flex justify-center">
-              <Avatar className="size-24">
-                <AvatarImage src={selectedUser.profileImage || fallbackImage(selectedUser)} />
-                <AvatarFallback className="text-xl">{getInitials(selectedUser)}</AvatarFallback>
-              </Avatar>
+          <div className="flex flex-col gap-4">
+            <div className="bg-card shrink-0 overflow-hidden rounded-lg border">
+              <DrawerProfileHeader
+                user={selectedUser}
+                fallbackImageUrl={fallbackImage(selectedUser)}
+              />
             </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Name</p>
-                <p className="font-medium">{fullName(selectedUser)}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p className="font-medium">{selectedUser.email || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Role</p>
-                <Badge variant="secondary">{selectedUser.role || "Staff"}</Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Plan</p>
-                <p className="font-medium">{selectedUser.trainerProfile?.plan?.name || "Custom"}</p>
-              </div>
+
+            <div className="flex min-h-0 flex-col gap-4">
+              <DrawerProfileAbout user={selectedUser} />
+              <DrawerProfileGallery
+                gallery={selectedUser.gallery ?? []}
+              />
             </div>
           </div>
         )}

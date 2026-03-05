@@ -65,7 +65,7 @@ export function ProfileSidebar({ user }: { user?: StaffUser | null }) {
             </div>
           </div>
           {bio && (
-            <div className="border-t pt-3 text-sm">
+            <div className="pt-3 text-sm">
               <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">Bio</p>
               <p>{bio}</p>
             </div>
