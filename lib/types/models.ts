@@ -16,6 +16,7 @@ export interface User extends BaseModel {
   role: 'admin' | 'staff' | 'user';
   status: 'active' | 'inactive' | 'suspended' | 'pending';
   profileImage?: string;
+  coverImage?: string;
   address?: {
     street?: string;
     city?: string;

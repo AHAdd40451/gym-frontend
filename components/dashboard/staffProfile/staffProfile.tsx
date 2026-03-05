@@ -28,6 +28,7 @@ type StaffUser = {
     language?: string;
     bio?: string;
     profileImage?: string | null;
+    coverImage?: string | null;
     createdAt?: string;
     location?: {
         country?: string;
@@ -63,7 +64,7 @@ export default function StaffProfile({ id, userData }: { id: string; userData: a
         <div className="mx-auto min-h-screen lg:max-w-7xl xl:pt-6">
             <div className="space-y-4">
                 <div className="bg-card overflow-hidden rounded-md border">
-                    <ProfileHeader user={user} />
+                    <ProfileHeader user={user} userId={userId} />
                 </div>
 
                 <div className="gap-4 space-y-4 lg:grid lg:space-y-0 xl:grid-cols-[300px_1fr]">
