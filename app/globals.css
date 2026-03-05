@@ -177,7 +177,7 @@
   
   /* Apply font using CSS variable - will be overridden by themes.css when data-theme-font is set */
   html {
-    font-family: var(--font-sans, var(--font-inter)), sans-serif;
+    font-family: var(--font-sans, var(--font-outfit)), sans-serif;
   }
   
   body {
@@ -187,7 +187,7 @@
   
   /* Override font-sans utility to use CSS variable */
   .font-sans {
-    font-family: var(--font-sans, var(--font-inter)), sans-serif;
+    font-family: var(--font-sans, var(--font-outfit)), sans-serif;
   }
 
   .font-display {
