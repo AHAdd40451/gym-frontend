@@ -37,7 +37,8 @@ export default async function RootLayout({
     scale: (cookieStore.get("theme_scale")?.value ?? DEFAULT_THEME.scale) as any,
     radius: (cookieStore.get("theme_radius")?.value ?? DEFAULT_THEME.radius) as any,
     contentLayout: (cookieStore.get("theme_content_layout")?.value ??
-      DEFAULT_THEME.contentLayout) as any
+      DEFAULT_THEME.contentLayout) as any,
+    font: (cookieStore.get("theme_font")?.value ?? "outfit") as string
   };
 
   const bodyAttributes = Object.fromEntries(
@@ -47,7 +48,11 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-theme-font={themeSettings.font}
+    >
       <body
         suppressHydrationWarning
         className={cn("bg-background group/layout font-sans", fontVariables)}

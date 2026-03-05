@@ -53,7 +53,7 @@ const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark"], {
     required_error: "Please select a theme."
   }),
-  font: z.enum(["inter", "roboto", "poppins", "montserrat", "pt-sans"], {
+  font: z.enum(["outfit", "inter", "roboto", "poppins", "montserrat", "pt-sans"], {
     invalid_type_error: "Select a font",
     required_error: "Please select a font."
   })
@@ -98,7 +98,7 @@ export default function Page() {
     resolver: zodResolver(appearanceFormSchema),
     defaultValues: {
       theme: "light",
-      font: "inter"
+      font: "outfit"
     }
   });
 
@@ -112,11 +112,11 @@ export default function Page() {
   // Fetch user preferences
   useEffect(() => {
     const fetchPreferences = async () => {
-      if (!userId) {
+        if (!userId) {
         setFetching(false);
-        // If no userId, check if font is already set, otherwise set default
+        // If no userId, apply default font and set cookie so layout uses it on next load
         if (!document.documentElement.getAttribute('data-theme-font')) {
-          document.documentElement.setAttribute('data-theme-font', 'inter');
+          applyFont('outfit');
         }
         return;
       }
@@ -148,7 +148,7 @@ export default function Page() {
         }
         
         // If still no font, use current attribute or default
-        savedFont = savedFont || currentFontAttribute || "inter";
+        savedFont = savedFont || currentFontAttribute || "outfit";
 
         form.reset({
           theme: savedTheme,
@@ -162,13 +162,13 @@ export default function Page() {
 
         // Apply font using data-theme-font attribute (preserve if already set correctly)
         if (currentFontAttribute !== savedFont) {
-          document.documentElement.setAttribute('data-theme-font', savedFont);
+          applyFont(savedFont);
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
         // On error, check if font is already set, otherwise set default
         if (!document.documentElement.getAttribute('data-theme-font')) {
-          document.documentElement.setAttribute('data-theme-font', 'inter');
+          applyFont('outfit');
         }
         toast.error("Failed to load appearance settings");
       } finally {
@@ -184,6 +184,8 @@ export default function Page() {
   // Apply font using data-theme-font attribute (matches themes.css)
   const applyFont = (font: string) => {
     document.documentElement.setAttribute('data-theme-font', font);
+    // Persist in cookie so layout can apply font on next server render
+    document.cookie = `theme_font=${encodeURIComponent(font)}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`;
   };
 
   const onSubmit = async (data: AppearanceFormValues) => {
@@ -357,6 +359,7 @@ export default function Page() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="outfit">Outfit</SelectItem>
                       <SelectItem value="inter">Inter</SelectItem>
                       <SelectItem value="roboto">Roboto</SelectItem>
                       <SelectItem value="poppins">Poppins</SelectItem>

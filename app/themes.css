@@ -855,7 +855,16 @@ body {
 /* Font */
 /* Default font - applied when no data-theme-font is set */
 :root {
-    --font-sans: var(--font-inter);
+    --font-sans: var(--font-outfit);
+}
+
+[data-theme-font="outfit"] {
+    --font-sans: var(--font-outfit);
+    font-family: var(--font-outfit), sans-serif;
+}
+
+[data-theme-font="outfit"] body {
+    font-family: var(--font-outfit), sans-serif;
 }
 
 [data-theme-font="inter"] {
