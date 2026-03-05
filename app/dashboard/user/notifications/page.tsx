@@ -1,51 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ComponentProps } from "react";
-import { toast } from "sonner";
-import {
-  BellIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  RefreshCcwIcon,
-  SearchIcon,
-  Trash2Icon
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { Check, RefreshCcw, Settings } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/api/services/auth/context";
 import {
   notificationsApi,
-  type Notification
+  type Notification as ApiNotification,
 } from "@/lib/api/services/notifications/notifications";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import NotificationsDataTable, {
+  type Notification,
+} from "@/app/dashboard/(auth)/pages/notifications/data-table";
 
-type Pagination = {
-  page?: number;
-  limit?: number;
-  total?: number;
-  totalPages?: number;
-  hasNext?: boolean;
-  hasPrev?: boolean;
-};
-
-const LIMIT = 7;
 const FETCH_LIMIT = 100;
 
-function normalizeNotifications(payload: any): Notification[] {
+function normalizeNotifications(payload: any): ApiNotification[] {
   const body = payload?.data ?? payload;
 
   if (Array.isArray(body)) return body;
@@ -62,49 +38,28 @@ function normalizeNotifications(payload: any): Notification[] {
   return [];
 }
 
-function extractPagination(payload: any): Pagination | null {
-  const body = payload?.data ?? payload;
-  return (
-    body?.pagination ??
-    body?.meta?.pagination ??
-    body?.data?.pagination ??
-    body?.data?.meta?.pagination ??
-    null
-  );
+function toTemplateType(type?: string): Notification["type"] {
+  if (type === "success") return "team";
+  if (type === "warning") return "ticket";
+  if (type === "error") return "ticket";
+  return "message";
 }
 
-function formatRelativeTime(timestamp?: string | null) {
-  if (!timestamp) return "just now";
-
+function toRelativeTime(value?: string | null) {
+  if (!value) return "just now";
   try {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+    return formatDistanceToNow(new Date(value), { addSuffix: true });
   } catch {
     return "just now";
   }
 }
 
-function getTypeBadgeVariant(type: Notification["type"]): ComponentProps<typeof Badge>["variant"] {
-  if (type === "success") return "success";
-  if (type === "warning") return "warning";
-  if (type === "error") return "destructive";
-  return "info";
-}
-
 export default function NotificationsPage() {
   const { user } = useAuth();
 
-  const [items, setItems] = useState<Notification[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [items, setItems] = useState<ApiNotification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<Notification["type"] | "all">("all");
-  const [query, setQuery] = useState("");
 
   const userId = useMemo(() => {
     const anyUser = user as any;
@@ -112,9 +67,9 @@ export default function NotificationsPage() {
     if (fromContext) return fromContext;
 
     if (typeof window === "undefined") return undefined;
-
     const stored = localStorage.getItem("currentUser");
     if (!stored) return undefined;
+
     try {
       const parsed = JSON.parse(stored);
       return (parsed?._id || parsed?.id) as string | undefined;
@@ -123,429 +78,179 @@ export default function NotificationsPage() {
     }
   }, [user]);
 
-  const userLabel = useMemo(() => {
-    if (!user) return "You";
-    return [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.email || "You";
-  }, [user]);
+  const unreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items]);
 
-  const refreshUnreadCount = useCallback(async () => {
+  const loadNotifications = useCallback(async () => {
     if (!userId) {
-      setUnreadCount(null);
+      setItems([]);
+      setLoading(false);
       return;
     }
 
+    setLoading(true);
+    setErrorMessage(null);
     try {
-      const res = await notificationsApi.getUnreadCount(String(userId));
-      const data = (res as any)?.data ?? res;
-      const count = data?.count ?? (data as any)?.data?.count ?? 0;
-      setUnreadCount(Number.isFinite(count) ? count : 0);
-    } catch {
-      setUnreadCount(null);
+      const res = await notificationsApi.getAll(String(userId), {
+        page: 1,
+        limit: FETCH_LIMIT,
+      });
+      const list = normalizeNotifications(res);
+      list.sort((a, b) => {
+        const at = Date.parse(a.createdAt || a.updatedAt || "");
+        const bt = Date.parse(b.createdAt || b.updatedAt || "");
+        if (!Number.isFinite(at) && !Number.isFinite(bt)) return 0;
+        if (!Number.isFinite(at)) return 1;
+        if (!Number.isFinite(bt)) return -1;
+        return bt - at;
+      });
+      setItems(list);
+    } catch (error: any) {
+      const message = error?.message || "Could not load notifications.";
+      setErrorMessage(message);
+      setItems([]);
+      toast.error("Could not load notifications", { description: message });
+    } finally {
+      setLoading(false);
     }
   }, [userId]);
 
-  const loadNotifications = useCallback(
-    async (resetPage = true) => {
-      if (!userId) {
-        setItems([]);
-        setPagination(null);
-        setHasMore(false);
-        setLoading(false);
-        return;
-      }
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
-      setLoading(true);
-      setErrorMessage(null);
-      if (resetPage) setPage(1);
+  const handleMarkRead = useCallback(
+    async (notificationId: string) => {
+      if (!userId) return;
 
+      setItems((prev) => prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n)));
       try {
-        const filters: any = {
-          page: 1,
-          limit: FETCH_LIMIT
-        };
-
-        if (showUnreadOnly) filters.isRead = false;
-        if (typeFilter !== "all") filters.type = typeFilter;
-
-        const res = await notificationsApi.getAll(String(userId), filters);
-        const list = normalizeNotifications(res);
-        const nextPagination = extractPagination(res);
-
-        setPagination(nextPagination);
-        setItems(list);
-        setHasMore(list.length >= LIMIT);
-      } catch (error: any) {
-        const message = error?.message || "Could not load notifications. Check API and token.";
-        setErrorMessage(message);
-        setItems([]);
-        setPagination(null);
-        setHasMore(false);
-
-        toast.error("Could not load notifications", {
-          description: message
+        await notificationsApi.markAsRead(notificationId, {
+          userId: String(userId),
+          isRead: true,
         });
-      } finally {
-        setLoading(false);
+      } catch {
+        // keep optimistic state
       }
     },
-    [showUnreadOnly, typeFilter, userId]
+    [userId]
   );
 
-  useEffect(() => {
-    loadNotifications(true);
-    refreshUnreadCount();
-  }, [loadNotifications, refreshUnreadCount]);
+  const handleDelete = useCallback(async (notificationId: string) => {
+    try {
+      await notificationsApi.delete(notificationId);
+      setItems((prev) => prev.filter((n) => n._id !== notificationId));
+      toast.success("Notification deleted.");
+    } catch (error: any) {
+      const message = error?.message || "Could not delete notification.";
+      toast.error("Action failed", { description: message });
+    }
+  }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [query]);
-
-  const filteredItems = useMemo(() => {
-    const search = query.trim().toLowerCase();
-    if (!search) return items;
-
-    return items.filter((item) => {
-      const haystack = `${item.title || ""} ${item.message || ""}`.toLowerCase();
-      return haystack.includes(search);
-    });
-  }, [items, query]);
-
-  const sortedItems = useMemo(() => {
-    const list = [...filteredItems];
-    list.sort((a, b) => {
-      const at = Date.parse(a.createdAt || a.updatedAt || "");
-      const bt = Date.parse(b.createdAt || b.updatedAt || "");
-      if (!Number.isFinite(at) && !Number.isFinite(bt)) return 0;
-      if (!Number.isFinite(at)) return 1;
-      if (!Number.isFinite(bt)) return -1;
-      return bt - at;
-    });
-    return list;
-  }, [filteredItems]);
-
-  const totalFilteredCount = sortedItems.length;
-  const totalPages = Math.max(1, Math.ceil(totalFilteredCount / LIMIT));
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * LIMIT;
-    return sortedItems.slice(start, start + LIMIT);
-  }, [sortedItems, page]);
-
-  const totalCount = totalFilteredCount;
-  const hasNextPage = page < totalPages;
-  const hasPrevPage = page > 1;
-
-  const derivedUnreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items]);
-
-  const statsTotal = totalCount ?? items.length;
-  const statsUnread = unreadCount ?? derivedUnreadCount;
-  const statsRead = Math.max(0, statsTotal - statsUnread);
-
-  useEffect(() => {
-    if (page > totalPages && totalPages >= 1) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const handleRefresh = async () => {
-    await loadNotifications(true);
-    await refreshUnreadCount();
-  };
-
-  const handlePrevPage = () => {
-    if (page <= 1) return;
-    setPage((p) => p - 1);
-  };
-
-  const handleNextPage = () => {
-    if (page >= totalPages) return;
-    setPage((p) => p + 1);
-  };
-
-  const handleMarkAllRead = async () => {
-    if (!userId) return;
-
+  const handleMarkAllRead = useCallback(async () => {
+    if (!userId || items.length === 0) return;
     try {
       await notificationsApi.markAllAsRead(String(userId));
-      setItems((prev) => (showUnreadOnly ? [] : prev.map((n) => ({ ...n, isRead: true }))));
-      setUnreadCount(0);
+      setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success("All notifications marked as read.");
     } catch (error: any) {
       const message = error?.message || "Could not mark all as read.";
       toast.error("Action failed", { description: message });
     }
-  };
+  }, [items.length, userId]);
 
-  const handleMarkRead = async (notificationId: string) => {
-    if (!userId) return;
+  const tableData: Notification[] = useMemo(
+    () =>
+      items.map((item, index) => ({
+        id: index + 1,
+        title: item.title || "Notification",
+        description: item.message || "",
+        type: toTemplateType(item.type),
+        time: toRelativeTime(item.createdAt || item.updatedAt),
+        status: item.isRead ? "read" : "unread",
+        actions: [
+          ...(item.isRead
+            ? []
+            : [
+                {
+                  label: "Mark read",
+                  variant: "outline" as const,
+                  onClick: () => handleMarkRead(item._id),
+                },
+              ]),
+          {
+            label: "Delete",
+            variant: "destructive" as const,
+            onClick: () => handleDelete(item._id),
+          },
+        ],
+      })),
+    [handleDelete, handleMarkRead, items]
+  );
 
-    setItems((prev) => {
-      if (showUnreadOnly) return prev.filter((n) => n._id !== notificationId);
-      return prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n));
-    });
-    setUnreadCount((prev) => (typeof prev === "number" ? Math.max(0, prev - 1) : prev));
+  if (!userId) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Could not identify your account. Please sign in again.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-    try {
-      await notificationsApi.markAsRead(notificationId, {
-        userId: String(userId),
-        isRead: true
-      });
-    } catch {
-      // Optimistic UI; keep state.
-    }
-  };
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Loading notifications...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const handleDelete = async (notificationId: string) => {
-    try {
-      await notificationsApi.delete(notificationId);
-      setItems((prev) => prev.filter((n) => n._id !== notificationId));
-      toast.success("Notification deleted.");
-      refreshUnreadCount();
-    } catch (error: any) {
-      const message = error?.message || "Could not delete notification.";
-      toast.error("Action failed", { description: message });
-    }
-  };
-
-  const handleClearAll = async () => {
-    if (!userId) return;
-    if (!window.confirm("Clear all notifications? This cannot be undone.")) return;
-
-    try {
-      await notificationsApi.deleteAll(String(userId));
-      setItems([]);
-      setPagination(null);
-      setHasMore(false);
-      setUnreadCount(0);
-      toast.success("All notifications cleared.");
-    } catch (error: any) {
-      const message = error?.message || "Could not clear notifications.";
-      toast.error("Action failed", { description: message });
-    }
-  };
+  if (errorMessage) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4">
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+            <Button className="mt-4" variant="outline" onClick={loadNotifications}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 pb-10">
-      <Card className="via-background to-background border-none bg-gradient-to-r from-[var(--primary)]/10 shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-3xl font-semibold">
-            <BellIcon className="size-6" />
-            Notifications
-          </CardTitle>
-          <CardDescription>All updates and alerts related to your account.</CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="mx-auto max-w-4xl space-y-4 xl:mt-8">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight lg:text-2xl">Notifications</h1>
+          <p className="text-sm text-muted-foreground">Latest account and gym updates.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{unreadCount} unread</Badge>
+          <Button onClick={handleMarkAllRead} disabled={unreadCount === 0}>
+            <Check className="size-4" />
+            Mark All as Read
+          </Button>
+          <Button onClick={loadNotifications} variant="outline">
+            <RefreshCcw className="size-4" />
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/pages/settings/notifications">
+              <Settings className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
 
-      <Card className="border-border/70 border shadow-sm">
-        <CardHeader>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <BellIcon className="size-5" />
-                All Notifications
-                <Badge variant="secondary" className="ml-2">
-                  {userLabel}
-                </Badge>
-              </CardTitle>
-              <CardDescription>
-                Use filters to find what you need. Click a notification to mark it as read.
-              </CardDescription>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={showUnreadOnly ? "outline" : "default"}
-                  onClick={() => setShowUnreadOnly(false)}
-                  disabled={loading}
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={showUnreadOnly ? "default" : "outline"}
-                  onClick={() => setShowUnreadOnly(true)}
-                  disabled={loading}
-                >
-                  Unread
-                </Button>
-              </div>
-
-              <div className="relative w-full sm:w-[260px]">
-                <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search notifications..."
-                  className="pl-9"
-                  disabled={loading && items.length === 0}
-                />
-              </div>
-
-              <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}>
-                <RefreshCcwIcon className="size-4" />
-                Refresh
-              </Button>
-
-              <Button
-                onClick={handleMarkAllRead}
-                variant="outline"
-                size="sm"
-                disabled={loading || items.length === 0 || derivedUnreadCount === 0}
-              >
-                <CheckCircle2Icon className="size-4" />
-                Mark all read
-              </Button>
-
-              <Button onClick={handleClearAll} size="sm" disabled={loading || items.length === 0}>
-                <Trash2Icon className="size-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {!userId ? (
-            <div className="text-muted-foreground p-6 text-center">
-              <p className="text-sm">Could not identify your account.</p>
-              <p className="mt-2 text-xs">Please sign out and sign in again.</p>
-            </div>
-          ) : loading && items.length === 0 ? (
-            <div className="text-muted-foreground p-6 text-center text-sm">
-              Loading notifications...
-            </div>
-          ) : errorMessage ? (
-            <div className="text-muted-foreground p-6 text-center">
-              <p className="text-sm">Could not load notifications.</p>
-              <p className="mt-2 text-xs">{errorMessage}</p>
-              <div className="mt-4 flex justify-center">
-                <Button onClick={handleRefresh} variant="outline" size="sm">
-                  Try again
-                </Button>
-              </div>
-            </div>
-          ) : sortedItems.length === 0 ? (
-            <div className="text-muted-foreground p-6 text-center">
-              <p className="text-sm">No notifications found.</p>
-              <p className="mt-2 text-xs">
-                {showUnreadOnly
-                  ? "You have no unread notifications."
-                  : "New notifications will appear here."}
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-0 min-h-0">
-              <div className="overflow-auto max-h-[65vh] min-h-0 pr-2">
-                <div className="space-y-3 pb-2">
-                  {paginatedItems.map((item) => (
-                    <Card
-                      key={item._id}
-                      className={cn(
-                        "border-border/70 border shadow-none",
-                        item.isRead ? "bg-background" : "bg-[var(--primary)]/5"
-                      )}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 min-w-0 flex-1">
-                            <Avatar className="size-9 shrink-0">
-                              <AvatarFallback>
-                                {item.title?.trim?.()?.charAt(0)?.toUpperCase?.() || "N"}
-                              </AvatarFallback>
-                            </Avatar>
-
-                            <div className="space-y-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="leading-none font-semibold">{item.title}</p>
-                                <Badge
-                                  variant={getTypeBadgeVariant(item.type)}
-                                  className="text-[11px] shrink-0"
-                                >
-                                  {item.type}
-                                </Badge>
-                                {!item.isRead ? (
-                                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs shrink-0">
-                                    <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
-                                    Unread
-                                  </span>
-                                ) : null}
-                              </div>
-
-                              <p className="text-muted-foreground text-sm break-words">{item.message}</p>
-
-                              <div className="text-muted-foreground flex items-center gap-1 text-xs">
-                                <ClockIcon className="size-3 shrink-0" />
-                                {formatRelativeTime(item.createdAt || item.updatedAt)}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            {!item.isRead ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleMarkRead(item._id)}
-                              >
-                                Mark read
-                              </Button>
-                            ) : null}
-
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(item._id)}
-                            >
-                              <Trash2Icon className="size-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </div>
-
-                        {item.updatedAt && item.updatedAt !== item.createdAt ? (
-                          <>
-                            <Separator className="my-3" />
-                            <p className="text-muted-foreground text-xs">
-                              Updated {formatRelativeTime(item.updatedAt)}
-                            </p>
-                          </>
-                        ) : null}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="my-0 shrink-0" />
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-4 shrink-0 bg-muted/30 rounded-b-lg -mx-px -mb-px px-4 border-t border-border/70">
-                <p className="text-muted-foreground text-xs order-2 sm:order-1">
-                  Showing {(page - 1) * LIMIT + paginatedItems.length} of {totalCount} notifications
-                </p>
-
-                <div className="flex flex-wrap items-center justify-end gap-2 order-1 sm:order-2">
-                  <Button
-                    onClick={handlePrevPage}
-                    variant="outline"
-                    size="sm"
-                    disabled={loading || !hasPrevPage}
-                  >
-                    Previous
-                  </Button>
-                  <Badge variant="secondary" className="text-xs">
-                    Page {page} / {totalPages}
-                  </Badge>
-                  <Button
-                    onClick={handleNextPage}
-                    variant="outline"
-                    size="sm"
-                    disabled={loading || !hasNextPage}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <NotificationsDataTable data={tableData} />
     </div>
   );
 }

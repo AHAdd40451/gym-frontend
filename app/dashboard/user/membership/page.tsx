@@ -1,27 +1,23 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { getUserWithSubscriptionsDetails } from "@/lib/api/services/subcription/subcription";
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  CreditCard,
+  History,
+  ShieldCheck,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
 
-// Helper badge component
-function StatusBadge({ status }: { status?: string }) {
-  const colorMap: { [key: string]: string } = {
-    active: "bg-green-100 text-green-800",
-    trialing: "bg-blue-100 text-blue-800",
-    pending: "bg-yellow-100 text-yellow-800",
-    canceled: "bg-red-100 text-red-800",
-    expired: "bg-gray-300 text-gray-700",
-    past_due: "bg-orange-100 text-orange-800",
-    unpaid: "bg-rose-200 text-rose-800",
-  };
-  const color = colorMap[status || ""] || "bg-gray-100 text-gray-700";
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>{status?.toUpperCase()}</span>
-  );
-}
-
-// ----------------------------
-// Types for membership data
-// ----------------------------
 interface Transaction {
   amount?: number;
   currency?: string;
@@ -30,12 +26,11 @@ interface Transaction {
 }
 
 interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  buttonText: string;
-  buttonIcon?: React.ReactNode;
+  name?: string;
+  description?: string;
+  price?: number;
+  priceCents?: number;
+  currency?: string;
 }
 
 interface UserProfile {
@@ -47,10 +42,12 @@ interface UserProfile {
 }
 
 interface Subscription {
-  plan?: { name?: string; description?: string };
+  plan?: Plan;
   status?: string;
   startDate?: string;
   endDate?: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
   transactions?: Transaction[];
 }
 
@@ -59,166 +56,334 @@ interface Membership {
   subscriptions?: Subscription[];
 }
 
-// Membership plans (UI only)
-const PLANS: Plan[] = [
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 20,
-    description: 'Entry-level plan with access to premium models, unlimited Tab completions, and more.',
-    buttonText: 'Free 7-day trial',
-    buttonIcon: (
-      <svg height="18" width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16.5 3.5v2M7.5 3.5v2"/><path d="M2 11h20"/></svg>
-    ),
-  },
-  {
-    id: 'proplus',
-    name: 'Pro+',
-    price: 60,
-    description: 'Get 3x more usage than Pro, unlock higher limits on Agent, and more.',
-    buttonText: 'Upgrade to Pro+',
-  },
-  {
-    id: 'ultra',
-    name: 'Ultra',
-    price: 200,
-    description: 'Get maximum value with 20x usage limits and early access to advanced features.',
-    buttonText: 'Upgrade to Ultra',
-  },
-];
+const activeStatuses = ["active", "trialing", "pending", "past_due"];
 
-const MembershipPage = () => {
+const formatDate = (value?: string) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString();
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+};
+
+const formatPrice = (sub?: Subscription) => {
+  if (!sub) return "$0";
+  const fromPlanPrice = typeof sub.plan?.price === "number" ? sub.plan.price : undefined;
+  const fromPlanCents =
+    typeof sub.plan?.priceCents === "number" ? sub.plan.priceCents / 100 : undefined;
+  const fromTxn =
+    Array.isArray(sub.transactions) && sub.transactions.length > 0
+      ? sub.transactions[sub.transactions.length - 1]?.amount
+      : undefined;
+
+  const amount = fromPlanPrice ?? fromPlanCents ?? fromTxn ?? 0;
+  const currency =
+    sub.plan?.currency ||
+    (sub.transactions && sub.transactions.length > 0
+      ? sub.transactions[sub.transactions.length - 1]?.currency
+      : undefined) ||
+    "USD";
+
+  const symbol = currency.toUpperCase() === "PKR" ? "Rs" : "$";
+  return `${symbol}${Number(amount).toLocaleString()}`;
+};
+
+const statusClasses = (status?: string) => {
+  const value = (status || "").toLowerCase();
+  if (value === "active") return "bg-emerald-500/15 text-emerald-700 border-emerald-500/40";
+  if (value === "trialing") return "bg-blue-500/15 text-blue-700 border-blue-500/40";
+  if (value === "pending") return "bg-amber-500/15 text-amber-700 border-amber-500/40";
+  if (value === "past_due") return "bg-orange-500/15 text-orange-700 border-orange-500/40";
+  if (value === "canceled") return "bg-rose-500/15 text-rose-700 border-rose-500/40";
+  return "bg-muted text-muted-foreground border-border";
+};
+
+export default function MembershipPage() {
   const [membership, setMembership] = useState<Membership | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchMembership = async () => {
       setLoading(true);
       setError("");
+
       try {
+        const rawUser = localStorage.getItem("currentUser");
+        const token = localStorage.getItem("authToken") || localStorage.getItem("token") || "";
+
+        if (!rawUser) {
+          setError("User not logged in");
+          setLoading(false);
+          return;
+        }
+
+        let parsedUser: Record<string, unknown> | null = null;
         let userId: string | null = null;
-        let currentUser: Record<string, unknown> | null = null;
-        if (typeof window !== "undefined") {
-          const u = localStorage.getItem("currentUser");
-          const token = localStorage.getItem("authToken") || localStorage.getItem("token");
-          if (u) {
-            try {
-              const parsed = JSON.parse(u);
-              currentUser = parsed;
-              userId = parsed?._id ?? parsed?.id ?? null;
-            } catch {
-              userId = null;
-            }
-          }
-          if (!userId) {
-            setError("User not logged in");
-            setLoading(false);
-            return;
-          }
-          try {
-            const res = await getUserWithSubscriptionsDetails(userId, token);
-            setMembership(res);
-          } catch (apiErr) {
-            // Fallback: show page with profile from currentUser, no subscriptions (e.g. backend endpoint missing)
-            const fallback: Membership = {
-              user: currentUser
-                ? {
-                    firstName: (currentUser.firstName as string) ?? "",
-                    lastName: (currentUser.lastName as string) ?? "",
-                    email: (currentUser.email as string) ?? "",
-                    role: (currentUser.role as string) ?? "user",
-                    status: "active",
-                  }
-                : undefined,
-              subscriptions: [],
-            };
-            setMembership(fallback);
-          }
+        try {
+          parsedUser = JSON.parse(rawUser);
+          userId = (parsedUser?._id as string) || (parsedUser?.id as string) || null;
+        } catch {
+          setError("Invalid user session");
+          setLoading(false);
+          return;
+        }
+
+        if (!userId) {
+          setError("User not logged in");
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const res = await getUserWithSubscriptionsDetails(userId, token);
+          setMembership(res);
+        } catch {
+          // If details endpoint fails, keep user card visible with empty subscriptions.
+          setMembership({
+            user: {
+              firstName: (parsedUser?.firstName as string) || "",
+              lastName: (parsedUser?.lastName as string) || "",
+              email: (parsedUser?.email as string) || "",
+              role: (parsedUser?.role as string) || "user",
+              status: "active",
+            },
+            subscriptions: [],
+          });
         }
       } catch (e) {
-        const errMsg = e instanceof Error ? e.message : String(e);
-        setError(errMsg || "Could not fetch membership info");
+        setError(e instanceof Error ? e.message : "Could not fetch membership info");
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+
+    fetchMembership();
   }, []);
 
-  if (loading) return <div className="min-h-[300px] flex items-center justify-center text-xl">Loading membership...</div>;
-  if (error && !membership) return <div className="text-red-500 p-5">{error}</div>;
-  if (!membership) return <div className="min-h-[300px] flex items-center justify-center text-xl text-muted-foreground">Loading membership...</div>;
-
-  const user = membership.user || {};
   const subscriptions = membership?.subscriptions || [];
-  const activeSub = subscriptions.find((sub) => ["active", "trialing", "pending"].includes(sub.status || ""));
+  const activeSub = useMemo(
+    () => subscriptions.find((sub) => activeStatuses.includes((sub.status || "").toLowerCase())),
+    [subscriptions]
+  );
+  const latestTxn =
+    activeSub?.transactions && activeSub.transactions.length > 0
+      ? activeSub.transactions[activeSub.transactions.length - 1]
+      : undefined;
+  const allPlanHistory = useMemo(
+    () =>
+      [...subscriptions].sort(
+        (a, b) =>
+          new Date(b.startDate || b.currentPeriodStart || 0).getTime() -
+          new Date(a.startDate || a.currentPeriodStart || 0).getTime()
+      ),
+    [subscriptions]
+  );
+  const allTransactions = useMemo(
+    () =>
+      subscriptions
+        .flatMap((sub) => sub.transactions || [])
+        .sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        ),
+    [subscriptions]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
+        Loading membership...
+      </div>
+    );
+  }
+
+  if (error && !membership) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center">
+        <Card className="w-full max-w-lg border-destructive/30">
+          <CardContent className="flex items-center gap-3 p-6 text-destructive">
+            <AlertCircle className="size-5" />
+            <p>{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-5">
-      <h1 className="text-3xl font-bold mb-8 text-center">My Membership</h1>
-      <div className="grid gap-8">
-        {activeSub ? (
-          <div className="rounded-lg shadow-lg border px-6 py-5 bg-white">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-              <div>
-                <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-                  {activeSub.plan?.name || 'Unnamed Plan'}
-                  <StatusBadge status={activeSub.status} />
-                </h2>
-                <p className="text-gray-500 text-sm mb-1">
-                  Started: <span className="font-medium">{activeSub.startDate ? new Date(activeSub.startDate).toLocaleDateString() : "N/A"}</span>
+    <div className="mx-auto w-full max-w-5xl space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">My Membership</h1>
+        <p className="text-sm text-muted-foreground">
+          Your current plan, billing status, and subscription timeline.
+        </p>
+      </div>
+
+      <Card className="overflow-hidden border-border/80">
+        <CardContent className="p-0">
+          <div className="flex flex-col lg:flex-row">
+            <div className="space-y-5 p-6 lg:w-2/3">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-bold">
+                    {activeSub?.plan?.name || "No Active Membership"}
+                  </h2>
+                  <Badge variant="outline" className={statusClasses(activeSub?.status)}>
+                    {(activeSub?.status || "inactive").toUpperCase()}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {activeSub?.plan?.description ||
+                    "Start a membership plan to unlock workouts, booking, and progress tracking."}
                 </p>
-                <p className="text-gray-500 text-sm ">
-                  Expires: <span className="font-medium">{activeSub.endDate ? new Date(activeSub.endDate).toLocaleDateString() : "N/A"}</span>
-                </p>
-                {activeSub.transactions && activeSub.transactions.length > 0 && (
-                  <p className="mt-2 text-gray-500 text-xs">Last payment: <span className="font-medium">{activeSub.transactions[activeSub.transactions.length-1]?.createdAt ? new Date(activeSub.transactions[activeSub.transactions.length-1]?.createdAt as string).toLocaleDateString() : "-"}</span></p>
-                )}
               </div>
-              {/* <div className="self-end mt-2 md:mt-0">
-                <button className="bg-linear-to-r from-green-500 to-green-700 py-2 px-6 rounded text-white font-medium hover:from-green-600 hover:to-green-800 transition">Upgrade Plan</button>
-              </div> */}
+
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <Check className="size-4 text-emerald-600" />
+                  <span>
+                    Plan period: {formatDate(activeSub?.startDate || activeSub?.currentPeriodStart)} to{" "}
+                    {formatDate(activeSub?.endDate || activeSub?.currentPeriodEnd)}
+                  </span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="size-4 text-emerald-600" />
+                  <span>
+                    Transactions recorded: {activeSub?.transactions?.length ?? 0}
+                  </span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="size-4 text-emerald-600" />
+                  <span>
+                    Last payment date: {formatDate(latestTxn?.createdAt)}
+                  </span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="size-4 text-emerald-600" />
+                  <span>
+                    Last payment status: {(latestTxn?.status || "-").toUpperCase()}
+                  </span>
+                </li>
+              </ul>
+
+              <p className="text-xs text-muted-foreground">
+                Subscription details refresh automatically from your account record.
+              </p>
             </div>
-            {/* Details toggle */}
-            <details className="bg-gray-50 rounded p-3 mt-2">
-              <summary className="font-semibold cursor-pointer mb-2">View membership details</summary>
-              <div className="mt-2 text-sm text-gray-700">
-                <div>Status: <StatusBadge status={activeSub.status} /></div>
-                <div>Start: {activeSub.startDate ? new Date(activeSub.startDate).toLocaleString() : "-"}</div>
-                <div>Expires: {activeSub.endDate ? new Date(activeSub.endDate).toLocaleString() : "-"}</div>
-                {activeSub.plan?.description && <div className="mt-2">{activeSub.plan.description}</div>}
-                <div className="mt-2">{activeSub.transactions && activeSub.transactions.length > 0 ? (
-                  <div>
-                    <b>Transactions ({activeSub.transactions.length}):</b>
-                    <ul className="list-disc pl-4">
-                      {activeSub.transactions.map((t, i) => (
-                        <li key={i} className="mb-1">{t.amount ? `$${t.amount}` : ""} {t.currency || ""} — <span className="">{t.status}</span> <span className="text-gray-400 ml-2">{t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "-"}</span></li>
-                      ))}
-                    </ul>
+
+            <div className="border-t bg-muted/20 p-6 lg:w-1/3 lg:border-l lg:border-t-0">
+              <div className="space-y-5">
+                <div className="text-center lg:text-left">
+                  <p className="text-sm text-muted-foreground">Current billing</p>
+                  <p className="mt-1 text-4xl font-semibold">{formatPrice(activeSub)}</p>
+                  <p className="text-xs text-muted-foreground">per billing cycle</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CalendarDays className="size-4" />
+                    Next renewal: {formatDate(activeSub?.endDate || activeSub?.currentPeriodEnd)}
                   </div>
-                ) : <span className="text-gray-500">No transaction history.</span>}</div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CreditCard className="size-4" />
+                    Currency: {(latestTxn?.currency || activeSub?.plan?.currency || "USD").toUpperCase()}
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <ShieldCheck className="size-4" />
+                    Status: {(activeSub?.status || "inactive").toUpperCase()}
+                  </div>
+                </div>
+
+                <Button className="w-full gap-2" disabled={!activeSub}>
+                  <Sparkles className="size-4" />
+                  {activeSub ? "Manage Membership" : "No Active Plan"}
+                </Button>
               </div>
-            </details>
+            </div>
           </div>
-        ) : (
-          <div className="rounded-lg border px-6 py-10 flex flex-col items-center bg-white shadow-sm">
-            <h2 className="font-bold text-xl text-center mb-2">No Active Membership</h2>
-            <p className="text-gray-500 text-center mb-5">You do not currently have an active subscription plan.</p>
-            <button className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-blue-400 py-2 px-7 rounded text-white font-semibold">Subscribe Now</button>
-          </div>
-        )}
-        <div className="rounded-lg border px-6 py-5 bg-gray-50">
-          <h3 className="text-lg font-bold mb-1">Profile</h3>
-          <div className="grid grid-cols-1 gap-y-2 text-sm">
-            <div><b>Name:</b> {user.firstName} {user.lastName}</div>
-            <div><b>Email:</b> {user.email}</div>
-            <div><b>Status:</b> {user.status}, Role: {user.role}</div>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="size-4 text-primary" />
+              Plan History
+            </CardTitle>
+            <CardDescription>Your previous and current membership plans.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {allPlanHistory.length > 0 ? (
+              allPlanHistory.map((sub, idx) => (
+                <div key={`${sub.plan?.name || "plan"}-${idx}`} className="rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{sub.plan?.name || "Unnamed Plan"}</p>
+                    <Badge variant="outline" className={statusClasses(sub.status)}>
+                      {(sub.status || "unknown").toUpperCase()}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatDate(sub.startDate || sub.currentPeriodStart)} to{" "}
+                    {formatDate(sub.endDate || sub.currentPeriodEnd)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{sub.plan?.description || "-"}</p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                No plan history found.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="size-4 text-primary" />
+              Transaction History
+            </CardTitle>
+            <CardDescription>All payments linked with your membership records.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {allTransactions.length > 0 ? (
+              allTransactions.map((txn, idx) => {
+                const currency = (txn.currency || "USD").toUpperCase();
+                const symbol = currency === "PKR" ? "Rs" : "$";
+                return (
+                  <div key={`${txn.createdAt || "txn"}-${idx}`} className="rounded-md border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        <p className="font-medium">
+                          {symbol}
+                          {Number(txn.amount || 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <Badge variant="secondary">{(txn.status || "unknown").toUpperCase()}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(txn.createdAt)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Currency: {currency}</p>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                No transaction history found.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-};
-
-export default MembershipPage;
+}
