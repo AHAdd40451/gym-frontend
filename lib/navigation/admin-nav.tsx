@@ -246,7 +246,7 @@ export const adminNavItems: NavGroup[] = [
   }
 ];
 
-export function AdminNavMain() {
+export function AdminNavMain({ user }: any) {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
 

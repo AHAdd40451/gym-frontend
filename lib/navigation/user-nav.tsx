@@ -209,7 +209,7 @@ export const userNavItems: NavGroup[] = [
   }
 ];
 
-export function UserNavMain() {
+export function UserNavMain({ user }: any) {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
 

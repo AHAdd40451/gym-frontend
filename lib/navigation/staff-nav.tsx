@@ -205,9 +205,12 @@ export const staffNavItems: NavGroup[] = [
   // }
 ];
 
-export function StaffNavMain() {
+export function StaffNavMain({ user }: any) {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
+  const staffId = (user as { _id?: string } | null)?._id ?? user?.id;
+  const profileHref = staffId ? `/dashboard/staff/profile/${staffId}` : "/dashboard/staff/profile";
+  const isProfileRoute = pathname?.startsWith("/dashboard/staff/profile");
 
   return (
     <>
@@ -216,10 +219,14 @@ export function StaffNavMain() {
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
-              {nav.items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  {Array.isArray(item.items) && item.items.length > 0 ? (
-                    <>
+              {nav.items.map((item) => {
+                const resolvedHref = item.title === "Profile" ? profileHref : item.href;
+                const isActive = item.title === "Profile" ? !!isProfileRoute : pathname === item.href;
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    {Array.isArray(item.items) && item.items.length > 0 ? (
+                      <>
                       <div className="hidden group-data-[collapsible=icon]:block">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -276,37 +283,38 @@ export function StaffNavMain() {
                           </SidebarMenuSub>
                         </CollapsibleContent>
                       </Collapsible>
-                    </>
-                  ) : (
+                      </>
+                    ) : (
                     <SidebarMenuButton
                       className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
-                      isActive={pathname === item.href}
+                      isActive={isActive}
                       tooltip={item.title}
                       asChild
                     >
-                      <Link href={item.href} target={item.newTab ? "_blank" : ""}>
+                      <Link href={resolvedHref} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-                  )}
-                  {!!item.isComing && (
-                    <SidebarMenuBadge className="peer-hover/menu-button:text-foreground opacity-50">
-                      Coming
-                    </SidebarMenuBadge>
-                  )}
-                  {!!item.isNew && (
-                    <SidebarMenuBadge className="border border-green-400 text-green-600 peer-hover/menu-button:text-green-600">
-                      New
-                    </SidebarMenuBadge>
-                  )}
-                  {!!item.isDataBadge && (
-                    <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
-                      {item.isDataBadge}
-                    </SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-              ))}
+                    )}
+                    {!!item.isComing && (
+                      <SidebarMenuBadge className="peer-hover/menu-button:text-foreground opacity-50">
+                        Coming
+                      </SidebarMenuBadge>
+                    )}
+                    {!!item.isNew && (
+                      <SidebarMenuBadge className="border border-green-400 text-green-600 peer-hover/menu-button:text-green-600">
+                        New
+                      </SidebarMenuBadge>
+                    )}
+                    {!!item.isDataBadge && (
+                      <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
+                        {item.isDataBadge}
+                      </SidebarMenuBadge>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
