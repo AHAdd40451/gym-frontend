@@ -73,7 +73,10 @@ export const API_ENDPOINTS = {
     USER_TRANSACTIONS: (userId: string) => `/subscriptions/user/${userId}/transactions`,
     
     // Other
-    SUBSCRIBED_USERS: "/subscriptions/subscribed-users"
+    SUBSCRIBED_USERS: "/subscriptions/subscribed-users",
+
+    // Trainer subscription status (for profile: show Subscribed vs Subscribe)
+    TRAINER_STATUS: (trainerId: string) => `/subscriptions/trainer/${trainerId}/status`,
   },
 
   PLANS: {
@@ -125,5 +128,9 @@ export const API_ENDPOINTS = {
     TODAY: "/workout-logs/today",
       HISTORY: (userId: string) => `/workouts/user/${userId}`,
 
-  }
+  },
+
+  STRIPE: {
+    CREATE_TRAINER_CHECKOUT_SESSION: "/stripe/create-trainer-checkout-session",
+  },
 } as const;

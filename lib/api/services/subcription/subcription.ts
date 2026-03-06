@@ -1,6 +1,12 @@
 import { serverFetch, buildQueryString } from "../../api-actions/server";
 import { API_ENDPOINTS } from "../../constants/constants";
+import apiClient from "../../axios";
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from '@tanstack/react-query';
+
+const QUERY_KEYS = {
+  TRAINER_SUBSCRIBED_USERS: 'trainerSubscribedUsers',
+};
 
 export interface SubscribedUser {
   _id: string;
@@ -77,6 +83,76 @@ export interface SubscriptionPayload {
 }
 
 // ----------------------- API CALLS -----------------------
+
+/** Response from GET /subscriptions/trainer/:trainerId/status */
+export interface TrainerSubscriptionStatusResponse {
+  success: boolean;
+  hasActiveSubscription: boolean;
+  subscription: {
+    _id: string;
+    status: string;
+    startDate: string | null;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+  } | null;
+}
+
+/** Response from GET /subscriptions/trainer/me (paginated) */
+export interface TrainerSubscribedUsersParams {
+  page?: number;
+  limit?: number;
+  memberName?: string;
+  status?: string;
+}
+
+export interface TrainerSubscribedUsersResponse {
+  success: boolean;
+  data: any[];
+  count: number;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+const subscriptionApi = {
+  getTrainerSubscribedUsers: async (params?: TrainerSubscribedUsersParams) => {
+    const queryParams: Record<string, string | number> = {};
+    if (params?.page != null) queryParams.page = params.page;
+    if (params?.limit != null) queryParams.limit = params.limit;
+    if (params?.memberName?.trim()) queryParams.memberName = params.memberName.trim();
+    if (params?.status?.trim() && params.status.toLowerCase() !== "all") queryParams.status = params.status.trim();
+    const response = await apiClient.get("subscriptions/trainer/me", { params: queryParams });
+    return response?.data as TrainerSubscribedUsersResponse;
+  },
+};
+
+
+export const useGetTrainerSubscribedUsers = (params?: TrainerSubscribedUsersParams) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.TRAINER_SUBSCRIBED_USERS, params?.page, params?.limit, params?.memberName, params?.status],
+    queryFn: () => subscriptionApi.getTrainerSubscribedUsers(params),
+  });
+};
+
+/**
+ * Check if the current user (or given userId) has an active subscription with the given trainer.
+ * Used on trainer profile to show "Subscribed" vs "Subscribe".
+ */
+export async function getTrainerSubscriptionStatus(
+  trainerId: string,
+  userId?: string | null
+): Promise<TrainerSubscriptionStatusResponse> {
+  const url = API_ENDPOINTS.SUBSCRIPTIONS.TRAINER_STATUS(trainerId);
+  const params = userId ? { userId } : {};
+  const response = await apiClient.get(url, { params });
+  const data = response?.data;
+  return {
+    success: data?.success ?? false,
+    hasActiveSubscription: data?.hasActiveSubscription ?? false,
+    subscription: data?.subscription ?? null,
+  };
+}
 
 // Fetch user with subscriptions and transactions (for details UI)
 export async function getUserWithSubscriptionsDetails(userId: string, token?: string | null) {

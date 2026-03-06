@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -13,15 +14,19 @@ import {
   DrawerProfileGallery,
 } from "@/app/dashboard/user/booking/drawer-profile";
 import { getUsersByRole } from "@/lib/api/services/getstaff/staff";
+import { getTrainerSubscriptionStatus } from "@/lib/api/services/subcription/subcription";
+import { useAuth } from "@/lib/api/services/auth/context";
 import {
   CalendarDays,
-  Clock3,
   ImageIcon,
   Mail,
+  Phone,
+  DollarSign,
   Search,
   Sparkles,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type StaffUser = {
   _id: string;
@@ -33,6 +38,7 @@ type StaffUser = {
   profileImage?: string;
   bio?: string;
   phone?: string | null;
+  subscriptionFees?: number | null;
   language?: string;
   createdAt?: string;
   location?: {
@@ -48,9 +54,6 @@ type StaffUser = {
   };
   [key: string]: unknown;
 };
-
-const CACHE_KEY = "booking_staff_cache_v1";
-const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const extractStaff = (res: any): StaffUser[] => {
   const candidates = [
@@ -89,43 +92,89 @@ const statusClass = (status?: string) => {
 };
 
 const BookingUsers = () => {
+  const searchParams = useSearchParams();
+  const trainerIdFromParams = searchParams.get("trainer") ?? undefined;
+  const payment = searchParams.get("payment") ?? undefined;
+
+  const { user: authUser } = useAuth();
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [fromCache, setFromCache] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffUser | null>(null);
+  const [trainerSubscriptionStatus, setTrainerSubscriptionStatus] = useState<{
+    hasActiveSubscription: boolean;
+    subscription: { currentPeriodEnd?: string | null } | null;
+  } | null>(null);
+
+  const hasOpenedDrawerFromParamsRef = useRef(false);
+
+  const currentUserId =
+    (authUser as { id?: string; _id?: string } | null)?.id ??
+    (authUser as { id?: string; _id?: string } | null)?._id;
 
   useEffect(() => {
-    const hydrateFromCache = () => {
-      try {
-        const raw = sessionStorage.getItem(CACHE_KEY);
-        if (!raw) return false;
-
-        const parsed = JSON.parse(raw) as { ts: number; data: StaffUser[] };
-        if (!parsed?.ts || !Array.isArray(parsed?.data)) return false;
-
-        const isFresh = Date.now() - parsed.ts < CACHE_TTL_MS;
-        if (!isFresh) return false;
-
-        setStaff(parsed.data);
-        setFromCache(true);
-        setLoading(false);
-        return true;
-      } catch {
-        return false;
+    if (!payment) return;
+    const t = setTimeout(() => {
+      if (payment === "success") {
+        toast.success("Payment successful", {
+          description: "You are now subscribed to the trainer.",
+        });
+      } else if (payment === "cancelled") {
+        toast.error("Payment cancelled", {
+          description: "You have not been subscribed to the trainer.",
+        });
       }
-    };
+    }, 100);
+    return () => clearTimeout(t);
+  }, [payment]);
 
+  // Open drawer for trainer from query params (?trainer=123&payment=success)
+  useEffect(() => {
+    if (
+      loading ||
+      !trainerIdFromParams ||
+      !staff.length ||
+      hasOpenedDrawerFromParamsRef.current
+    )
+      return;
+    const trainerUser = staff.find(
+      (u) => String(u._id) === String(trainerIdFromParams)
+    );
+    if (trainerUser) {
+      hasOpenedDrawerFromParamsRef.current = true;
+      setSelectedUser(trainerUser);
+      setDrawerOpen(true);
+    }
+  }, [loading, trainerIdFromParams, staff]);
+
+  const fetchTrainerSubscriptionStatus = useCallback(
+    async (trainerId: string) => {
+      if (!currentUserId) {
+        setTrainerSubscriptionStatus({ hasActiveSubscription: false, subscription: null });
+        return;
+      }
+      try {
+        const res = await getTrainerSubscriptionStatus(trainerId, currentUserId);
+        setTrainerSubscriptionStatus({
+          hasActiveSubscription: res.hasActiveSubscription,
+          subscription: res.subscription,
+        });
+      } catch {
+        setTrainerSubscriptionStatus({ hasActiveSubscription: false, subscription: null });
+      }
+    },
+    [currentUserId]
+  );
+
+  useEffect(() => {
     const fetchStaff = async () => {
       try {
         const token = localStorage.getItem("authToken") || "";
         const res = await getUsersByRole("staff" as any, { page: 1, limit: 50 }, token);
         const users = extractStaff(res);
         setStaff(users);
-        setFromCache(false);
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: users }));
       } catch (err) {
         console.error("Error fetching staff:", err);
         setError("Failed to fetch staff");
@@ -134,15 +183,16 @@ const BookingUsers = () => {
       }
     };
 
-    const hadFreshCache = hydrateFromCache();
-    // Always refresh in background for accuracy even if cache exists.
-    if (hadFreshCache) {
-      fetchStaff();
-      return;
-    }
-
     fetchStaff();
   }, []);
+
+  useEffect(() => {
+    if (drawerOpen && selectedUser?._id) {
+      fetchTrainerSubscriptionStatus(selectedUser._id);
+    } else {
+      setTrainerSubscriptionStatus(null);
+    }
+  }, [drawerOpen, selectedUser?._id, fetchTrainerSubscriptionStatus]);
 
   const filteredStaff = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -196,12 +246,6 @@ const BookingUsers = () => {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {fromCache ? (
-                <Badge variant="outline" className="gap-1">
-                  <Clock3 className="size-3.5" />
-                  Cached
-                </Badge>
-              ) : null}
               <Badge variant="secondary">{filteredStaff.length} trainers</Badge>
             </div>
           </div>
@@ -269,33 +313,23 @@ const BookingUsers = () => {
                     </Badge>
                   </div>
 
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Mail className="size-4" />
-                    <span className="truncate">{user.email || "-"}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-md border border-border/70 bg-muted/30 p-2">
-                      <p className="text-muted-foreground">Plan</p>
-                      <p className="mt-0.5 font-medium">{plan?.name || "Custom"}</p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Mail className="size-4 shrink-0" />
+                      <span className="truncate">{user.email || "-"}</span>
                     </div>
-                    <div className="rounded-md border border-border/70 bg-muted/30 p-2">
-                      <p className="text-muted-foreground">Price</p>
-                      <p className="mt-0.5 font-medium">{typeof plan?.price === "number" ? `$${plan.price}` : "-"}</p>
+                    <div className="flex items-center gap-2">
+                      <Phone className="size-4 shrink-0" />
+                      <span className="truncate">{user.phone || "-"}</span>
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-2 rounded-md border border-border/70 bg-muted/20 p-2 text-xs">
-                    <CalendarDays className="mt-0.5 size-3.5 text-primary" />
-                    <p className="text-muted-foreground line-clamp-2">{days}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-muted-foreground text-xs">Tap to view details</span>
-                    <Button size="sm" className="gap-1">
-                      <Sparkles className="size-3.5" />
-                      View
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="size-4 shrink-0" />
+                      <span>
+                        {user.subscriptionFees != null
+                          ? `$${Number(user.subscriptionFees).toLocaleString()} / subscription`
+                          : "-"}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -321,6 +355,8 @@ const BookingUsers = () => {
               <DrawerProfileHeader
                 user={selectedUser}
                 fallbackImageUrl={fallbackImage(selectedUser)}
+                hasActiveSubscription={trainerSubscriptionStatus?.hasActiveSubscription ?? false}
+                subscriptionEndDate={trainerSubscriptionStatus?.subscription?.currentPeriodEnd ?? null}
               />
             </div>
 

@@ -31,6 +31,7 @@ type StaffUser = {
     status?: string;
     language?: string;
     bio?: string;
+    subscriptionFees?: number | null;
     profileImage?: string | null;
     coverImage?: string | null;
     createdAt?: string;

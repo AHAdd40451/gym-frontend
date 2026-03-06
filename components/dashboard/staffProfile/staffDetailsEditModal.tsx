@@ -26,6 +26,7 @@ export type StaffDetailsEditUser = {
   phone?: string | null;
   language?: string;
   bio?: string;
+  subscriptionFees?: number | null;
   location?: {
     country?: string;
     city?: string;
@@ -58,6 +59,7 @@ export function StaffDetailsEditModal({
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
+  const [subscriptionFees, setSubscriptionFees] = useState<string>("");
 
   useEffect(() => {
     if (open && user) {
@@ -68,6 +70,9 @@ export function StaffDetailsEditModal({
       setCity(user.location?.city ?? "");
       setCountry(user.location?.country ?? "");
       setLanguage(user.language ?? "English");
+      setSubscriptionFees(
+        user.subscriptionFees != null ? String(user.subscriptionFees) : ""
+      );
       setError(null);
     }
   }, [open, user]);
@@ -84,6 +89,10 @@ export function StaffDetailsEditModal({
         phone: phone.trim() || undefined,
         bio: bio.trim() || undefined,
         language: language.trim() || undefined,
+        subscriptionFees:
+          subscriptionFees.trim() === ""
+            ? undefined
+            : Number(subscriptionFees),
         location: {
           city: city.trim() || undefined,
           country: country.trim() || undefined,
@@ -186,6 +195,22 @@ export function StaffDetailsEditModal({
               onChange={(e) => setLanguage(e.target.value)}
               placeholder="e.g. English"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-subscriptionFees">Subscription fees (USD)</Label>
+            <Input
+              id="edit-subscriptionFees"
+              type="number"
+              min={0}
+              step={1}
+              value={subscriptionFees}
+              onChange={(e) => setSubscriptionFees(e.target.value)}
+              placeholder="e.g. 10"
+            />
+            <p className="text-muted-foreground text-xs">
+              Fee shown to users when they subscribe to you as a trainer.
+            </p>
           </div>
 
           <div className="space-y-2">
