@@ -64,6 +64,7 @@
     "@tiptap/extension-text-style": "^2.22.3",
     "@tiptap/extension-typography": "^2.22.3",
     "@tiptap/extension-underline": "^2.22.3",
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tiptap/pm": "^2.22.3",
     "@tiptap/react": "^2.22.3",
     "@tiptap/starter-kit": "^2.22.3",
