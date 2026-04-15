@@ -1,3 +1,5 @@
+const API_BASE = "http://localhost:5003/api";
+
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
@@ -44,6 +46,11 @@ export const API_ENDPOINTS = {
 
   REVIEWS: {
     BASE: "/reviews"
+  },
+//  
+POSTS: {
+    BASE: `${API_BASE}/post`,
+    ALL:`${API_BASE}/post/all` 
   },
 
   ORDERS: {
