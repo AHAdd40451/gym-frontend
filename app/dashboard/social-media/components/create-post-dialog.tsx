@@ -1,98 +1,232 @@
-"use client";
-
-import { useState } from "react";
-import { Plus, Video, ImageIcon } from "lucide-react";
-
+import { useState, ChangeEvent, useRef } from "react";
+import { Plus, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
+import { createPost } from "@/lib/api/services/post/post";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 
 export function CreatePostDialog() {
-  const [newPostType, setNewPostType] = useState<"text" | "image" | "video">("text");
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [caption, setCaption] = useState("");
+  const uploadingSet = useRef<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  // ✅ unique file id (duplicate fix)
+  const getFileId = (file: File) =>
+    `${file.name}-${file.size}-${file.lastModified}`;
 
+  // =========================
+  // 1️⃣ SELECT + AUTO UPLOAD
+  // =========================
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const selectedFiles = Array.from(e.target.files);
+
+    // preview state
+    setFiles((prev) => [...prev, ...selectedFiles]);
+
+    // filter duplicates
+    const newFiles = selectedFiles.filter(
+      (file) => !uploadingSet.current.has(getFileId(file))
+    );
+
+    newFiles.forEach((file) =>
+      uploadingSet.current.add(getFileId(file))
+    );
+
+    await uploadFiles(newFiles);
+  };
+
+  // =========================
+  // 2️⃣ UPLOAD API (PARALLEL)
+  // =========================
+  const uploadFiles = async (selectedFiles: File[]) => {
+    if (selectedFiles.length === 0) return;
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Please login again");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append("files", file);
+
+        const res = await fetch("https://dev.syssel.market/api/general/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Upload failed");
+        }
+
+        return data.files?.[0]?.fileUrl;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+
+      setUploadedUrls((prev) => [...prev, ...urls]);
+
+      console.log("UPDATED URLs:", urls);
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Upload failed ❌");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePost = async () => {
+    if (uploading) {
+      toast.error("Wait for upload to finish");
+      return;
+    }
+
+    if (uploadedUrls.length === 0) {
+      toast.error("No uploaded images");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+
+    try {
+      await createPost(
+        {
+          caption: caption.trim(), // ✅ ADD THIS
+          media: uploadedUrls, // ✅ URLs send
+          // caption bhi add kar sakte ho yahan
+        },
+        token || undefined
+      );
+
+      toast.success("Post created 🎉");
+      setOpen(false);
+
+      // reset
+      setFiles([]);
+      setUploadedUrls([]);
+      setCaption("");
+      uploadingSet.current.clear();
+    } catch (err: any) {
+      toast.error(err.message || "Error creating post");
+    }
+  };
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="mt-4 w-full">
+        <Button className="w-full mt-4">
           <Plus />
           Create Post
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+
+      <DialogContent className="sm:max-w-lg"
+
+      >
         <DialogHeader>
           <DialogTitle>Create Post</DialogTitle>
         </DialogHeader>
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Caption</label>
+
+          <input
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full border rounded p-2 text-sm"
+          />
+        </div>
         <div className="space-y-4">
-          {/* User Header */}
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="https://i.pravatar.cc/150?img=13" />
-              <AvatarFallback>XA</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold">Toby Belhome</p>
-              <p className="text-muted-foreground text-xs">Public</p>
-            </div>
+          {/* UPLOAD */}
+          <div className="border border-dashed p-8 text-center rounded-lg">
+            <ImageIcon className="mx-auto text-muted-foreground size-8" />
+
+            <p className="text-sm text-muted-foreground mt-2">
+              Select images (auto upload)
+            </p>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Select Files
+            </Button>
+
+            {/* <input
+              type="file"
+              multiple
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            /> */}
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
           </div>
 
-          {/* Post Type Selection */}
-          <div className="flex gap-2">
-            <Button
-              variant={newPostType === "text" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setNewPostType("text")}>
-              Text
-            </Button>
-            <Button
-              variant={newPostType === "image" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setNewPostType("image")}>
-              <ImageIcon />
-              Photo
-            </Button>
-            <Button
-              variant={newPostType === "video" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setNewPostType("video")}>
-              <Video />
-              Video
-            </Button>
-          </div>
+          {/* PREVIEW */}
+          {files.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
 
-          {/* Text Area */}
-          <Textarea placeholder="What's on your mind?" className="min-h-32 resize-none" />
+              {files.map((file, i) => {
+                const url = URL.createObjectURL(file);
 
-          {/* Media Preview */}
-          {newPostType === "image" && (
-            <div className="rounded-lg border border-dashed p-8 text-center">
-              <ImageIcon className="text-muted-foreground/50 mx-auto size-8" />
-              <p className="text-muted-foreground mt-2 text-sm">Add photos to your post</p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Upload Photo
-              </Button>
+                return file.type.startsWith("video/") ? (
+                  <video
+                    key={i}
+                    src={url}
+                    className="h-20 w-full object-cover rounded"
+                    controls
+                  />
+                ) : (
+                  <img
+                    key={i}
+                    src={url}
+                    className="h-20 w-full object-cover rounded"
+                  />
+                );
+              })}
             </div>
           )}
 
-          {newPostType === "video" && (
-            <div className="rounded-lg border border-dashed p-8 text-center">
-              <Video className="text-muted-foreground/50 mx-auto size-8" />
-              <p className="text-muted-foreground mt-2 text-sm">Add video to your post</p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Upload Video
-              </Button>
-            </div>
+          {/* STATUS */}
+          {uploading && (
+            <p className="text-sm text-blue-500">Uploading...</p>
           )}
 
-          {/* Action Icons */}
-          <div className="flex items-center justify-end">
-            <Button>Post</Button>
+          {/* POST */}
+          <div className="flex justify-end">
+            <Button onClick={handlePost} disabled={uploading}>
+              {uploading ? "Uploading..." : "Create Post"}
+            </Button>
           </div>
         </div>
       </DialogContent>

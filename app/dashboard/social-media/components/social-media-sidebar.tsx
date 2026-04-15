@@ -13,6 +13,7 @@ import {
   Search,
   Settings,
   SettingsIcon,
+  User,
   Users,
   X
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useEffect } from "react";
 
 import { CreatePostDialog } from "./create-post-dialog";
 
@@ -35,48 +37,54 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: <Home />, label: "Home", badge: 10, active: true },
-  { icon: <ListTodo />, label: "Tasks" },
-  { icon: <Users />, label: "Users", badge: 2 },
-  { icon: <Globe />, label: "APIs" },
-  { icon: <CreditCard />, label: "Subscription" },
-  { icon: <Settings />, label: "Settings" },
-  { icon: <HelpCircle />, label: "Help & Support" }
+  { icon: <Home />, label: "Home" },
+  { icon: <User />, label: "Profile" },
 ];
 
 export function SocialMediaSidebar() {
   const isMobile = useIsMobile();
+  const [user, setUser] = useState<any>(null);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const SidebarContent = () => {
     return (
       <>
-        <div className="relative mb-4 lg:mb-6">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input placeholder="Search..." className="pl-9" />
-        </div>
 
         <nav className="flex-1 space-y-1">
+
           {navItems.map((item) => (
-            <Button
-              variant="ghost"
+            <Link
               key={item.label}
-              className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                item.active
+              href={
+                item.label === "Profile"
+                  ? "/dashboard/social-media/settings"
+                  : "/dashboard/social-media"
+              }
+            >
+              <Button
+                variant="ghost"
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors ${item.active
                   ? "bg-accent text-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}>
-              <div className="flex items-center gap-3">
-                {item.icon}
-                <span>{item.label}</span>
-              </div>
-              {item.badge && (
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs">
-                  {item.badge}
-                </Badge>
-              )}
-            </Button>
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+
+                {item.badge && (
+                  <Badge className="h-5 min-w-5 rounded-full px-1.5 text-xs">
+                    {item.badge}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
           ))}
         </nav>
       </>
@@ -87,18 +95,19 @@ export function SocialMediaSidebar() {
     return (
       <Card className="bg-muted flex-1 py-4">
         <CardHeader className="flex items-center gap-3 px-4">
-          <Avatar>
-            <AvatarImage src="https://i.pravatar.cc/150?img=19" />
-            <AvatarFallback>TB</AvatarFallback>
-          </Avatar>
-          <div>
+
+          {/* <div>
             <div className="text-sm">Toby Belhome</div>
             <div className="text-muted-foreground text-xs">@toby</div>
+          </div> */}
+          <div className="text-sm">
+            {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
+          </div>
+          <div className="text-muted-foreground text-xs">
+            {user ? user.email : ""}
           </div>
           <div className="ms-auto flex">
-            <Button size="icon" variant="ghost">
-              <SettingsIcon />
-            </Button>
+
             <Sheet>
               <SheetTrigger asChild>
                 <Button size="icon" variant="ghost">
@@ -122,13 +131,14 @@ export function SocialMediaSidebar() {
     <aside className="flex flex-col gap-4">
       <Card className="bg-muted flex-1">
         <CardHeader className="flex items-center gap-3">
-          <Avatar className="size-10">
-            <AvatarImage src="https://i.pravatar.cc/150?img=19" />
-            <AvatarFallback>TB</AvatarFallback>
-          </Avatar>
+
           <div>
-            <div className="text-sm">Toby Belhome</div>
-            <div className="text-muted-foreground text-xs">@toby</div>
+            <div className="text-sm">
+              {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {user ? user.email : ""}
+            </div>
           </div>
           <Button size="icon" variant="ghost" className="ms-auto">
             <SettingsIcon />
