@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import { useState } from "react";
 import {
   BadgeCheck,
@@ -36,7 +36,9 @@ export function PostItem({ post }: any) {
   const avatar = post?.avatar || "";
   // const comments = post?.comments || [];
   const [commentsState, setCommentsState] = useState(post?.comments || []);
-
+  console.log("POST DATA:", post);
+  console.log("USER:", post?.user);
+  console.log("USER ID:", post?.user?._id, post?.userId);
   // ================= LIKE STATE (PERSISTENT) =================
   const [likedPosts, setLikedPosts] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
@@ -145,6 +147,7 @@ export function PostItem({ post }: any) {
       );
     }
   };
+  const userId = post?.user?._id || post?.userId;
   // ================= LIKE COUNT =================
   const likeCount =
     (post?.likeCount || 0) + (likedPosts.has(postId) ? 1 : 0);
@@ -157,14 +160,24 @@ export function PostItem({ post }: any) {
         {/* HEADER */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={avatar} />
-              <AvatarFallback>{username?.[0] || "U"}</AvatarFallback>
-            </Avatar>
+
 
             <div className="flex items-center gap-1">
-              <span className="text-sm font-semibold">{username}</span>
-              {post?.verified && <BadgeCheck className="size-4" />}
+
+
+
+              <Link
+                href={`/dashboard/social-media/user/${post?.user?._id || post?.userId}`}
+                className="flex items-center gap-3"
+              >
+                <Avatar>
+                  <AvatarImage src={avatar} />
+                </Avatar>
+
+                <span className="text-sm font-semibold hover:underline cursor-pointer">
+                  {username}
+                </span>
+              </Link>
             </div>
           </div>
 
@@ -215,8 +228,8 @@ export function PostItem({ post }: any) {
             <Button onClick={handleLike} variant="ghost" size="icon">
               <Heart
                 className={`transition-all duration-200 ${likedPosts.has(postId)
-                    ? "fill-red-500 text-red-500 scale-110"
-                    : "text-gray-500"
+                  ? "fill-red-500 text-red-500 scale-110"
+                  : "text-gray-500"
                   }`}
               />
             </Button>

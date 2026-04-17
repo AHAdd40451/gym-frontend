@@ -1,157 +1,5 @@
-// "use client";
-
-// import { Button } from "@/components/ui/button";
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// import { Separator } from "@/components/ui/separator";
-// import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-// interface User {
-//   id: string;
-//   name: string;
-//   username: string;
-//   avatar: string;
-//   isFollowed?: boolean;
-// }
-
-// const suggestedUsers: User[] = [
-//   {
-//     id: "1",
-//     name: "Azunyan Senpai",
-//     username: "@nyancat221b",
-//     avatar: "https://i.pravatar.cc/150?img=11"
-//   },
-//   {
-//     id: "2",
-//     name: "Oarack Babama",
-//     username: "@oarackbabama",
-//     avatar: "https://i.pravatar.cc/150?img=12"
-//   },
-//   {
-//     id: "3",
-//     name: "David Gilmore",
-//     username: "@davidgilmore",
-//     avatar: "https://i.pravatar.cc/150?img=13"
-//   },
-//   {
-//     id: "4",
-//     name: "Gerard Way",
-//     username: "@gerardway",
-//     avatar: "https://i.pravatar.cc/150?img=14",
-//     isFollowed: true
-//   },
-//   {
-//     id: "5",
-//     name: "Mary Suez",
-//     username: "@marysuez821",
-//     avatar: "https://i.pravatar.cc/150?img=15"
-//   },
-//   {
-//     id: "6",
-//     name: "Edgar Wright",
-//     username: "@davidgilmore",
-//     avatar: "https://i.pravatar.cc/150?img=16"
-//   }
-// ];
-
-// const trendingArtists: User[] = [
-//   {
-//     id: "1",
-//     name: "Saylor Twift",
-//     username: "@saylortwiftofficial",
-//     avatar: "https://i.pravatar.cc/150?img=20"
-//   },
-//   {
-//     id: "2",
-//     name: "Frank Iero",
-//     username: "@frankieroofficial",
-//     avatar: "https://i.pravatar.cc/150?img=21"
-//   },
-//   {
-//     id: "3",
-//     name: "Charlie XXX",
-//     username: "@clarliexx",
-//     avatar: "https://i.pravatar.cc/150?img=22"
-//   },
-//   {
-//     id: "4",
-//     name: "Star Warz",
-//     username: "@starwarzofficial",
-//     avatar: "https://i.pravatar.cc/150?img=23"
-//   }
-// ];
-
-// export function AsideRight() {
-//   return (
-//     <aside className="hidden flex-col gap-4 lg:flex">
-//       <Card className="bg-muted">
-//         <CardHeader className="flex items-center justify-between">
-//           <CardTitle>Suggested For You</CardTitle>
-//           <CardAction>
-//             <Button variant="link" size="sm" className="text-xs font-normal">
-//               See All
-//             </Button>
-//           </CardAction>
-//         </CardHeader>
-//         <CardContent className="space-y-3">
-//           {suggestedUsers.map((user) => (
-//             <div key={user.id} className="flex items-center justify-between">
-//               <div className="flex items-center gap-3">
-//                 <Avatar>
-//                   <AvatarImage src={user.avatar} />
-//                   <AvatarFallback>{user.name[0]}</AvatarFallback>
-//                 </Avatar>
-//                 <div>
-//                   <p className="text-sm font-medium">{user.name}</p>
-//                   <p className="text-muted-foreground text-xs">{user.username}</p>
-//                 </div>
-//               </div>
-//               <Button
-//                 variant="link"
-//                 size="sm"
-//                 className={user.isFollowed ? "text-muted-foreground" : ""}>
-//                 {user.isFollowed ? "Followed" : "Follow"}
-//               </Button>
-//             </div>
-//           ))}
-//         </CardContent>
-//       </Card>
-
-//       <Card className="bg-muted">
-//         <CardHeader className="flex items-center justify-between">
-//           <CardTitle>Trending Artists</CardTitle>
-//           <CardAction>
-//             <Button variant="link" size="sm" className="text-xs font-normal">
-//               See All
-//             </Button>
-//           </CardAction>
-//         </CardHeader>
-//         <CardContent className="space-y-3">
-//           {trendingArtists.map((artist) => (
-//             <div key={artist.id} className="flex items-center justify-between">
-//               <div className="flex items-center gap-3">
-//                 <Avatar>
-//                   <AvatarImage src={artist.avatar} />
-//                   <AvatarFallback>{artist.name[0]}</AvatarFallback>
-//                 </Avatar>
-//                 <div>
-//                   <p className="text-sm font-medium">{artist.name}</p>
-//                   <p className="text-muted-foreground text-xs">{artist.username}</p>
-//                 </div>
-//               </div>
-//               <Button variant="link" size="sm">
-//                 Follow
-//               </Button>
-//             </div>
-//           ))}
-//         </CardContent>
-//       </Card>
-//     </aside>
-//   );
-// }
-
-
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getAllUsers } from "@/lib/api/services/users/users";
@@ -196,10 +44,7 @@ export function AsideRight() {
 
         const allUsers = res?.data?.data?.users || [];
 
-        // 🔥 filter out logged-in user + only role=user
-        // const filtered = allUsers.filter(
-        //   (u: User) => u.role === "user" && u._id !== currentUserId
-        // );
+
         const filtered = allUsers.filter(
           (u: User) =>
             u.role === "user" &&
@@ -215,7 +60,7 @@ export function AsideRight() {
 
     fetchUsers();
   }, []);
-
+  const router = useRouter();
   // ======================
   // Follow / Unfollow
   // ======================
@@ -245,7 +90,9 @@ export function AsideRight() {
       setLoadingFollowId(null);
     }
   };
-
+  const goToProfile = (userId: string) => {
+    router.push(`/dashboard/social-media/user/${userId}`);
+  };
   return (
     <aside className="hidden flex-col gap-4 lg:flex">
       <Card className="bg-muted">
@@ -277,7 +124,10 @@ export function AsideRight() {
                   </Avatar>
 
                   <div>
-                    <p className="text-sm font-medium">
+                    <p
+                      className="text-sm font-medium cursor-pointer hover:underline"
+                      onClick={() => goToProfile(user._id)}
+                    >
                       {user.firstName} {user.lastName}
                     </p>
                   </div>

@@ -165,3 +165,12 @@ export async function getPostsByUserId(userId: string, token?: string) {
 export function transformPostsToUI(posts: Post[], currentUserId: string): UIPost[] {
   return posts.map((p, i) => transformPostToUI(p, currentUserId, i));
 }
+
+export async function getFollowingFeed(token?: string) {
+  return serverFetch<Post[]>(API_ENDPOINTS.POSTS.FEED, {
+    method: "GET",
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  });
+}

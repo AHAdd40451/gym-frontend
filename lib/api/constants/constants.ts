@@ -47,10 +47,12 @@ export const API_ENDPOINTS = {
   REVIEWS: {
     BASE: "/reviews"
   },
-//  
-POSTS: {
+  //  
+  POSTS: {
     BASE: `${API_BASE}/post`,
-    ALL:`${API_BASE}/post/all` 
+    ALL: `${API_BASE}/post/all`,
+    FEED: `${API_BASE}/post/feeds`,
+
   },
 
   ORDERS: {
@@ -67,18 +69,18 @@ POSTS: {
     UPDATE: (id: string) => `/subscriptions/${id}`,
     CANCEL: (id: string) => `/subscriptions/cancel/${id}`,
     DELETE: (id: string) => `/subscriptions/${id}`,
-    
+
     // User-specific subscriptions
     BY_USER: "/subscriptions/user",
     BY_USER_ID: (userId: string) => `/subscriptions/user/${userId}`,
-    
+
     // ✅ Main endpoint for billing page (returns user + subscriptions + transactions)
     USER_DETAILS: (userId: string) => `/subscriptions/${userId}/details`,
-    
+
     // Transaction management
     ADD_TRANSACTION: "/subscriptions/addTransaction",
     USER_TRANSACTIONS: (userId: string) => `/subscriptions/user/${userId}/transactions`,
-    
+
     // Other
     SUBSCRIBED_USERS: "/subscriptions/subscribed-users",
 
@@ -133,7 +135,7 @@ POSTS: {
     BASE: "/workout-logs",
     STATS: "/workout-logs/stats",
     TODAY: "/workout-logs/today",
-      HISTORY: (userId: string) => `/workouts/user/${userId}`,
+    HISTORY: (userId: string) => `/workouts/user/${userId}`,
 
   },
 

@@ -96,10 +96,6 @@ export function SocialMediaSidebar() {
       <Card className="bg-muted flex-1 py-4">
         <CardHeader className="flex items-center gap-3 px-4">
 
-          {/* <div>
-            <div className="text-sm">Toby Belhome</div>
-            <div className="text-muted-foreground text-xs">@toby</div>
-          </div> */}
           <div className="text-sm">
             {user ? `${user.firstName} ${user.lastName}` : "Loading..."}
           </div>
@@ -118,7 +114,6 @@ export function SocialMediaSidebar() {
                 <div className="flex-1">
                   <SidebarContent />
                 </div>
-                <ProBanner />
                 <CreatePostDialog />
               </SheetContent>
             </Sheet>
@@ -151,42 +146,8 @@ export function SocialMediaSidebar() {
         </CardContent>
       </Card>
 
-      <ProBanner />
+      {/* <ProBanner /> */}
     </aside>
   );
 }
 
-const ProBanner = () => {
-  const [showProBanner, setShowProBanner] = useState(true);
-  return (
-    showProBanner && (
-      <Card className="bg-muted relative">
-        <Button
-          onClick={() => setShowProBanner(false)}
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground absolute top-2 right-2">
-          <X />
-        </Button>
-        <CardContent>
-          <div className="bg-background mb-3 flex size-8 items-center justify-center rounded-lg border">
-            <AlertTriangle className="size-4" />
-          </div>
-          <p className="text-muted-foreground mb-3 text-sm">
-            Enjoy unlimited access to our template by paying just a small fee.
-          </p>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm">
-              Dismiss
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="https://shadcnuikit.com/pricing" target="_blank">
-                Go Pro
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  );
-};

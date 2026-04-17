@@ -5,14 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { CircleUserRoundIcon, Trash2Icon } from "lucide-react";
+import { CircleUserRoundIcon } from "lucide-react";
 
 import { usersApi } from "@/lib/api/services/users/users";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useAuth } from "@/lib/api/services/auth/context";
 
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,18 +36,15 @@ export default function Page() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [uploadedCoverUrl, setUploadedCoverUrl] = useState("");
 
-  // 👉 Dummy stats
-  const [stats] = useState({
-    posts: 12,
-    followers: 2450,
-    following: 180,
+  const [stats, setStats] = useState({
+    posts: 0,
+    followers: 0,
+    following: 0,
   });
 
-  // 👉 Profile image upload
   const [{ files }, { openFileDialog, getInputProps }] =
     useFileUpload({ accept: "image/*" });
 
-  // 👉 Cover image upload
   const [
     { files: coverFiles },
     { openFileDialog: openCoverDialog, getInputProps: getCoverInputProps }
@@ -64,28 +60,26 @@ export default function Page() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: "urls",
   });
 
-  // ========================
-  // SET USER ID
-  // ========================
+  // ================= USER ID =================
   useEffect(() => {
     const id = (user as any)?._id || (user as any)?.id;
     setUserId(id || null);
   }, [user]);
 
-  // ========================
-  // LOAD PROFILE
-  // ========================
+  // ================= LOAD PROFILE =================
   useEffect(() => {
     const load = async () => {
       if (!userId) return;
 
       const res = await usersApi.getById(userId);
-      const u = res?.data?.data?.user;
+
+      const u = res?.data?.user || res?.data?.data?.user;
+      const counts = res?.data?.counts || res?.data?.data?.counts;
 
       if (u) {
         setUser(u);
@@ -97,14 +91,20 @@ export default function Page() {
           urls: u.urls?.map((x: string) => ({ value: x })) || [],
         });
       }
+
+      if (counts) {
+        setStats({
+          posts: Number(counts.posts) || 0,
+          followers: Number(counts.followers) || 0,
+          following: Number(counts.following) || 0,
+        });
+      }
     };
 
     load();
   }, [userId]);
 
-  // ========================
-  // PROFILE IMAGE UPLOAD
-  // ========================
+  // ================= PROFILE IMAGE UPLOAD =================
   useEffect(() => {
     const upload = async () => {
       if (!files[0]?.file) return;
@@ -112,10 +112,10 @@ export default function Page() {
       const fd = new FormData();
       fd.append("files", files[0].file);
 
-      const res = await fetch("https://dev.syssel.market/api/general/upload", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch(
+        "https://dev.syssel.market/api/general/upload",
+        { method: "POST", body: fd }
+      );
 
       const data = await res.json();
 
@@ -127,9 +127,7 @@ export default function Page() {
     upload();
   }, [files]);
 
-  // ========================
-  // COVER IMAGE UPLOAD
-  // ========================
+  // ================= COVER UPLOAD =================
   useEffect(() => {
     const upload = async () => {
       if (!coverFiles[0]?.file) return;
@@ -137,10 +135,10 @@ export default function Page() {
       const fd = new FormData();
       fd.append("files", coverFiles[0].file);
 
-      const res = await fetch("https://dev.syssel.market/api/general/upload", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch(
+        "https://dev.syssel.market/api/general/upload",
+        { method: "POST", body: fd }
+      );
 
       const data = await res.json();
 
@@ -153,7 +151,6 @@ export default function Page() {
   }, [coverFiles]);
 
   const previewUrl =
-    files[0]?.preview ||
     uploadedImageUrl ||
     (user as any)?.profileImage ||
     "";
@@ -163,35 +160,40 @@ export default function Page() {
     (user as any)?.coverImage ||
     "";
 
-  // ========================
-  // SAVE PROFILE
-  // ========================
+  // ================= SAVE =================
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userId) return;
 
     try {
       setLoading(true);
 
-      const [firstName, ...last] = data.username.split(" ");
 
-      const payload = {
-        firstName,
-        lastName: last.join(" "),
+      const cleanName = data.username.trim();
+
+      // remove multiple spaces
+      const parts = cleanName.split(/\s+/);
+
+      const firstName = parts[0] || "";
+      const lastName = parts.slice(1).join(" ") || "";
+
+      // sanitize (ONLY letters + spaces allowed)
+      const safeFirstName = firstName.replace(/[^a-zA-Z ]/g, "");
+      const safeLastName = lastName.replace(/[^a-zA-Z ]/g, ""); const payload = {
+        firstName: safeFirstName,
+        lastName: safeLastName,
         email: data.email,
         bio: data.bio,
         urls: data.urls?.map((u) => u.value),
 
-        profileImage:
-          uploadedImageUrl || (user as any)?.profileImage,
-
-        coverImage:
-          uploadedCoverUrl || (user as any)?.coverImage,
+        profileImage: uploadedImageUrl || (user as any)?.profileImage,
+        coverImage: uploadedCoverUrl || (user as any)?.coverImage,
       };
 
       const res = await usersApi.update(userId, payload);
       const updated = res?.data?.data?.user;
 
       setUser(updated);
+      setUploadedImageUrl(updated?.profileImage || "");
 
       toast.success("Profile updated");
       setIsEditing(false);
@@ -205,23 +207,18 @@ export default function Page() {
   return (
     <div className="w-full max-w-5xl mx-auto">
 
-      <Card className="rounded-none md:rounded-xl">
+      <Card>
         <CardContent className="p-0">
 
-          {/* ================= COVER ================= */}
-          <div className="w-full h-48 md:h-64 bg-muted overflow-hidden">
-
+          {/* COVER */}
+          <div className="relative w-full h-48 md:h-64 bg-muted overflow-hidden">
             {coverPreview && (
-              <img
-                src={coverPreview}
-                className="w-full h-full object-cover"
-              />
+              <img src={coverPreview} className="w-full h-full object-cover" />
             )}
 
-            {/* COVER UPLOAD BUTTON (RESTORED) */}
             {isEditing && (
-              <div className="absolute md:top-30 top-44 md:right-16 right-6">
-                <Button type="button" onClick={openCoverDialog}>
+              <div className="absolute top-4 right-4">
+                <Button size="sm" onClick={openCoverDialog}>
                   Change Cover
                 </Button>
                 <input {...getCoverInputProps()} className="hidden" />
@@ -229,16 +226,16 @@ export default function Page() {
             )}
           </div>
 
-          {/* ================= PROFILE HEADER (INSTAGRAM STYLE) ================= */}
+          {/* HEADER */}
           <div className="px-4 md:px-6">
 
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-4">
+            <div className="flex justify-between items-start pt-4">
 
-              {/* LEFT: AVATAR + NAME */}
-              <div className="flex flex-col md:flex-row md:items-center gap-3">
+              {/* AVATAR BLOCK */}
+              <div className="flex gap-3">
 
-                <div className="relative -mt-12 md:-mt-16">
-                  <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-white shadow-sm">
+                <div className="relative">
+                  <Avatar className="h-24 w-24 border-4 border-white">
                     <AvatarImage src={previewUrl} />
                     <AvatarFallback>
                       <CircleUserRoundIcon />
@@ -248,7 +245,7 @@ export default function Page() {
                   {isEditing && (
                     <Button
                       size="sm"
-                      className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px]"
                       onClick={openFileDialog}
                     >
                       Edit
@@ -258,29 +255,29 @@ export default function Page() {
                   <input {...getInputProps()} className="hidden" />
                 </div>
 
-                {/* NAME + BIO */}
-                <div className="text-center md:text-left space-y-1">
+                <div>
                   <Input
                     {...form.register("username")}
                     disabled={!isEditing}
-                    className="font-semibold text-lg border-none shadow-none p-0 h-auto"
+                    className="font-semibold text-lg border-none"
                   />
 
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-1 ml-2">
                     {form.watch("bio")}
                   </p>
                 </div>
+
               </div>
 
-              {/* RIGHT: ACTIONS */}
-              <div className="flex gap-2 justify-center md:justify-end">
+              {/* BUTTONS */}
+              <div className="flex gap-2">
                 {!isEditing ? (
                   <Button onClick={() => setIsEditing(true)}>
                     Edit Profile
                   </Button>
                 ) : (
                   <>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                    <Button onClick={() => setIsEditing(false)} variant="outline">
                       Cancel
                     </Button>
                     <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}>
@@ -289,80 +286,27 @@ export default function Page() {
                   </>
                 )}
               </div>
+
             </div>
 
-            {/* ================= STATS ================= */}
-            <div className="flex justify-center md:justify-start gap-10 mt-4 border-t md:border-none pt-4 md:pt-2 text-center md:text-left">
-
+            {/* STATS */}
+            <div className="flex gap-10 mt-4 border-t pt-4">
               <div>
                 <p className="font-bold">{stats.posts}</p>
-                <p className="text-xs text-muted-foreground">Posts</p>
+                <p className="text-xs">Posts</p>
               </div>
-
               <div>
                 <p className="font-bold">{stats.followers}</p>
-                <p className="text-xs text-muted-foreground">Followers</p>
+                <p className="text-xs">Followers</p>
               </div>
-
               <div>
                 <p className="font-bold">{stats.following}</p>
-                <p className="text-xs text-muted-foreground">Following</p>
+                <p className="text-xs">Following</p>
               </div>
-
             </div>
-
-            {/* ================= EMAIL ================= */}
-            <div className="mt-4">
-              <Input
-                {...form.register("email")}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            {/* ================= LINKS ================= */}
-            <div className="mt-4 space-y-2">
-              {fields.map((f, i) => (
-                <div key={f.id} className="flex gap-2">
-                  <Input
-                    {...form.register(`urls.${i}.value`)}
-                    disabled={!isEditing}
-                  />
-
-                  {isEditing && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={() => remove(i)}
-                    >
-                      <Trash2Icon />
-                    </Button>
-                  )}
-                </div>
-              ))}
-
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => append({ value: "" })}
-                >
-                  Add Link
-                </Button>
-              )}
-            </div>
-
-            {/* ================= POSTS (INSTAGRAM GRID) ================= */}
             <div className="mt-6 border-t pt-4">
-
-              <div className="flex gap-1 md:gap-2">
-                {/* <Post/> */}
-                {/* <Post userId={userId!} /> */}
-                {userId && <Post userId={userId} />}
-              </div>
-
+              {userId && <Post userId={userId} />}
             </div>
-
           </div>
         </CardContent>
       </Card>
