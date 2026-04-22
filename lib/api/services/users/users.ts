@@ -20,6 +20,15 @@ export const usersApi = {
     }
   },
 
+// new
+searchByName: async (name: string) => {
+  const response = await apiClient.post(
+    `${API_ENDPOINTS.USERS.BASE}/searchs`,
+    { name }
+  );
+  return handleApiResponse(response);
+},
+
   // Get user by ID
   getById: async (id: string): Promise<User> => {
     try {
