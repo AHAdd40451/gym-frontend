@@ -59,7 +59,10 @@ export const API_ENDPOINTS = {
     BASE: "/orders",
     BY_USER: "/orders/my-orders"
   },
-
+ MESSAGES: {
+    BASE: "/messages",
+    GET:"/messages"
+  },
   // ✅ UPDATED SUBSCRIPTIONS SECTION
   SUBSCRIPTIONS: {
     BASE: "/subscriptions",
