@@ -30,7 +30,7 @@ export function ChatListItem({ chat, active }: { chat: ChatItemProps; active: bo
       </Avatar>
      <div className="flex items-center justify-between">
   <span className="truncate text-sm font-medium">
-    {chat.user?.name}
+    {/* {chat.user?.name} */}
   </span>
 
   <span className="text-muted-foreground flex-none text-xs">
