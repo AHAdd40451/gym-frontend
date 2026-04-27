@@ -37,7 +37,8 @@ import {
   TrophyIcon,
   BookOpenIcon,
   SettingsIcon,
-  History
+  History,
+  MessageCircle
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -193,6 +194,11 @@ export const userNavItems: NavGroup[] = [
         title: "Book Session",
         href: "/dashboard/user/booking",
         icon: CalendarIcon
+      },
+      {
+        title: "Let's Chats",
+        href: "/dashboard/user/chats",
+        icon: MessageCircle
       }
     ]
   },
