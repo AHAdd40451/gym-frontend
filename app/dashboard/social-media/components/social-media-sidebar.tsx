@@ -39,6 +39,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: <Home />, label: "Home" },
   { icon: <User />, label: "Profile" },
+  { icon: <Users />, label: "Chats" },
 ];
 
 export function SocialMediaSidebar() {
@@ -63,8 +64,9 @@ export function SocialMediaSidebar() {
               href={
                 item.label === "Profile"
                   ? "/dashboard/social-media/settings"
-                  : "/dashboard/social-media"
-              }
+                  : item.label === "Chats"
+                    ? "/dashboard/user/chats"
+                    : "/dashboard/social-media"}
             >
               <Button
                 variant="ghost"

@@ -48,11 +48,7 @@ export function ChatListItem({ chat, active }: { chat: ChatItemProps; active: bo
           { "from-muted": !active },
           { "dark:from-muted from-gray-200": active }
         )}>
-        <ChatUserDropdown>
-          <Button size="icon" variant="outline" className="rounded-full">
-            <Ellipsis />
-          </Button>
-        </ChatUserDropdown>
+        
       </div>
     </div>
   );

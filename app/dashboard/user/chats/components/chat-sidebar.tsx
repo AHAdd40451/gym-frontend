@@ -133,9 +133,7 @@ export function ChatSidebar() {
       <CardHeader>
         <CardTitle className="text-xl">Chats</CardTitle>
 
-        <CardAction>
-          <ActionDropdown />
-        </CardAction>
+     
 
         <CardDescription className="relative mt-4 flex items-center">
           <Search className="absolute left-3 size-4 text-muted-foreground" />

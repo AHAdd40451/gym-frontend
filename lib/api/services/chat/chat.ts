@@ -190,7 +190,26 @@ const getMessages = useCallback(async () => {
     },
     [receiverId]
   );
+const deleteMessage = useCallback(async (id: string) => {
+  if (!id) return;
 
+  // ✅ Optimistic UI (pehle UI se hatao)
+  setMessages((prev) => prev.filter((msg) => msg._id !== id));
+
+  try {
+    await fetch(`${API_BASE}/messages/delete/${id}`, {
+      method: "DELETE",
+    });
+
+    // ✅ Realtime emit (dusre user ke liye)
+    socket?.emit("deleteMessage", id);
+
+  } catch (error) {
+    console.error("DELETE ERROR:", error);
+
+    // ❌ agar error aaye to wapas laa bhi sakte ho (optional)
+  }
+}, []);
   return {
     messages,
     loading,
@@ -199,6 +218,7 @@ const getMessages = useCallback(async () => {
     sendMessage,
     getMessages,
     markSeen,
+    deleteMessage
   };
 }
 
