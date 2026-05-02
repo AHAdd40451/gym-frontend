@@ -1,88 +1,100 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent
-} from "@/components/ui/chart";
-import { Bar, BarChart, XAxis } from "recharts";
+
+interface MonthlyRevenue {
+  month: string;
+  year: number;
+  totalRevenue: number;
+  ordersRevenue: number;
+  subscriptionsRevenue: number;
+  totalOrders: number;
+  deliveredOrders: number;
+  totalSubscriptions: number;
+}
 
 export function EcommerceTotalRevenueCard() {
-  const chartConfig = {
-    desktop: {
-      label: "Desktop",
-      color: "var(--chart-1)"
-    },
-    mobile: {
-      label: "Mobile",
-      color: "var(--chart-2)"
-    }
-  } satisfies ChartConfig;
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const chartData = [
-    { month: "January", desktop: 190, mobile: 180 },
-    { month: "February", desktop: 250, mobile: 200 },
-    { month: "March", desktop: 240, mobile: 120 },
-    { month: "April", desktop: 120, mobile: 190 },
-    { month: "May", desktop: 110, mobile: 130 },
-    { month: "June", desktop: 250, mobile: 140 }
-  ];
+  useEffect(() => {
+    const fetchMonthlyRevenue = async () => {
+      try {
+        const res = await fetch("http://localhost:5003/api/dashboard/monthly-revenue");
+        const data = await res.json();
+        setMonthlyRevenue(data);
+      } catch (error) {
+        console.error("Error fetching monthly revenue:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMonthlyRevenue();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Total Revenue</CardTitle>
+          <CardDescription>Loading monthly data...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Total Revenue</CardTitle>
-        <CardDescription>Income in the last 28 days</CardDescription>
-        <CardAction className="relative col-start-auto row-start-auto justify-self-start lg:col-start-2 lg:row-start-1 lg:justify-self-end">
-          <div className="end-0 top-0 mt-2 flex flex-col items-stretch space-y-0 p-0 sm:flex-row lg:absolute lg:mt-0">
-            <div className="flex gap-8 rounded-lg border p-4">
-              <button className="flex flex-1 flex-col justify-center gap-2 text-left">
-                <span className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Desktop
-                </span>
-                <span className="font-display text-lg leading-none sm:text-2xl">24,828</span>
-              </button>
-              <button className="flex flex-1 flex-col justify-center gap-2 text-left">
-                <span className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Mobile
-                </span>
-                <span className="font-display text-lg leading-none sm:text-2xl">25,010</span>
-              </button>
-            </div>
-          </div>
-        </CardAction>
+        <CardTitle>Monthly Revenue</CardTitle>
+        <CardDescription>Click on a month for detailed breakdown</CardDescription>
       </CardHeader>
+
       <CardContent>
-        <div className="lg:mt-10">
-          <ChartContainer className="!aspect-21/9 w-full" config={chartConfig}>
-            <BarChart
-              accessibilityLayer
-              data={chartData}
-              margin={{
-                left: -6,
-                right: -6
-              }}>
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-                tickFormatter={(value) => value}
-              />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-              <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
-              <Bar dataKey="mobile" fill="var(--color-mobile)" radius={8} />
-            </BarChart>
-          </ChartContainer>
+        <div className="space-y-3">
+          {monthlyRevenue.slice(0, 6).map((month) => (
+            <Link
+              key={`${month.year}-${month.month}`}
+              href={`/dashboard/admin/ecommerce/revenue-details/${month.year}-${month.month}`}
+              className="block"
+            >
+              <div className="p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">
+                      {new Date(month.year, month.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Orders: {month.totalOrders} | Delivered: {month.deliveredOrders}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600">
+                      $ {month.totalRevenue.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Subs: {month.totalSubscriptions}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </CardContent>
     </Card>

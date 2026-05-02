@@ -3,41 +3,38 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAdminDashboard } from "@/lib/api/Admin/admin";
 
 export function EcommerceWelcomeCard() {
   const [income, setIncome] = useState(0);
-  const [growth, setGrowth] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchRevenue = async () => {
       try {
         setIsLoading(true);
-        const data = await getAdminDashboard(token);
-        setIncome(data.monthlyIncome.current);
-        setGrowth(data.monthlyIncome.growth);
+
+        const res = await fetch("http://localhost:5003/api/dashboard/revenue");
+        const data = await res.json();
+
+        // ✅ total revenue set
+        setIncome(data.totalRevenue || 0);
+
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Error fetching revenue:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchRevenue();
   }, []);
 
   return (
     <Card className="bg-muted relative overflow-hidden md:col-span-12 lg:col-span-4">
       <CardHeader>
+        {/* ✅ title change */}
         <CardTitle className="text-2xl">Monthly Income 💰</CardTitle>
-        <CardDescription>Current month earnings</CardDescription>
+        <CardDescription>All time earnings</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -50,13 +47,6 @@ export function EcommerceWelcomeCard() {
             <div>
               <div className="font-display text-3xl">
                 ${income.toLocaleString()}
-              </div>
-              <div className="text-muted-foreground text-xs">
-                <span className={growth >= 0 ? "text-green-500" : "text-red-500"}>
-                  {growth >= 0 ? "+" : ""}
-                  {growth}%
-                </span>{" "}
-                from last month
               </div>
             </div>
           </div>
