@@ -53,7 +53,8 @@ import {
   FileTextIcon,
   BellIcon,
   Plane,
-  Podcast
+  Podcast,
+  AxeIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -136,6 +137,11 @@ export const adminNavItems: NavGroup[] = [
         title: "All Subcriptions",
         href: "/dashboard/admin/all-sub",
         icon: Podcast
+      },
+      {
+        title: "AI Chat",
+        href: "/dashboard/admin/ai-chat-v2",
+        icon: AxeIcon
       }
     ]
   },
