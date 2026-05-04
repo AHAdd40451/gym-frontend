@@ -59,9 +59,9 @@ export const API_ENDPOINTS = {
     BASE: "/orders",
     BY_USER: "/orders/my-orders"
   },
- MESSAGES: {
+  MESSAGES: {
     BASE: "/messages",
-    GET:"/messages"
+    GET: "/messages"
   },
   // ✅ UPDATED SUBSCRIPTIONS SECTION
   SUBSCRIPTIONS: {
@@ -119,7 +119,10 @@ export const API_ENDPOINTS = {
     ALL: "/attendance/all",
     GET_BY_USER: "/attendance/user",
     CHECK_TODAY: "/attendance/today",
-
+    APPLY_LEAVE: "/attendance/leave",
+    GET_PENDING_LEAVES: "/attendance/leaves/pending",
+    UPDATE_LEAVE_STATUS: "/attendance/leave",
+    GET_ALL:"/attendance/all"
   },
   EXERCISES: {
     // v2 endpoints (JWT protected)

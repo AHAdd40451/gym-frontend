@@ -87,3 +87,113 @@ export async function checkTodayAttendance(
     }
   );
 }
+
+
+// Apply Leave
+export async function applyLeave(
+  userId: string,
+  reason: string,
+  token?: string
+) {
+  const authToken =
+    token ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token");
+
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<{ message: string }>(
+    `${API_ENDPOINTS.ATTENDANCE.APPLY_LEAVE}/${userId}`, 
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ reason }),
+    }
+  );
+}
+
+
+// =============================
+// 🔵 ADMIN APIs
+// =============================
+
+// Get Pending Leaves
+export async function getPendingLeaves(token?: string) {
+  const authToken =
+    token ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token");
+
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<any>(
+    `${API_ENDPOINTS.ATTENDANCE.GET_PENDING_LEAVES}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+  );
+}
+
+
+// Approve / Reject Leave
+export async function updateLeaveStatus(
+  attendanceId: string,
+  status: "approved" | "rejected",
+  token?: string
+) {
+  const authToken =
+    token ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token");
+
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<{ message: string }>(
+    `${API_ENDPOINTS.ATTENDANCE.UPDATE_LEAVE_STATUS}/${attendanceId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+}
+
+
+// Get All Attendance (Admin)
+export async function getAllAttendance(token?: string) {
+  const authToken =
+    token ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token");
+
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<any>(
+    `${API_ENDPOINTS.ATTENDANCE.GET_ALL}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+  );
+}

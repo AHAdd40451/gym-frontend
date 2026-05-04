@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { useGetTrainerSubscribedUsers } from "@/lib/api/services/subcription/subcription";
 import { useDebounce } from "@/hooks/useDebounce";
-
+import { applyLeave, checkTodayAttendance, createAttendance, getAttendanceByUserId } from "@/lib/api/services/attendence/attendence"
+import { toast } from "sonner"; // 👈 notification
 const PAGE_SIZE = 10;
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
@@ -126,6 +127,111 @@ const MembersPage = () => {
 
   const hasActiveFilters = Boolean(debouncedMemberName.trim() || (statusFilter !== "all" && statusFilter));
 
+  // ✅ Get user from localStorage
+  const [userId, setUserId] = useState<string | null>(null); useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser");
+
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      setUserId(parsed?.id || null);
+    }
+  }, []);
+
+
+
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [alreadyMarked, setAlreadyMarked] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveReason, setLeaveReason] = useState("");
+  const isDisabled = Boolean(alreadyMarked || loadingAction || !userId);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!userId) return;
+
+      try {
+        const res = await getAttendanceByUserId(userId);
+
+        console.log("FULL RES:", res);
+
+        // 🔥 FIX: correct path
+        const attendanceList =
+          res?.attendance ||        // direct
+          res?.data?.attendance ||  // axios style
+          [];
+
+        const today = new Date().toISOString().slice(0, 10);
+
+        const todayRecord = attendanceList.find((item: any) => {
+          const itemDate = new Date(item.date).toISOString().slice(0, 10);
+          return itemDate === today;
+        });
+
+        console.log("TODAY:", today);
+        console.log("MATCH:", todayRecord);
+
+        setAlreadyMarked(Boolean(todayRecord));
+
+      } catch (err) {
+        console.error(err);
+        setAlreadyMarked(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [userId]);
+  const handleMarkAttendance = async () => {
+    try {
+      setLoadingAction(true);
+
+      const res = await createAttendance(
+        userId,
+        new Date().toISOString(),
+        "present"
+      );
+
+      const data = res?.data || res;
+
+      if (data?.success) {
+        setAlreadyMarked(true); // instant disable
+        toast.success(data?.message || "Attendance marked successfully");
+
+      } else {
+        toast.error(data?.message || "Could not mark attendance");
+      }
+
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to mark attendance");
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+
+
+  const handleApplyLeave = async () => {
+    if (!leaveReason) {
+      toast.error("Please enter a reason");
+      return;
+    }
+
+    try {
+      setLoadingAction(true);
+
+      await applyLeave(userId, leaveReason);
+
+      toast.success("Leave applied successfully 🟡");
+      setAlreadyMarked(true);
+      setShowLeaveModal(false);
+      setLeaveReason("");
+
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to apply leave ❌");
+    } finally {
+      setLoadingAction(false);
+    }
+
+  };
   if (error) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -140,11 +246,28 @@ const MembersPage = () => {
     <div className="min-h-screen space-y-8 p-6 md:p-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Members</h1>
+        
         <p className="mt-1 text-sm text-muted-foreground">
           View and manage members subscribed to you as their trainer.
         </p>
-      </header>
 
+      </header>
+ <div className="flex gap-3">
+          <Button
+            onClick={handleMarkAttendance}
+            disabled={isDisabled}
+          >
+            Mark Attendance
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setShowLeaveModal(true)}
+            disabled={isDisabled}
+          >
+            Apply Leave
+          </Button>
+        </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="overflow-hidden border border-border/80 bg-card shadow-sm">
           <CardContent className="flex items-center gap-4 p-5">
@@ -369,6 +492,36 @@ const MembersPage = () => {
           </>
         )}
       </Card>
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[400px] space-y-4">
+            <h2 className="text-lg font-semibold">Apply Leave</h2>
+
+            <textarea
+              className="w-full border rounded-md p-2"
+              placeholder="Enter reason..."
+              value={leaveReason}
+              onChange={(e) => setLeaveReason(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowLeaveModal(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                onClick={handleApplyLeave}
+                disabled={loadingAction}
+              >
+                Submit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

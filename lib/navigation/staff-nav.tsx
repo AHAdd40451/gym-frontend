@@ -89,6 +89,11 @@ export const staffNavItems: NavGroup[] = [
         title: "Notifications",
         href: "/dashboard/staff/notifications",
         icon: BellIcon
+      },
+      {
+        title: "Attendance",
+        href: "/dashboard/user/attendance",
+        icon: ClockIcon
       }
     ]
   },
@@ -135,6 +140,7 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/user-workout-history",
         icon: History
       },
+      
       // {
       //   title: "Personal Training",
       //   href: "/dashboard/staff/training",
