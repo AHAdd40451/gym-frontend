@@ -108,12 +108,12 @@ export function SocialMediaSidebar() {
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button size="icon" variant="ghost">
+                <Button size="icon" variant="ghost" className="cursor-pointer">
                   <MenuIcon />
                 </Button>
               </SheetTrigger>
               <SheetContent className="p-4">
-                <div className="flex-1">
+                <div className="flex-1 mt-14">
                   <SidebarContent />
                 </div>
                 <CreatePostDialog />

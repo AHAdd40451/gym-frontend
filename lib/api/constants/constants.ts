@@ -54,6 +54,12 @@ export const API_ENDPOINTS = {
     FEED: `${API_BASE}/post/feeds`,
 
   },
+  STORY: {
+    BASE: `${API_BASE}/story/create`,
+    ALL: `${API_BASE}/story/all`,
+    VIEW: `${API_BASE}/story`,
+    DELETE: `${API_BASE}/story`,
+  },
 
   ORDERS: {
     BASE: "/orders",
@@ -122,7 +128,7 @@ export const API_ENDPOINTS = {
     APPLY_LEAVE: "/attendance/leave",
     GET_PENDING_LEAVES: "/attendance/leaves/pending",
     UPDATE_LEAVE_STATUS: "/attendance/leave",
-    GET_ALL:"/attendance/all"
+    GET_ALL: "/attendance/all"
   },
   EXERCISES: {
     // v2 endpoints (JWT protected)
