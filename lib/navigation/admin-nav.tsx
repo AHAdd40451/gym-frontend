@@ -54,7 +54,8 @@ import {
   BellIcon,
   Plane,
   Podcast,
-  AxeIcon
+  AxeIcon,
+  DollarSign
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -157,6 +158,11 @@ export const adminNavItems: NavGroup[] = [
         title: "All Attendance",
         href: "/dashboard/admin/attendance",
         icon: UsersIcon
+      },
+       {
+        title: "All Plan's",
+        href: "/dashboard/admin/plans",
+        icon: DollarSign
       }
       // {
       //   title: "Staff Management",

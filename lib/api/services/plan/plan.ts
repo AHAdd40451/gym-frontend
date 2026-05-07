@@ -56,8 +56,8 @@ export async function getAllPlans(
     `${API_ENDPOINTS.PLANS.BASE}${queryString}`,
     token
       ? {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        headers: { Authorization: `Bearer ${token}` },
+      }
       : undefined
   );
 }
@@ -102,34 +102,56 @@ export async function deletePlan(id: string, token?: string) {
 
 // 🧩 UI Transformation Utilities
 export interface UIPlan {
-  id: number;
+  id: string; // 👈 MUST BE STRING (_id)
   name: string;
   price: string;
   duration: string;
   status: "active" | "inactive";
+  description?: string; // 👈 ADD THIS
+
 }
 
 /**
  * Transform backend Plan → UI format
  */
+// export function transformPlanToUI(plan: Plan, index?: number): UIPlan {
+//   const price = `${(plan.priceCents / 100).toFixed(2)} ${plan.currency}`;
+//   const duration = `Every ${plan.intervalCount} ${plan.billingInterval}${
+//     plan.intervalCount > 1 ? "s" : ""
+//   }`;
+
+//   const numericId =
+//     parseInt(plan._id.slice(-8), 16) || (index !== undefined ? index + 4000 : 0);
+
+//   return {
+//     id: numericId,
+//     name: plan.name,
+//     price,
+//     duration,
+//     status: plan.isActive ? "active" : "inactive",
+//   };
+// }
 export function transformPlanToUI(plan: Plan, index?: number): UIPlan {
   const price = `${(plan.priceCents / 100).toFixed(2)} ${plan.currency}`;
-  const duration = `Every ${plan.intervalCount} ${plan.billingInterval}${
-    plan.intervalCount > 1 ? "s" : ""
-  }`;
+
+  const duration = `Every ${plan.intervalCount} ${plan.billingInterval}${plan.intervalCount > 1 ? "s" : ""
+    }`;
 
   const numericId =
-    parseInt(plan._id.slice(-8), 16) || (index !== undefined ? index + 4000 : 0);
+    parseInt(plan._id.slice(-8), 16) ||
+    (index !== undefined ? index + 4000 : 0);
 
   return {
-    id: numericId,
+    id: plan._id, // 👈 REAL MONGO ID (IMPORTANT)
+
     name: plan.name,
     price,
     duration,
     status: plan.isActive ? "active" : "inactive",
+
+    description: plan.description, // 👈 ADD THIS
   };
 }
-
 /**
  * Transform array of Plans → UI array
  */
