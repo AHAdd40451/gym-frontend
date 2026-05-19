@@ -183,6 +183,85 @@ export async function createSubscription(payload: SubscriptionPayload, token: st
     }
   );
 }
+export interface WalkInSubscriptionPayload {
+  firstName: string;
+  lastName?: string;
+  phone: string;
+  email?: string;
+  planId: string;
+  amount: number;
+  currency?: string;
+  startDate: string;
+  endDate: string;
+  paymentStatus: "paid" | "pending";
+}
+
+export interface WalkInSubscriptionResponse {
+  success: boolean;
+  message?: string;
+  subscription?: Subscription;
+  error?: string;
+  status?: number;
+}
+
+export async function createWalkInSubscription(
+  payload: WalkInSubscriptionPayload,
+  token: string
+) {
+  return serverFetch<WalkInSubscriptionResponse>(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/walk-in`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export interface PlanOption {
+  _id?: string;
+  id?: string;
+  name: string;
+  description?: string;
+  priceCents?: number;
+  price?: number;
+  currency?: string;
+  durationMonths?: number;
+  duration?: number;
+}
+
+export async function getSubscriptionPlans(
+  token?: string
+): Promise<PlanOption[]> {
+  try {
+    const response = await apiClient.get("plans", {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    });
+
+    console.log("Plans API raw response:", response?.data);
+
+    const plans =
+      response?.data?.data?.plans ||
+      response?.data?.plans ||
+      response?.data?.result ||
+      response?.data?.data ||
+      response?.data ||
+      [];
+
+    console.log("Parsed plans:", plans);
+
+    return Array.isArray(plans) ? plans : [];
+  } catch (error: any) {
+    console.error("Plans API error:", error?.response?.data || error);
+    return [];
+  }
+}
 
 // 2️⃣ Get all subscriptions (Admin)
 export async function getAllSubscriptions(params: { page?: number; limit?: number } = {}, token: string) {

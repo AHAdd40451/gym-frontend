@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -25,9 +24,13 @@ export default function EventCalendarApp() {
     }
   };
 
+  const handleAddSubscription = () => {
+    router.push("/dashboard/admin/all-sub/add");
+  };
+
   const fetchData = async () => {
     try {
-      setLoading(true); // start loading
+      setLoading(true);
 
       const res = await getAllSubscriptions({ page: 1, limit: 50 }, "");
 
@@ -35,11 +38,11 @@ export default function EventCalendarApp() {
         const formatted: CalendarEvent[] = res.data.data.map((item: any) => ({
           id: item.id,
           title: item.planName || "No Plan",
-          description: `User: ${item.firstName}`,
+          description: `User: ${item.firstName || "Walk-in Customer"}`,
           start: new Date(item.startDate),
           end: new Date(item.endDate),
           color: getColorByPlan(item.planName),
-          location: item.firstName,
+          location: item.firstName || "Walk-in Customer",
         }));
 
         setEvents(formatted);
@@ -50,12 +53,12 @@ export default function EventCalendarApp() {
       console.error("Error fetching events:", err);
       setEvents([]);
     } finally {
-      setLoading(false); // stop loading
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData(); // single fetch on component mount
+    fetchData();
   }, []);
 
   if (loading) {
@@ -67,20 +70,37 @@ export default function EventCalendarApp() {
   }
 
   return (
-    <EventCalendar
-      events={events}
-      initialView="month"
-      onEventSelect={(event) =>
-        router.push(`/dashboard/admin/all-sub/${event.id}`)
-      }
-      onEventCreate={(startTime) => {
-        // Handle event creation - you can customize this behavior
-        console.log("Create event at:", startTime);
-      }}
-      onEventUpdate={(event) => {
-        // Handle event update - you can customize this behavior
-        console.log("Update event:", event);
-      }}
-    />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">All Subscriptions</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage customer subscriptions and walk-in customers.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAddSubscription}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Add Subscription
+        </button>
+      </div>
+
+      <EventCalendar
+        events={events}
+        initialView="month"
+        onEventSelect={(event) => {
+          router.push(`/dashboard/admin/all-sub/${event.id}`);
+        }}
+        onEventCreate={(startTime) => {
+          console.log("Create event at:", startTime);
+        }}
+        onEventUpdate={(event) => {
+          console.log("Update event:", event);
+        }}
+      />
+    </div>
   );
 }
