@@ -67,7 +67,7 @@
 // export default Page;
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSubscriptionById } from "@/lib/api/services/subcription/subcription";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,7 +76,19 @@ import { Button } from "@/components/ui/button";
 
 interface SubscriptionDetail {
   id: string;
-  firstName: string;
+
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  name?: string;
+
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    name?: string;
+  };
+
   planName: string;
   startDate: string;
   endDate: string;
@@ -85,7 +97,10 @@ interface SubscriptionDetail {
 export default function Page() {
   const router = useRouter();
   const { id } = useParams() as { id: string };
-  const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null);
+
+  const [subscription, setSubscription] = useState<SubscriptionDetail | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +108,9 @@ export default function Page() {
     const fetchSubscription = async () => {
       try {
         setLoading(true);
+
         const res = await getSubscriptionById(id);
+
         if (res?.success && res.data) {
           setSubscription(res.data);
         } else {
@@ -106,12 +123,53 @@ export default function Page() {
         setLoading(false);
       }
     };
-    fetchSubscription();
+
+    if (id) {
+      fetchSubscription();
+    }
   }, [id]);
 
-  if (loading) return <div className="flex justify-center items-center h-screen">Loading subscription details...</div>;
-  if (error) return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
-  if (!subscription) return <div className="flex justify-center items-center h-screen">No subscription data available</div>;
+  const userFullName = useMemo(() => {
+    if (!subscription) return "N/A";
+
+    const directName =
+      subscription.fullName ||
+      subscription.name ||
+      `${subscription.firstName || ""} ${subscription.lastName || ""}`.trim();
+
+    const nestedUserName =
+      subscription.user?.fullName ||
+      subscription.user?.name ||
+      `${subscription.user?.firstName || ""} ${
+        subscription.user?.lastName || ""
+      }`.trim();
+
+    return directName || nestedUserName || "N/A";
+  }, [subscription]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading subscription details...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        {error}
+      </div>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        No subscription data available
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center h-screen">
@@ -119,21 +177,44 @@ export default function Page() {
         <Button
           variant="outline"
           size="sm"
-          className="absolute  left-10"
+          className="absolute left-10"
           onClick={() => router.back()}
         >
           Exit
         </Button>
+
         <CardHeader>
-          <CardTitle className="text-2xl font-bold  mt-16">Subscription Details</CardTitle>
+          <CardTitle className="text-2xl font-bold mt-16">
+            Subscription Details
+          </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-3 mt-2 text-lg">
-          <p><strong>ID:</strong> {subscription.id}</p>
-          <p><strong>Name:</strong> {subscription.firstName}</p>
-          <p><strong>Plan:</strong> {subscription.planName}</p>
-          <p><strong>Start Date:</strong> {new Date(subscription.startDate).toLocaleDateString()}</p>
-          <p><strong>End Date:</strong> {new Date(subscription.endDate).toLocaleDateString()}</p>
-          <Badge variant="success" className="mt-2 text-lg">Active</Badge>
+          <p>
+            <strong>ID:</strong> {subscription.id}
+          </p>
+
+          <p>
+            <strong>Name:</strong> {userFullName}
+          </p>
+
+          <p>
+            <strong>Plan:</strong> {subscription.planName}
+          </p>
+
+          <p>
+            <strong>Start Date:</strong>{" "}
+            {new Date(subscription.startDate).toLocaleDateString()}
+          </p>
+
+          <p>
+            <strong>End Date:</strong>{" "}
+            {new Date(subscription.endDate).toLocaleDateString()}
+          </p>
+
+          <Badge variant="success" className="mt-2 text-lg">
+            Active
+          </Badge>
         </CardContent>
       </Card>
     </div>

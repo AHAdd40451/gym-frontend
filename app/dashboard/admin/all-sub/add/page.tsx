@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
-  createWalkInSubscription,
+  createWalkInSubscription as createCustomerSubscription,
   getSubscriptionPlans,
 } from "@/lib/api/services/subcription/subcription";
 import type { PlanOption } from "@/lib/api/services/subcription/subcription";
@@ -48,8 +48,6 @@ export default function AddSubscriptionPage() {
       const token = getToken();
       const data = await getSubscriptionPlans(token);
 
-      console.log("Plans dropdown data:", data);
-
       setPlans(data);
     } catch (error) {
       console.error("Error fetching plans:", error);
@@ -79,8 +77,8 @@ export default function AddSubscriptionPage() {
         amount: selectedPlan?.priceCents
           ? String(selectedPlan.priceCents / 100)
           : selectedPlan?.price
-          ? String(selectedPlan.price)
-          : formData.amount,
+            ? String(selectedPlan.price)
+            : formData.amount,
       });
 
       return;
@@ -91,56 +89,61 @@ export default function AddSubscriptionPage() {
       [name]: value,
     });
   };
+  const convertDateToLocalNoonISO = (dateValue: string) => {
+    const [year, month, day] = dateValue.split("-").map(Number);
+    const localNoonDate = new Date(year, month - 1, day, 12, 0, 0, 0);
 
+    return localNoonDate.toISOString();
+  };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!formData.firstName.trim()) {
-      alert("First name required hai");
+      alert("First name is required.");
       return;
     }
 
     if (!formData.phone.trim()) {
-      alert("Phone required hai");
+      alert("Phone number is required.");
       return;
     }
 
     if (!formData.planId) {
-      alert("Plan select karo");
+      alert("Please select a subscription plan.");
       return;
     }
 
     if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("Amount valid enter karo");
+      alert("Please enter a valid amount.");
       return;
     }
 
     if (!formData.startDate) {
-      alert("Start date required hai");
+      alert("Start date is required.");
       return;
     }
 
     if (!formData.endDate) {
-      alert("End date required hai");
+      alert("End date is required.");
       return;
     }
 
     if (new Date(formData.endDate) < new Date(formData.startDate)) {
-      alert("End date start date se pehle nahi ho sakti");
+      alert("End date cannot be before the start date.");
       return;
     }
 
     const token = getToken();
 
     if (!token) {
-      alert("Admin token nahi mila. Please login again.");
+      alert("Admin token was not found. Please log in again.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await createWalkInSubscription(
+      const res = await createCustomerSubscription(
         {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -149,17 +152,15 @@ export default function AddSubscriptionPage() {
           planId: formData.planId,
           amount: Number(formData.amount),
           currency: "USD",
-          startDate: formData.startDate,
-          endDate: formData.endDate,
+          startDate: convertDateToLocalNoonISO(formData.startDate),
+          endDate: convertDateToLocalNoonISO(formData.endDate),
           paymentStatus: formData.paymentStatus as "paid" | "pending",
         },
         token
       );
 
-      console.log("Walk-in subscription response:", res);
-
       if (res?.success === false || res?.error) {
-        alert(res?.message || res?.error || "Subscription add nahi hui");
+        alert(res?.message || res?.error || "Subscription could not be added.");
         return;
       }
 
@@ -167,187 +168,239 @@ export default function AddSubscriptionPage() {
       router.refresh();
     } catch (error: any) {
       console.error("Error adding subscription:", error);
-      alert(error?.message || "Subscription add nahi hui");
+      alert(error?.message || "Subscription could not be added.");
     } finally {
       setLoading(false);
     }
   };
 
+  const cardClass =
+    "rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm";
+
+  const inputClass =
+    "w-full rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const labelClass = "text-sm font-medium text-foreground";
+  const helpTextClass = "text-sm leading-6 text-muted-foreground";
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Add Subscription</h1>
-          <p className="text-sm text-muted-foreground">
-            Walk-in customer ki subscription add karein.
-          </p>
-        </div>
+    <div className="w-full px-5 py-6 lg:px-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-semibold text-foreground">
+            Add Subscription
+          </h1>
 
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/admin/all-sub")}
-          className="rounded-md border px-4 py-2 text-sm"
-        >
-          Back
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border p-5">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">First Name</label>
-            <input
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              placeholder="Enter first name"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Last Name</label>
-            <input
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              placeholder="Enter last name"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Phone</label>
-            <input
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Enter phone number"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter email optional"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Plan</label>
-            <select
-              name="planId"
-              value={formData.planId}
-              onChange={handleChange}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-              disabled={plansLoading}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/admin/all-sub")}
+              className="rounded-lg bg-muted px-5 py-3 text-sm font-medium text-foreground hover:bg-muted/80"
             >
-              <option value="">
-                {plansLoading ? "Loading plans..." : "Select plan"}
-              </option>
+              Discard
+            </button>
 
-              {plans.map((plan) => {
-                const planId = plan._id || plan.id;
+            <button
+              type="submit"
+              disabled={loading || plansLoading}
+              className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {loading ? "Saving..." : "Add"}
+            </button>
+          </div>
+        </div>
 
-                if (!planId) return null;
+        <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+          <div className={cardClass}>
+            <h2 className="mb-8 text-xl font-semibold text-foreground">
+              Customer Details
+            </h2>
 
-                return (
-                  <option key={planId} value={planId}>
-                    {plan.name}
+            <div className="space-y-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className={labelClass}>First Name</label>
+                  <input
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Enter first name"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className={labelClass}>Last Name</label>
+                  <input
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Enter last name"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className={labelClass}>Phone Number</label>
+                  <input
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="Enter phone number"
+                    className={inputClass}
+                    required
+                  />
+                  <p className={helpTextClass}>
+                    Add the customer's phone number for contact and records.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className={labelClass}>Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter email address"
+                    className={inputClass}
+                  />
+                  <p className={helpTextClass}>
+                    Email is optional, but useful for account records.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelClass}>Subscription Plan</label>
+                <select
+                  name="planId"
+                  value={formData.planId}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                  disabled={plansLoading}
+                >
+                  <option value="">
+                    {plansLoading ? "Loading plans..." : "Select plan"}
                   </option>
-                );
-              })}
-            </select>
 
-            {!plansLoading && plans.length === 0 && (
-              <p className="text-xs text-red-500">
-                Plans nahi mile. Console mein Plans API response check karo.
-              </p>
-            )}
+                  {plans.map((plan) => {
+                    const planId = plan._id || plan.id;
+
+                    if (!planId) return null;
+
+                    return (
+                      <option key={planId} value={planId}>
+                        {plan.name}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {!plansLoading && plans.length === 0 && (
+                  <p className="text-sm text-destructive">
+                    No plans found. Please check the Plans API response.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className={labelClass}>Start Date</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required
+                  />
+                  <p className={helpTextClass}>
+                    Select the date when the subscription should start.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className={labelClass}>End Date</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required
+                  />
+                  <p className={helpTextClass}>
+                    Select the date when the subscription should expire.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Amount</label>
-            <input
-              type="number"
-              name="amount"
-              value={formData.amount}
-              onChange={handleChange}
-              placeholder="Enter amount"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-            />
+          <div className="space-y-5">
+            <div className={cardClass}>
+              <h2 className="mb-8 text-xl font-semibold text-foreground">
+                Pricing
+              </h2>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className={labelClass}>Amount</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className={inputClass}
+                    required
+                  />
+                  <p className={helpTextClass}>
+                    This amount will be saved with the subscription payment.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 border-t border-border pt-5">
+                  <input
+                    type="checkbox"
+                    checked
+                    readOnly
+                    className="h-5 w-5 rounded border-input accent-primary"
+                  />
+                  <span className="text-sm font-medium text-foreground">
+                    Manual payment
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className={cardClass}>
+              <h2 className="mb-8 text-xl font-semibold text-foreground">
+                Payment Status
+              </h2>
+
+              <div className="space-y-2">
+                <select
+                  name="paymentStatus"
+                  value={formData.paymentStatus}
+                  onChange={handleChange}
+                  className={inputClass}
+                >
+                  <option value="paid">Paid</option>
+                  <option value="pending">Pending</option>
+                </select>
+
+                <p className={helpTextClass}>
+                  Selecting Paid will activate the subscription immediately.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Start Date</label>
-            <input
-              type="date"
-              name="startDate"
-              value={formData.startDate}
-              onChange={handleChange}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">End Date</label>
-            <input
-              type="date"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleChange}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Payment Status</label>
-          <select
-            name="paymentStatus"
-            value={formData.paymentStatus}
-            onChange={handleChange}
-            className="w-full rounded-md border px-3 py-2 text-sm"
-          >
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
-
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={loading || plansLoading}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            {loading ? "Saving..." : "Save Subscription"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/admin/all-sub")}
-            className="rounded-md border px-4 py-2 text-sm"
-          >
-            Cancel
-          </button>
         </div>
       </form>
     </div>
