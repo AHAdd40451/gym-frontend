@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { type Layout } from "react-resizable-panels";
+
 import { useMailStore } from "../use-mail";
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -19,6 +19,11 @@ import { NavDesktop } from "./nav-desktop";
 import { NavMobile } from "./nav-mobile";
 import { MailDisplayMobile } from "./mail-display-mobile";
 import { cn } from "@/lib/utils";
+type Layout = {
+  "left-panel": number;
+  "middle-panel": number;
+  "right-panel": number;
+};
 
 const DEFAULT_LAYOUT: Layout = {
   "left-panel": 16,
