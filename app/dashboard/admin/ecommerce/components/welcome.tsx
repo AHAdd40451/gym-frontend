@@ -13,7 +13,7 @@ export function EcommerceWelcomeCard() {
       try {
         setIsLoading(true);
 
-        const res = await fetch("http://localhost:5003/api/dashboard/revenue");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/revenue`);
         const data = await res.json();
 
         // ✅ total revenue set

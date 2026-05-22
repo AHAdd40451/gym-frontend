@@ -131,7 +131,7 @@ export function EcommerceTotalRevenueCard() {
     const fetchMonthlyRevenue = async () => {
       try {
         const res = await fetch(
-          "http://localhost:5003/api/dashboard/monthly-revenue"
+         `${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/monthly-revenue`
         );
 
         const data = await res.json();

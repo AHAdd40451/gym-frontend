@@ -44,7 +44,7 @@ export default function RevenueDetailsPage() {
   useEffect(() => {
     const fetchMonthlyDetails = async () => {
       try {
-        const res = await fetch(`http://localhost:5003/api/dashboard/revenue-details/${year}/${month}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/revenue-details/${year}/${month}`);
         const data = await res.json();
         setData(data);
       } catch (error) {
