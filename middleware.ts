@@ -1,88 +1,127 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// Public routes that don't require authentication
-const publicRoutes = ['/login', '/register', "/community", '/forgot-password', '/reset-password', '/verify-email'];
-const protectedRoutes = ['/dashboard'];
+const publicRoutes = [
+  "/login",
+  "/register",
+  "/community",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/landing-login",
+];
 
+const protectedRoutes = ["/dashboard"];
+
+function isPublicPath(pathname: string) {
+  if (pathname === "/") return true;
+
+  return publicRoutes.some((route) => pathname.startsWith(route));
+}
+
+function safeParseUserCookie(userCookie: string) {
+  try {
+    return JSON.parse(decodeURIComponent(userCookie));
+  } catch {
+    try {
+      return JSON.parse(userCookie);
+    } catch {
+      return null;
+    }
+  }
+}
 
 export function middleware(request: NextRequest) {
-
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('auth-token')?.value;
-  const userCookie = request.cookies.get('auth-user')?.value;
 
-  // Skip middleware for API routes, static files, and other non-page routes
-  if (pathname.startsWith('/api') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon.ico') ||
-    pathname.includes('.')) {
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
 
+  const token = request.cookies.get("auth-token")?.value;
+  const userCookie = request.cookies.get("auth-user")?.value;
 
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const isPublicRoute = isPublicPath(pathname);
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 
-  // Protected routes that require authentication
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-
-  // Check if user is authenticated (just check if cookies exist)
-  const isAuthenticated = !!(token && userCookie);
+  const isAuthenticated = Boolean(token && userCookie);
   let userRole: string | null = null;
 
   if (isAuthenticated && userCookie) {
-    try {
-      const userData = JSON.parse(userCookie);
+    const userData = safeParseUserCookie(userCookie);
 
-      console.log(userData, "userDatauserDatauserData");
-      userRole = userData.role;
-    } catch (error) {
-      console.error('Failed to parse user data:', error);
-      // Clear invalid cookies
+    if (!userData) {
       const response = NextResponse.next();
-      response.cookies.delete('auth-token');
-      response.cookies.delete('auth-user');
+      response.cookies.delete("auth-token");
+      response.cookies.delete("auth-user");
       return response;
     }
+
+    userRole = userData.role || null;
   }
 
-  // If accessing protected route without authentication
+  // Protected route without login
   if (isProtectedRoute && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // If accessing public route while authenticated, redirect to appropriate dashboard
-  if (isPublicRoute && isAuthenticated && pathname !== '/') {
+  // Logged-in user should not stay on login/register pages
+  // But landing-login must stay public because it sets cookies first
+  if (
+    isPublicRoute &&
+    isAuthenticated &&
+    pathname !== "/" &&
+    pathname !== "/landing-login"
+  ) {
     const dashboardUrl = getDashboardUrl(userRole);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
-  // Role-based redirects for dashboard
-  if (pathname === '/dashboard' && isAuthenticated) {
+  // /dashboard should go to role dashboard
+  if (pathname === "/dashboard" && isAuthenticated) {
     const dashboardUrl = getDashboardUrl(userRole);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
-  // Staff default: /dashboard/staff → /dashboard/staff/members
-  if (pathname === '/dashboard/staff' && isAuthenticated && userRole === 'staff') {
-    return NextResponse.redirect(new URL('/dashboard/staff/members', request.url));
+  // Staff default redirect
+  if (
+    pathname === "/dashboard/staff" &&
+    isAuthenticated &&
+    userRole === "staff"
+  ) {
+    return NextResponse.redirect(
+      new URL("/dashboard/staff/members", request.url)
+    );
   }
 
-  // Role-based access control for specific dashboard routes
+  // Role based access
   if (isProtectedRoute && isAuthenticated) {
-    const roleBasedRoutes = {
-      '/dashboard/admin': 'admin',
-      '/dashboard/staff': 'staff',
-      '/dashboard/user': 'user'
+    const roleBasedRoutes: Record<string, string> = {
+      "/dashboard/admin": "admin",
+      "/dashboard/staff": "staff",
+      "/dashboard/user": "user",
     };
 
-    const requiredRole = roleBasedRoutes[pathname as keyof typeof roleBasedRoutes];
-    if (requiredRole && userRole !== requiredRole) {
-      // Redirect to appropriate dashboard based on user role
-      const dashboardUrl = getDashboardUrl(userRole);
-      return NextResponse.redirect(new URL(dashboardUrl, request.url));
+    const matchedRoute = Object.keys(roleBasedRoutes).find((route) =>
+      pathname.startsWith(route)
+    );
+
+    if (matchedRoute) {
+      const requiredRole = roleBasedRoutes[matchedRoute];
+
+      if (userRole !== requiredRole) {
+        const dashboardUrl = getDashboardUrl(userRole);
+        return NextResponse.redirect(new URL(dashboardUrl, request.url));
+      }
     }
   }
 
@@ -91,26 +130,17 @@ export function middleware(request: NextRequest) {
 
 function getDashboardUrl(role: string | null): string {
   switch (role) {
-    case 'admin':
-      return '/dashboard/admin/ecommerce';
-    case 'staff':
-      return '/dashboard/staff/members';
-    case 'user':
-      return '/dashboard/user';
+    case "admin":
+      return "/dashboard/admin/ecommerce";
+    case "staff":
+      return "/dashboard/staff/members";
+    case "user":
+      return "/dashboard/user";
     default:
-      return '/dashboard/user';
+      return "/dashboard/user";
   }
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

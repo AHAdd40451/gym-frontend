@@ -60,22 +60,22 @@ const accountFormSchema = z.object({
   }),
   language: z.string({
     required_error: "Please select a language."
-  })
+  }),
+  location: z.string().optional()
 });
 
 type AccountFormValues = z.infer<typeof accountFormSchema>;
 
-// Helper to safely extract error message
 function getErrorMessage(error: any): string {
   if (!error) return "An unknown error occurred";
-  
+
   if (typeof error === "string") return error;
   if (error.message) return error.message;
   if (error.error) return error.error;
   if (error.data?.message) return error.data.message;
   if (error.response?.data?.message) return error.response.data.message;
   if (error.response?.data?.error) return error.response.data.error;
-  
+
   try {
     return JSON.stringify(error);
   } catch {
@@ -94,40 +94,61 @@ function extractUserFromUsersApiResponse(res: any) {
   );
 }
 
-// Helper function to update user in localStorage accounts
+function getLocationValue(user: any) {
+  if (!user) return "";
+
+  if (typeof user.location === "string") {
+    return user.location;
+  }
+
+  return (
+    user?.location?.country ||
+    user?.country ||
+    user?.address?.country ||
+    ""
+  );
+}
+
 function updateAccountInLocalStorage(updatedUser: any) {
   try {
-    const accountsStr = localStorage.getItem("accounts");
-    if (!accountsStr) return;
-    
-    const accounts = JSON.parse(accountsStr);
     const userId = updatedUser?._id || updatedUser?.id;
-    
+
     if (!userId) return;
-    
-    const updatedAccounts = accounts.map((acc: any) => {
-      const accId = acc?._id || acc?.id;
-      if (accId === userId) {
-        return { ...acc, ...updatedUser };
-      }
-      return acc;
-    });
-    
-    localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
-    
+
+    const accountsStr = localStorage.getItem("accounts");
+
+    if (accountsStr) {
+      const accounts = JSON.parse(accountsStr);
+
+      const updatedAccounts = accounts.map((acc: any) => {
+        const accId = acc?._id || acc?.id;
+
+        if (String(accId) === String(userId)) {
+          return { ...acc, ...updatedUser };
+        }
+
+        return acc;
+      });
+
+      localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
+    }
+
     const currentUserStr = localStorage.getItem("currentUser");
+
     if (currentUserStr) {
       const currentUser = JSON.parse(currentUserStr);
       const currentUserId = currentUser?._id || currentUser?.id;
-      if (currentUserId === userId) {
+
+      if (String(currentUserId) === String(userId)) {
         localStorage.setItem("currentUser", JSON.stringify(updatedUser));
       }
+    } else {
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
     }
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('userUpdated'));
-    
-    console.log("✅ Updated user in localStorage accounts");
+
+    window.dispatchEvent(new Event("userUpdated"));
+
+    console.log("✅ Updated user in localStorage");
   } catch (error) {
     console.error("❌ Failed to update localStorage accounts:", error);
   }
@@ -135,27 +156,27 @@ function updateAccountInLocalStorage(updatedUser: any) {
 
 export default function Page() {
   const { user, setUser } = useAuth();
-  
-  // Get userId from auth context or localStorage as fallback
+
   const [userId, setUserId] = useState<string | null>(
     (user as any)?._id || (user as any)?.id || (user as any)?.userId || null
   );
 
-  // Update userId when user changes or load from localStorage
   useEffect(() => {
     const id = (user as any)?._id || (user as any)?.id || (user as any)?.userId;
+
     if (id) {
       setUserId(id);
     } else {
-      // Fallback to localStorage
-      const storedUser = localStorage.getItem('currentUser');
+      const storedUser = localStorage.getItem("currentUser");
+
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
           const storedId = parsedUser?._id || parsedUser?.id;
+
           if (storedId) setUserId(storedId);
         } catch (error) {
-          console.error('Failed to parse user from localStorage:', error);
+          console.error("Failed to parse user from localStorage:", error);
         }
       }
     }
@@ -169,11 +190,11 @@ export default function Page() {
     defaultValues: {
       name: "",
       dob: undefined,
-      language: "en"
+      language: "en",
+      location: ""
     }
   });
 
-  // Load user account data
   useEffect(() => {
     const loadAccountData = async () => {
       if (!userId) {
@@ -183,56 +204,63 @@ export default function Page() {
 
       console.log("Loading account data for userId:", userId);
       setFetchingAccount(true);
-      
+
       try {
         const res = await usersApi.getById(String(userId));
         console.log("API Response:", res);
-        
+
         const freshUser = extractUserFromUsersApiResponse(res);
         console.log("Extracted user:", freshUser);
 
         if (freshUser) {
           setUser(freshUser);
-          
-          // Reset form with user data
+
           form.reset({
             name: `${freshUser.firstName ?? ""} ${freshUser.lastName ?? ""}`.trim() || "",
             dob: freshUser.dateOfBirth ? new Date(freshUser.dateOfBirth) : undefined,
-            language: freshUser.language || "en"
+            language: freshUser.language || "en",
+            location: getLocationValue(freshUser)
           });
         } else {
           console.warn("No user data in API response, using auth context");
-          // Fallback to auth context
+
           if (user) {
             form.reset({
               name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
               dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
-              language: (user as any).language || "en"
+              language: (user as any).language || "en",
+              location: getLocationValue(user)
             });
           }
         }
       } catch (err: any) {
         const errorMsg = getErrorMessage(err);
-        const isCorsError = errorMsg?.includes('CORS') || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error');
-        
+        const isCorsError =
+          errorMsg?.includes("CORS") ||
+          err?.code === "ERR_NETWORK" ||
+          err?.message?.includes("Network Error");
+
         if (isCorsError) {
           console.warn("CORS/Network error - using local data");
-          // Don't show error toast for CORS, just use local data
+
           if (user) {
             form.reset({
               name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
               dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
-              language: (user as any).language || "en"
+              language: (user as any).language || "en",
+              location: getLocationValue(user)
             });
           }
         } else {
           console.error("Failed to fetch account data:", errorMsg, err);
           toast.error(`Failed to load account: ${errorMsg}`);
+
           if (user) {
             form.reset({
               name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "",
               dob: (user as any).dateOfBirth ? new Date((user as any).dateOfBirth) : undefined,
-              language: (user as any).language || "en"
+              language: (user as any).language || "en",
+              location: getLocationValue(user)
             });
           }
         }
@@ -263,7 +291,10 @@ export default function Page() {
         firstName,
         lastName: lastNameArr.join(" ") || "",
         dateOfBirth: data.dob.toISOString(),
-        language: data.language
+        language: data.language,
+        location: {
+          country: data.location || ""
+        }
       };
 
       console.log("Update data:", updateData);
@@ -271,45 +302,45 @@ export default function Page() {
       const updateResponse = await usersApi.update(String(userId), updateData);
       console.log("Update response:", updateResponse);
 
-      // Refresh user from API
       console.log("Fetching updated user data...");
       const res = await usersApi.getById(String(userId));
       const freshUser = extractUserFromUsersApiResponse(res);
-      
+
       if (freshUser) {
-        // Update localStorage first
         updateAccountInLocalStorage(freshUser);
-        
-        // Then update auth context
         setUser(freshUser);
         console.log("User state updated:", freshUser);
       }
 
       toast.success("Account updated successfully!");
-      
-      // Force a small delay to ensure state propagates
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (error: any) {
       const errorMsg = getErrorMessage(error);
-      const isCorsError = errorMsg?.includes('CORS') || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error');
-      
+      const isCorsError =
+        errorMsg?.includes("CORS") ||
+        error?.code === "ERR_NETWORK" ||
+        error?.message?.includes("Network Error");
+
       if (isCorsError) {
-        // CORS error - save to localStorage anyway (optimistic update)
         console.warn("CORS/Network error - saving to localStorage");
-        
+
         const [firstName, ...lastNameArr] = data.name.trim().split(" ");
+
         const updatedUser = {
           ...user,
           firstName,
           lastName: lastNameArr.join(" ") || "",
           dateOfBirth: data.dob.toISOString(),
-          language: data.language
+          language: data.language,
+          location: {
+            country: data.location || ""
+          }
         };
-        
-        // Update localStorage
+
         updateAccountInLocalStorage(updatedUser);
         setUser(updatedUser as any);
-        
+
         toast.success("Account saved locally (offline mode)");
       } else {
         console.error("Account update error:", errorMsg, error);
@@ -320,34 +351,29 @@ export default function Page() {
     }
   }
 
-  // Show loading skeleton
   if (fetchingAccount) {
     return (
       <Card>
         <CardContent className="p-6">
           <div className="space-y-8">
-            {/* Name Field Skeleton */}
             <div className="space-y-2">
               <div className="h-4 w-12 animate-pulse rounded bg-muted-foreground/20"></div>
               <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
               <div className="h-3 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
             </div>
 
-            {/* Date of Birth Field Skeleton */}
             <div className="space-y-2">
               <div className="h-4 w-24 animate-pulse rounded bg-muted-foreground/20"></div>
               <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
               <div className="h-3 w-2/3 animate-pulse rounded bg-muted-foreground/20"></div>
             </div>
 
-            {/* Language Field Skeleton */}
             <div className="space-y-2">
               <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
               <div className="h-10 w-full animate-pulse rounded-md bg-muted-foreground/20"></div>
               <div className="h-3 w-3/4 animate-pulse rounded bg-muted-foreground/20"></div>
             </div>
 
-            {/* Submit Button Skeleton */}
             <div className="h-10 w-40 animate-pulse rounded-md bg-muted-foreground/20"></div>
           </div>
         </CardContent>
@@ -376,6 +402,7 @@ export default function Page() {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="dob"
@@ -390,15 +417,18 @@ export default function Page() {
                           className={cn(
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
-                          )}>
+                          )}
+                        >
                           {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
+
                     <PopoverContent
                       className="max-h-[--radix-popover-content-available-height] w-[--radix-popover-trigger-width] p-0"
-                      align="start">
+                      align="start"
+                    >
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -415,6 +445,24 @@ export default function Page() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Pakistan, USA, Dubai..." {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This location will be shown on your profile.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* <FormField
               control={form.control}
               name="language"
@@ -472,6 +520,7 @@ export default function Page() {
                 </FormItem>
               )}
             /> */}
+
             <Button type="submit" disabled={loading}>
               {loading ? "Updating..." : "Update account"}
             </Button>

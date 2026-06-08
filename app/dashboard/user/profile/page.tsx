@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CardSkills } from "../../../../components/dashboard/Profile/card-skills";
 import { LatestActivity } from "../../../../components/dashboard/Profile/latest-activity";
 import { AboutMe } from "../../../../components/dashboard/Profile/about-me";
 import { Connections } from "../../../../components/dashboard/Profile/connections";
@@ -93,7 +92,6 @@ export default function Page() {
         <div className="space-y-4 xl:col-span-1">
           <ProfileCard user={user} />
           {/* <CompleteYourProfileCard /> */}
-          <CardSkills />
         </div>
         <div className="space-y-4 xl:col-span-2">
           <LatestActivity user={user} />

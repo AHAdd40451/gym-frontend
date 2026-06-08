@@ -14,19 +14,10 @@ import {
   getSortedRowModel,
   useReactTable
 } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, PlusCircle, Star, Loader2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,25 +51,17 @@ import { Product } from "@/lib/api/services/product/product";
 import { deleteProductAction } from "./actions";
 import { EditProductDialog } from "./edit-product-dialog";
 
-// Helper function to determine product status based on stock
 const getProductStatus = (stock: { quantity: number; inStock: boolean }) => {
   if (!stock.inStock || stock.quantity === 0) return "out-of-stock";
   if (stock.quantity < 20) return "low-stock";
   return "active";
 };
 
-// Helper function to get stock quantity
-const getStockQuantity = (stock: { quantity: number; inStock: boolean }): number => {
-  return stock.quantity;
-};
-
-// Helper function to get category name
 const getCategoryName = (category: string | { _id: string; name: string }): string => {
   if (typeof category === "string") return category;
   return category?.name || "Unknown";
 };
 
-// Define column actions type
 type ProductActionsProps = {
   row: any;
   onDelete: (productId: string, productName: string) => void;
@@ -94,20 +77,29 @@ const ProductActions = ({ row, onDelete, onEdit }: ProductActionsProps) => {
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
+
         <DropdownMenuItem asChild>
-          <Link href={`/dashboard/admin/product-list/${row.original._id}`}>View details</Link>
+          <Link href={`/dashboard/admin/product-list/${row.original._id}`}>
+            View details
+          </Link>
         </DropdownMenuItem>
-        {/* Edit moved to product details page */}
-        {/* <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem> */}
+
+        <DropdownMenuItem onClick={() => onEdit(row.original)}>
+          Edit
+        </DropdownMenuItem>
+
         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original._id)}>
           Copy ID
         </DropdownMenuItem>
+
         <DropdownMenuItem
           className="text-red-600"
-          onClick={() => onDelete(row.original._id, row.original.name)}>
+          onClick={() => onDelete(row.original._id, row.original.name)}
+        >
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -124,7 +116,8 @@ export const createColumns = (
     header: ({ table }) => (
       <Checkbox
         checked={
-          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
@@ -147,7 +140,8 @@ export const createColumns = (
         <Button
           className="-ml-3"
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Product Name
           <ArrowUpDown className="size-3" />
         </Button>
@@ -165,6 +159,7 @@ export const createColumns = (
             className="object-cover"
           />
         </figure>
+
         <div className="capitalize">{row.getValue("name")}</div>
       </div>
     )
@@ -176,7 +171,8 @@ export const createColumns = (
         <Button
           className="-ml-3"
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Price
           <ArrowUpDown className="size-3" />
         </Button>
@@ -194,7 +190,8 @@ export const createColumns = (
         <Button
           className="-ml-3"
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Category
           <ArrowUpDown className="size-3" />
         </Button>
@@ -212,7 +209,8 @@ export const createColumns = (
         <Button
           className="-ml-3"
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Stock
           <ArrowUpDown className="size-3" />
         </Button>
@@ -238,7 +236,8 @@ export const createColumns = (
         <Button
           className="-ml-3"
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Status
           <ArrowUpDown className="size-3" />
         </Button>
@@ -268,7 +267,9 @@ export const createColumns = (
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => <ProductActions row={row} onDelete={onDelete} onEdit={onEdit} />
+    cell: ({ row }) => (
+      <ProductActions row={row} onDelete={onDelete} onEdit={onEdit} />
+    )
   }
 ];
 
@@ -282,13 +283,18 @@ interface ProductListTableProps {
   categories: Category[];
 }
 
-export default function ProductListTable({ products, categories }: ProductListTableProps) {
-  const [localProducts, setLocalProducts] = React.useState(products);
+export default function ProductListTable({
+  products,
+  categories
+}: ProductListTableProps) {
+  const [localProducts, setLocalProducts] = React.useState(products || []);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+
   const [deleteDialog, setDeleteDialog] = React.useState<{
     open: boolean;
     productId: string;
@@ -298,6 +304,17 @@ export default function ProductListTable({ products, categories }: ProductListTa
     productId: "",
     productName: ""
   });
+
+  const [bulkDeleteDialog, setBulkDeleteDialog] = React.useState<{
+    open: boolean;
+    productIds: string[];
+    productNames: string[];
+  }>({
+    open: false,
+    productIds: [],
+    productNames: []
+  });
+
   const [editDialog, setEditDialog] = React.useState<{
     open: boolean;
     product: Product | null;
@@ -306,16 +323,22 @@ export default function ProductListTable({ products, categories }: ProductListTa
     product: null
   });
 
-  // Handle delete product
-  const handleDeleteProduct = React.useCallback((productId: string, productName: string) => {
-    setDeleteDialog({
-      open: true,
-      productId,
-      productName
-    });
-  }, []);
+  React.useEffect(() => {
+    setLocalProducts(products || []);
+    setRowSelection({});
+  }, [products]);
 
-  // Handle edit product
+  const handleDeleteProduct = React.useCallback(
+    (productId: string, productName: string) => {
+      setDeleteDialog({
+        open: true,
+        productId,
+        productName
+      });
+    },
+    []
+  );
+
   const handleEditProduct = React.useCallback((product: Product) => {
     setEditDialog({
       open: true,
@@ -323,18 +346,19 @@ export default function ProductListTable({ products, categories }: ProductListTa
     });
   }, []);
 
-  // Handle edit success - update product in local state
   const handleEditSuccess = React.useCallback((updatedProduct: Product) => {
     setLocalProducts((prev) =>
-      prev.map((product) => (product._id === updatedProduct._id ? updatedProduct : product))
+      prev.map((product) =>
+        product._id === updatedProduct._id ? updatedProduct : product
+      )
     );
   }, []);
 
-  // Confirm delete
   const confirmDelete = React.useCallback(async () => {
     if (!deleteDialog.productId) return;
 
     setIsDeleting(true);
+
     try {
       const result = await deleteProductAction(deleteDialog.productId);
 
@@ -347,10 +371,11 @@ export default function ProductListTable({ products, categories }: ProductListTa
           description: `${deleteDialog.productName} has been removed from your product list.`
         });
 
-        // ✅ Remove product from local state (No GET API call needed!)
         setLocalProducts((prev) =>
           prev.filter((product) => product._id !== deleteDialog.productId)
         );
+
+        setRowSelection({});
       }
     } catch (error: any) {
       toast.error("Failed to delete product", {
@@ -358,13 +383,28 @@ export default function ProductListTable({ products, categories }: ProductListTa
       });
     } finally {
       setIsDeleting(false);
-      setDeleteDialog({ open: false, productId: "", productName: "" });
+      setDeleteDialog({
+        open: false,
+        productId: "",
+        productName: ""
+      });
     }
   }, [deleteDialog]);
 
-  // Cancel delete
   const cancelDelete = React.useCallback(() => {
-    setDeleteDialog({ open: false, productId: "", productName: "" });
+    setDeleteDialog({
+      open: false,
+      productId: "",
+      productName: ""
+    });
+  }, []);
+
+  const cancelBulkDelete = React.useCallback(() => {
+    setBulkDeleteDialog({
+      open: false,
+      productIds: [],
+      productNames: []
+    });
   }, []);
 
   const columns = React.useMemo(
@@ -391,9 +431,99 @@ export default function ProductListTable({ products, categories }: ProductListTa
     }
   });
 
+  const selectedProducts = table
+    .getFilteredSelectedRowModel()
+    .rows.map((row) => row.original);
+
+  const selectedProductIds = selectedProducts
+    .map((product) => product._id)
+    .filter(Boolean);
+
+  const openBulkDeleteDialog = React.useCallback(() => {
+    if (!selectedProductIds.length) return;
+
+    setBulkDeleteDialog({
+      open: true,
+      productIds: selectedProductIds,
+      productNames: selectedProducts.map((product) => product.name)
+    });
+  }, [selectedProductIds, selectedProducts]);
+
+  const confirmBulkDelete = React.useCallback(async () => {
+    if (!bulkDeleteDialog.productIds.length) return;
+
+    setIsBulkDeleting(true);
+
+    try {
+      const results = await Promise.all(
+        bulkDeleteDialog.productIds.map(async (productId) => {
+          const result = await deleteProductAction(productId);
+
+          return {
+            productId,
+            result
+          };
+        })
+      );
+
+      const successfulIds = results
+        .filter((item) => item.result.success)
+        .map((item) => item.productId);
+
+      const failedItems = results.filter((item) => !item.result.success);
+
+      if (successfulIds.length > 0) {
+        const successfulIdsSet = new Set(successfulIds);
+
+        setLocalProducts((prev) =>
+          prev.filter((product) => !successfulIdsSet.has(product._id))
+        );
+
+        setRowSelection({});
+
+        toast.success(`${successfulIds.length} product(s) deleted successfully`);
+      }
+
+      if (failedItems.length > 0) {
+        toast.error(`${failedItems.length} product(s) failed to delete`, {
+          description:
+            failedItems[0]?.result?.error ||
+            "Some products could not be deleted. Please try again."
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to delete selected products", {
+        description: error.message || "An unexpected error occurred. Please try again."
+      });
+    } finally {
+      setIsBulkDeleting(false);
+      setBulkDeleteDialog({
+        open: false,
+        productIds: [],
+        productNames: []
+      });
+    }
+  }, [bulkDeleteDialog]);
+
   return (
     <>
       <div className="w-full space-y-4">
+        {selectedProductIds.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isBulkDeleting}
+              onClick={openBulkDeleteDialog}
+            >
+              {isBulkDeleting
+                ? "Deleting..."
+                : `Delete Selected (${selectedProductIds.length})`}
+            </Button>
+          </div>
+        )}
+
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
@@ -404,27 +534,40 @@ export default function ProductListTable({ products, categories }: ProductListTa
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                       </TableHead>
                     );
                   })}
                 </TableRow>
               ))}
             </TableHeader>
+
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
                     No products found.
                   </TableCell>
                 </TableRow>
@@ -432,50 +575,60 @@ export default function ProductListTable({ products, categories }: ProductListTa
             </TableBody>
           </Table>
         </div>
+
         <div className="flex items-center justify-end space-x-2">
           <div className="text-muted-foreground flex-1 text-sm">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
+
           <div className="space-x-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}>
+              disabled={!table.getCanPreviousPage()}
+            >
               Previous
             </Button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}>
+              disabled={!table.getCanNextPage()}
+            >
               Next
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteDialog.open}
-        onOpenChange={(open) => !isDeleting && !open && cancelDelete()}>
+        onOpenChange={(open) => !isDeleting && !open && cancelDelete()}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+
             <AlertDialogDescription>
-              This will permanently delete <strong>{deleteDialog.productName}</strong> from your
-              product list. This action cannot be undone.
+              This will permanently delete{" "}
+              <strong>{deleteDialog.productName}</strong> from your product
+              list. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete} disabled={isDeleting}>
               Cancel
             </AlertDialogCancel>
+
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -489,11 +642,56 @@ export default function ProductListTable({ products, categories }: ProductListTa
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit Product Dialog */}
+      <AlertDialog
+        open={bulkDeleteDialog.open}
+        onOpenChange={(open) => !isBulkDeleting && !open && cancelBulkDelete()}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete selected products?</AlertDialogTitle>
+
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <strong>{bulkDeleteDialog.productIds.length}</strong> selected
+              product(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={cancelBulkDelete}
+              disabled={isBulkDeleting}
+            >
+              Cancel
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Selected"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {editDialog.product && (
         <EditProductDialog
           open={editDialog.open}
-          onOpenChange={(open) => setEditDialog({ open, product: null })}
+          onOpenChange={(open) =>
+            setEditDialog({
+              open,
+              product: null
+            })
+          }
           product={editDialog.product}
           categories={categories}
           onSuccess={handleEditSuccess}
