@@ -11,16 +11,17 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
+  TooltipProvider
 } from "@/components/ui/tooltip";
 
 import { getAllProducts, Product } from "@/lib/api/services/product/product";
+
+const getProductImage = (image?: string) => {
+  if (!image) return "/images/placeholder.png";
+  return image;
+};
 
 export function EcommerceBestSellingProductsCard() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -31,13 +32,11 @@ export function EcommerceBestSellingProductsCard() {
       try {
         const res = await getAllProducts();
 
-        // ⚠️ serverFetch pattern
         if (res?.data?.success) {
-          // TEMP: top 6 products
           setProducts(res.data.products.slice(0, 6));
         }
       } catch (error) {
-        console.error("❌ Products fetch error:", error);
+        console.error("Products fetch error:", error);
       } finally {
         setLoading(false);
       }
@@ -48,39 +47,32 @@ export function EcommerceBestSellingProductsCard() {
 
   if (loading) {
     return (
-      <Card className="h-full">
+      <Card className="h-full overflow-hidden">
         <CardHeader>
           <CardTitle>Best Selling Products</CardTitle>
           <CardDescription>Top products overview</CardDescription>
           <CardAction>
             <TooltipProvider>
-              <Tooltip>
-                {/* <TooltipTrigger asChild>
-                  <Button size="icon" variant="outline">
-                    <ChevronRight />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View All</TooltipContent> */}
-              </Tooltip>
+              <Tooltip />
             </TooltipProvider>
           </CardAction>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="flex items-center justify-between rounded-md border px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-md border px-4 py-3"
             >
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 animate-pulse rounded-md bg-muted-foreground/20"></div>
-                <div className="space-y-2">
-                  <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20"></div>
-                  <div className="h-3 w-16 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-md bg-muted-foreground/20" />
+                <div className="min-w-0 space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted-foreground/20" />
+                  <div className="h-3 w-16 animate-pulse rounded bg-muted-foreground/20" />
                 </div>
               </div>
 
-              <div className="h-4 w-20 animate-pulse rounded bg-muted-foreground/20"></div>
+              <div className="h-4 w-20 shrink-0 animate-pulse rounded bg-muted-foreground/20" />
             </div>
           ))}
         </CardContent>
@@ -89,54 +81,57 @@ export function EcommerceBestSellingProductsCard() {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full overflow-hidden">
       <CardHeader>
         <CardTitle>Best Selling Products</CardTitle>
         <CardDescription>Top products overview</CardDescription>
         <CardAction>
           <TooltipProvider>
-            <Tooltip>
-              {/* <TooltipTrigger asChild>
-                <Button size="icon" variant="outline">
-                  <ChevronRight />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View All</TooltipContent> */}
-            </Tooltip>
+            <Tooltip />
           </TooltipProvider>
         </CardAction>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {products.map((product) => (
-          <Link
-            key={product._id}
-            href={`/dashboard/admin/product-list/${product._id}`}
-            className="hover:bg-muted flex items-center justify-between rounded-md border px-4 py-3"
-          >
-            <div className="flex items-center gap-4">
-              <Image
-                src={product.image || "/images/placeholder.png"}
-                width={40}
-                height={40}
-                className="rounded-md"
-                alt={product.name}
-                unoptimized
-              />
-              <div>
-                <div className="font-medium">{product.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  ${product.price}
+      <CardContent className="space-y-3">
+        {products.length > 0 ? (
+          products.map((product) => (
+            <Link
+              key={product._id}
+              href={`/dashboard/admin/product-list/${product._id}`}
+              className="hover:bg-muted flex flex-col gap-3 rounded-md border px-4 py-3 transition sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                  <Image
+                    src={getProductImage(product.image)}
+                    fill
+                    className="object-cover"
+                    alt={product.name || "Product image"}
+                    unoptimized
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="truncate font-medium">
+                    {product.name}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    ${product.price}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* TEMP text (real selling orders se aayega) */}
-            <div className="text-sm text-green-600">
-              In Stock: {product.stock?.quantity ?? 0}
-            </div>
-          </Link>
-        ))}
+              <div className="shrink-0 text-left text-sm text-green-600 sm:text-right">
+                In Stock: {product.stock?.quantity ?? 0}
+              </div>
+            </Link>
+          ))
+        ) : (
+          <p className="text-center text-sm text-muted-foreground">
+            No products found.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

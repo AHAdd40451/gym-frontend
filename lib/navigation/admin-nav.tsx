@@ -49,7 +49,7 @@ import {
   BookAIcon,
   ShieldIcon,
   DatabaseIcon,
-  BarChart3Icon,
+  // BarChart3Icon,
   FileTextIcon,
   BellIcon,
   Plane,
@@ -108,26 +108,27 @@ export const adminNavItems: NavGroup[] = [
       //   href: "/dashboard/admin/product",
       //   icon: BarChart3Icon
       // },
-      {
-        title: "Product-list",
-        href: "/dashboard/admin/product-list",
-        icon: BarChart3Icon
-      },
-      {
-        title: "Orders",
-        href: "/dashboard/admin/orders",
-        icon: BarChart3Icon
-      },
-      {
-        title: "category",
-        href: "/dashboard/admin/category",
-        icon: BarChart3Icon
-      },
-      {
-        title: "sub-category",
-        href: "/dashboard/admin/sub-category",
-        icon: BarChart3Icon
-      },
+
+      // {
+      //   title: "Product-list",
+      //   href: "/dashboard/admin/product-list",
+      //   icon: BarChart3Icon
+      // },
+      // {
+      //   title: "Orders",
+      //   href: "/dashboard/admin/orders",
+      //   icon: BarChart3Icon
+      // },
+      // {
+      //   title: "category",
+      //   href: "/dashboard/admin/category",
+      //   icon: BarChart3Icon
+      // },
+      // {
+      //   title: "sub-category",
+      //   href: "/dashboard/admin/sub-category",
+      //   icon: BarChart3Icon
+      // },
 
       // {
       //   title: "Contact",
@@ -159,11 +160,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/attendance",
         icon: UsersIcon
       },
-       {
-        title: "All Plan's",
-        href: "/dashboard/admin/plans",
-        icon: DollarSign
-      }
+      // {
+      //   title: "All Plan's",
+      //   href: "/dashboard/admin/plans",
+      //   icon: DollarSign
+      // }
       // {
       //   title: "Staff Management",
       //   href: "/dashboard/admin/staff",
