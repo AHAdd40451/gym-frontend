@@ -2,14 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAllSubscriptions } from "@/lib/api/services/subcription/subcription";
 import { EventCalendar } from "./event-calendar";
 import { CalendarEvent } from "./";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym-api.moduleminds.ltd/api";
 
 export default function EventCalendarApp() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const getToken = () => {
+    if (typeof window === "undefined") return "";
+
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("adminToken") ||
+      ""
+    );
+  };
 
   const getColorByPlan = (planName?: string): CalendarEvent["color"] => {
     switch (planName) {
@@ -31,6 +45,7 @@ export default function EventCalendarApp() {
   const getLocalCalendarDate = (dateValue?: string | Date) => {
     if (!dateValue) {
       const today = new Date();
+
       return new Date(
         today.getFullYear(),
         today.getMonth(),
@@ -44,14 +59,12 @@ export default function EventCalendarApp() {
 
     const rawDate = String(dateValue);
 
-    // If value is coming as YYYY-MM-DD from date input
     if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
       const [year, month, day] = rawDate.split("-").map(Number);
 
       return new Date(year, month - 1, day, 12, 0, 0, 0);
     }
 
-    // If value is coming from MongoDB as ISO date
     const parsedDate = new Date(rawDate);
 
     if (Number.isNaN(parsedDate.getTime())) {
@@ -87,6 +100,22 @@ export default function EventCalendarApp() {
     return date.toLocaleDateString();
   };
 
+  const getSubscriptionsFromResponse = (json: any) => {
+    if (Array.isArray(json)) return json;
+
+    if (Array.isArray(json?.data)) return json.data;
+
+    if (Array.isArray(json?.data?.data)) return json.data.data;
+
+    if (Array.isArray(json?.subscriptions)) return json.subscriptions;
+
+    if (Array.isArray(json?.data?.subscriptions)) {
+      return json.data.subscriptions;
+    }
+
+    return [];
+  };
+
   const handleAddSubscription = () => {
     router.push("/dashboard/admin/all-sub/add");
   };
@@ -95,20 +124,62 @@ export default function EventCalendarApp() {
     try {
       setLoading(true);
 
-      const res = await getAllSubscriptions({ page: 1, limit: 50 }, "");
+      const token = getToken();
 
-      if (res?.data?.data && Array.isArray(res.data.data)) {
-        const formatted: CalendarEvent[] = res.data.data.map((item: any) => {
+      if (!token) {
+        console.error("Subscription calendar token not found");
+        setEvents([]);
+        return;
+      }
+
+      const res = await fetch(
+        `${API_BASE_URL}/subscriptions?page=1&limit=100`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error("Subscriptions API error:", json);
+        setEvents([]);
+        return;
+      }
+
+      const list = getSubscriptionsFromResponse(json);
+
+      console.log("Subscriptions calendar list:", list);
+
+      const formatted: CalendarEvent[] = list
+        .filter((item: any) => {
+          const customerType = String(
+            item?.metadata?.customerType || ""
+          ).toLowerCase();
+
+          return customerType !== "gym-owner";
+        })
+        .map((item: any) => {
           const subscriptionStartDate = getLocalCalendarDate(
-            item.startDate || item.currentPeriodStart || item.createdAt
+            item.startDate ||
+              item.currentPeriodStart ||
+              item.createdAt ||
+              new Date()
           );
 
-          // Keep event on same day only.
-          // Do not use expiry date here, otherwise calendar shows long bars.
           const subscriptionEndDate = new Date(subscriptionStartDate);
           subscriptionEndDate.setHours(13, 0, 0, 0);
 
-          const expiryDate = item.endDate || item.currentPeriodEnd;
+          const expiryDate =
+            item.endDate ||
+            item.currentPeriodEnd ||
+            item.currentPeriodEndDate ||
+            null;
 
           const customerName =
             [item.firstName, item.lastName].filter(Boolean).join(" ") ||
@@ -116,13 +187,20 @@ export default function EventCalendarApp() {
               .filter(Boolean)
               .join(" ") ||
             item.user?.name ||
+            item.name ||
+            item.email ||
             "Customer";
 
-          const planName = item.planName || item.plan?.name || "No Plan";
+          const planName =
+            item.planName ||
+            item.plan?.name ||
+            item.plan?.title ||
+            item.metadata?.planName ||
+            "Membership Plan";
 
           return {
-            id: item.id || item._id,
-            title: planName,
+            id: String(item.id || item._id),
+            title: `${customerName} - ${planName}`,
             description: `Customer: ${customerName}${
               expiryDate ? ` | Expires: ${formatDate(expiryDate)}` : ""
             }`,
@@ -133,10 +211,9 @@ export default function EventCalendarApp() {
           };
         });
 
-        setEvents(formatted);
-      } else {
-        setEvents([]);
-      }
+      console.log("Calendar events:", formatted);
+
+      setEvents(formatted);
     } catch (err) {
       console.error("Error fetching events:", err);
       setEvents([]);
@@ -147,6 +224,16 @@ export default function EventCalendarApp() {
 
   useEffect(() => {
     fetchData();
+
+    const handleFocus = () => {
+      fetchData();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   if (loading) {
