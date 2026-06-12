@@ -67,6 +67,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import AdminWelcomeOnboarding from "@/components/AdminWelcomeOnboarding";
 
 type NavGroup = {
   title: string;
@@ -270,6 +271,8 @@ export function AdminNavMain({ user }: any) {
 
   return (
     <>
+      <AdminWelcomeOnboarding user={user} />
+
       {adminNavItems.map((nav) => (
         <SidebarGroup key={nav.title}>
           <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
