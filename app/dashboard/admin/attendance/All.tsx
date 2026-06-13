@@ -1,237 +1,593 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-    getAllAttendance,
-    updateLeaveStatus,
+  getAllAttendance,
+  updateLeaveStatus,
 } from "@/lib/api/services/attendence/attendence";
 
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 
 /* ================= TYPES ================= */
 
 type User = {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    role?: string;
+  _id?: string;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
 };
 
 type Attendance = {
-    _id: string;
-    user: User; // ✅ FIXED (backend actual field)
-    date: string;
-    status: "present" | "absent" | "leave";
-    leaveStatus?: "pending" | "approved" | "rejected";
-    leaveReason: string;
+  _id: string;
+  user: User;
+  date: string;
+  status: "present" | "absent" | "leave";
+  leaveStatus?: "pending" | "approved" | "rejected";
+  leaveReason: string;
+};
 
-
+type UserAttendanceGroup = {
+  userKey: string;
+  user: User;
+  records: Attendance[];
+  presentCount: number;
+  absentCount: number;
+  leaveCount: number;
+  pendingLeave?: Attendance;
+  latestRecord?: Attendance;
 };
 
 /* ================= COMPONENT ================= */
 
 function All() {
-    const [data, setData] = useState<Attendance[]>([]);
-    const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<Attendance[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    const [selectedLeave, setSelectedLeave] = useState<Attendance | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
-    /* ================= FETCH ================= */
+  const [selectedLeave, setSelectedLeave] = useState<Attendance | null>(null);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
 
-    const fetchAll = async () => {
-        try {
-            setLoading(true);
+  const [selectedUserGroup, setSelectedUserGroup] =
+    useState<UserAttendanceGroup | null>(null);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
 
-            const res = await getAllAttendance();
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
-            console.log("📦 API Response:", res);
+  /* ================= FETCH ================= */
 
-            const finalData = res?.data?.attendance || [];
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
 
-            setData(finalData);
-        } catch (err) {
-            console.error("❌ Error fetching attendance:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+      const res = await getAllAttendance();
 
-    useEffect(() => {
-        fetchAll();
-    }, []);
+      console.log("📦 API Response:", res);
 
-    /* ================= MODAL ================= */
+      const finalData =
+        res?.data?.attendance ||
+        res?.attendance ||
+        res?.data ||
+        [];
 
-    const openLeaveModal = (item: Attendance) => {
-        setSelectedLeave(item);
-        setModalOpen(true);
-    };
+      setData(Array.isArray(finalData) ? finalData : []);
+    } catch (err) {
+      console.error("❌ Error fetching attendance:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    /* ================= ACTION ================= */
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
-    const handleAction = async (status: "approved" | "rejected") => {
-        if (!selectedLeave) return;
+  /* ================= HELPERS ================= */
 
-        try {
-            await updateLeaveStatus(selectedLeave._id, status);
+  const getUserName = (user?: User) => {
+    const name = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
 
-            await fetchAll();
+    return name || user?.email || "Staff";
+  };
 
-            setModalOpen(false);
-            setSelectedLeave(null);
-        } catch (err) {
-            console.error("Error updating leave:", err);
-        }
-    };
-
-    /* ================= HELPERS ================= */
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "present":
-                return "bg-green-500";
-            case "absent":
-                return "bg-red-500";
-            case "leave":
-                return "bg-yellow-500";
-            default:
-                return "bg-gray-400";
-        }
-    };
-
-    const getUserName = (user?: User) => {
-        return user
-            ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-            : "Staff";
-    };
-
-    /* ================= UI ================= */
-
+  const getUserKey = (user?: User) => {
     return (
-        <div className="p-6 space-y-6">
-            <h2 className="text-2xl font-bold">📋 Attendance Dashboard</h2>
+      user?._id ||
+      user?.id ||
+      user?.email ||
+      `${user?.firstName || ""}-${user?.lastName || ""}`
+    );
+  };
 
-            {loading ? (
-                <p className="text-gray-500">Loading...</p>
-            ) : (
-                <div className="grid gap-4">
-                    {data.map((item) => (
-                        <Card key={item._id} className="shadow-sm hover:shadow-md transition">
+  const getDateKey = (dateValue: string | Date) => {
+    const date = new Date(dateValue);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-                            <CardHeader className="flex flex-row justify-between items-center">
+    return `${year}-${month}-${day}`;
+  };
 
-                                <CardTitle className="text-lg">
-                                    👤 {getUserName(item.user)}
-                                </CardTitle>
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "present":
+        return "bg-green-500 text-white";
+      case "absent":
+        return "bg-red-500 text-white";
+      case "leave":
+        return "bg-yellow-500 text-white";
+      default:
+        return "bg-gray-400 text-white";
+    }
+  };
 
-                                <Badge className={getStatusColor(item.status)}>
-                                    {item.status}
-                                </Badge>
+  const getLeaveStatusColor = (status?: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-600 text-white";
+      case "rejected":
+        return "bg-red-600 text-white";
+      case "pending":
+      default:
+        return "bg-yellow-500 text-white";
+    }
+  };
 
-                            </CardHeader>
+  /* ================= GROUP USERS ================= */
 
-                            <CardContent className="flex justify-between items-center">
+  const groupedUsers = useMemo<UserAttendanceGroup[]>(() => {
+    const map = new Map<string, UserAttendanceGroup>();
 
-                                <p className="text-sm text-gray-500">
-                                    📅 {new Date(item.date).toDateString()}
-                                </p>
+    data.forEach((item) => {
+      const userKey = getUserKey(item.user);
 
-                                {item.status === "leave" &&
-                                    item.leaveStatus === "pending" && (
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => openLeaveModal(item)}
-                                        >
-                                            Review Leave
-                                        </Button>
-                                    )}
-                            </CardContent>
+      if (!map.has(userKey)) {
+        map.set(userKey, {
+          userKey,
+          user: item.user,
+          records: [],
+          presentCount: 0,
+          absentCount: 0,
+          leaveCount: 0,
+          pendingLeave: undefined,
+          latestRecord: undefined,
+        });
+      }
 
-                        </Card>
-                    ))}
-                </div>
-            )}
+      const group = map.get(userKey)!;
 
-            {/* ================= MODAL ================= */}
+      group.records.push(item);
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent>
+      if (item.status === "present") group.presentCount += 1;
+      if (item.status === "absent") group.absentCount += 1;
+      if (item.status === "leave") group.leaveCount += 1;
 
-                    <DialogHeader>
-                        <DialogTitle>Leave Request</DialogTitle>
-                    </DialogHeader>
+      if (item.status === "leave" && item.leaveStatus === "pending") {
+        group.pendingLeave = item;
+      }
 
-                    {selectedLeave && (
-                        <div className="space-y-4">
-                            <p>
-                                <b>User:</b> {getUserName(selectedLeave.user)}
-                            </p>
-                            <p>
-                                <b>Date:</b>{" "}
-                                {new Date(selectedLeave.date).toDateString()}
-                            </p>
+      if (
+        !group.latestRecord ||
+        new Date(item.date).getTime() >
+          new Date(group.latestRecord.date).getTime()
+      ) {
+        group.latestRecord = item;
+      }
+    });
 
+    return Array.from(map.values());
+  }, [data]);
 
-                            <p>
-                                <b>Status:</b>{" "}
-                                <Badge className="bg-yellow-500">Pending</Badge>
-                            </p>
+  const filteredAndSortedUsers = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-                            <div className="p-3 rounded-md bg-gray-100">
-                                <p className="text-sm font-medium text-gray-700">
-                                    Leave Reason:
-                                </p>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {selectedLeave.leaveReason || "No Reason Provided"}
-                                </p>
-                            </div>
+    const users = [...groupedUsers];
 
-                            <div className="flex gap-2 pt-4">
+    if (!query) {
+      return users.sort((a, b) => {
+        const aTime = a.latestRecord
+          ? new Date(a.latestRecord.date).getTime()
+          : 0;
+        const bTime = b.latestRecord
+          ? new Date(b.latestRecord.date).getTime()
+          : 0;
 
-                                <Button
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleAction("approved")}
-                                >
-                                    Accept
-                                </Button>
+        return bTime - aTime;
+      });
+    }
 
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => handleAction("rejected")}
-                                >
-                                    Reject
-                                </Button>
+    return users.sort((a, b) => {
+      const aName = getUserName(a.user).toLowerCase();
+      const bName = getUserName(b.user).toLowerCase();
 
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setModalOpen(false)}
-                                >
-                                    Close
-                                </Button>
+      const aEmail = a.user?.email?.toLowerCase() || "";
+      const bEmail = b.user?.email?.toLowerCase() || "";
 
-                            </div>
-                        </div>
+      const aMatch = aName.includes(query) || aEmail.includes(query);
+      const bMatch = bName.includes(query) || bEmail.includes(query);
+
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+
+      return aName.localeCompare(bName);
+    });
+  }, [groupedUsers, search]);
+
+  /* ================= MODAL ACTIONS ================= */
+
+  const openLeaveModal = (item: Attendance) => {
+    setSelectedLeave(item);
+    setLeaveModalOpen(true);
+  };
+
+  const openCalendarModal = (group: UserAttendanceGroup) => {
+    setSelectedUserGroup(group);
+
+    const latestDate = group.latestRecord?.date
+      ? new Date(group.latestRecord.date)
+      : new Date();
+
+    setCalendarMonth(latestDate);
+    setCalendarModalOpen(true);
+  };
+
+  const handleLeaveAction = async (status: "approved" | "rejected") => {
+    if (!selectedLeave) return;
+
+    try {
+      await updateLeaveStatus(selectedLeave._id, status);
+
+      await fetchAll();
+
+      setLeaveModalOpen(false);
+      setSelectedLeave(null);
+    } catch (err) {
+      console.error("Error updating leave:", err);
+    }
+  };
+
+  /* ================= CALENDAR HELPERS ================= */
+
+  const selectedMonthRecords = useMemo(() => {
+    if (!selectedUserGroup) return new Map<string, Attendance>();
+
+    const map = new Map<string, Attendance>();
+
+    selectedUserGroup.records.forEach((record) => {
+      const recordDate = new Date(record.date);
+
+      if (
+        recordDate.getMonth() === calendarMonth.getMonth() &&
+        recordDate.getFullYear() === calendarMonth.getFullYear()
+      ) {
+        map.set(getDateKey(record.date), record);
+      }
+    });
+
+    return map;
+  }, [selectedUserGroup, calendarMonth]);
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+    const firstWeekDay = firstDayOfMonth.getDay();
+    const totalDays = lastDayOfMonth.getDate();
+
+    const days: Array<Date | null> = [];
+
+    for (let i = 0; i < firstWeekDay; i++) {
+      days.push(null);
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      days.push(new Date(year, month, day));
+    }
+
+    return days;
+  }, [calendarMonth]);
+
+  const changeMonth = (direction: "prev" | "next") => {
+    setCalendarMonth((prev) => {
+      const nextDate = new Date(prev);
+
+      if (direction === "prev") {
+        nextDate.setMonth(nextDate.getMonth() - 1);
+      } else {
+        nextDate.setMonth(nextDate.getMonth() + 1);
+      }
+
+      return nextDate;
+    });
+  };
+
+  const monthTitle = calendarMonth.toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
+
+  /* ================= UI ================= */
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">📋 Attendance Dashboard</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Search user and click card to view monthly attendance calendar.
+          </p>
+        </div>
+
+        <div className="w-full md:w-[360px]">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search user by name or email..."
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-black focus:ring-2 focus:ring-black/10"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-gray-500">Loading...</p>
+      ) : (
+        <div className="grid gap-4">
+          {filteredAndSortedUsers.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-sm text-gray-500">
+                No attendance records found.
+              </CardContent>
+            </Card>
+          ) : (
+            filteredAndSortedUsers.map((group) => (
+              <Card
+                key={group.userKey}
+                onClick={() => openCalendarModal(group)}
+                className="cursor-pointer shadow-sm transition hover:shadow-md"
+              >
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg">
+                      👤 {getUserName(group.user)}
+                    </CardTitle>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      {group.user?.email || "No email"}{" "}
+                      {group.user?.role ? `• ${group.user.role}` : ""}
+                    </p>
+                  </div>
+
+                  {group.latestRecord && (
+                    <Badge className={getStatusColor(group.latestRecord.status)}>
+                      Latest: {group.latestRecord.status}
+                    </Badge>
+                  )}
+                </CardHeader>
+
+                <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className="bg-green-500 text-white">
+                      Present {group.presentCount}
+                    </Badge>
+
+                    <Badge className="bg-red-500 text-white">
+                      Absent {group.absentCount}
+                    </Badge>
+
+                    <Badge className="bg-yellow-500 text-white">
+                      Leave {group.leaveCount}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {group.latestRecord && (
+                      <p className="text-sm text-gray-500">
+                        Last:{" "}
+                        {new Date(group.latestRecord.date).toDateString()}
+                      </p>
                     )}
 
-                </DialogContent>
-            </Dialog>
+                    {group.pendingLeave && (
+                      <Button
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openLeaveModal(group.pendingLeave!);
+                        }}
+                      >
+                        Review Leave
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
-    );
+      )}
+
+      {/* ================= MONTHLY CALENDAR MODAL ================= */}
+
+      <Dialog open={calendarModalOpen} onOpenChange={setCalendarModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Monthly Attendance -{" "}
+              {selectedUserGroup ? getUserName(selectedUserGroup.user) : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedUserGroup && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between gap-3">
+                <Button variant="outline" onClick={() => changeMonth("prev")}>
+                  Previous
+                </Button>
+
+                <h3 className="text-lg font-semibold">{monthTitle}</h3>
+
+                <Button variant="outline" onClick={() => changeMonth("next")}>
+                  Next
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 text-center text-sm font-semibold text-gray-600">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {calendarDays.map((day, index) => {
+                  if (!day) {
+                    return (
+                      <div
+                        key={`empty-${index}`}
+                        className="min-h-[58px] rounded-lg border border-transparent"
+                      />
+                    );
+                  }
+
+                  const key = getDateKey(day);
+                  const record = selectedMonthRecords.get(key);
+
+                  return (
+                    <div
+                      key={key}
+                      className="min-h-[58px] rounded-lg border bg-white p-1.5"
+                    >
+                      <p className="text-sm font-semibold">{day.getDate()}</p>
+
+                      {record ? (
+                        <div className="mt-1 space-y-1">
+                          <Badge className={getStatusColor(record.status)}>
+                            {record.status}
+                          </Badge>
+
+                          {record.status === "leave" && (
+                            <div className="space-y-1">
+                              <Badge
+                                className={getLeaveStatusColor(
+                                  record.leaveStatus
+                                )}
+                              >
+                                {record.leaveStatus || "pending"}
+                              </Badge>
+
+                              {record.leaveReason && (
+                                <p className="line-clamp-1 text-[10px] text-gray-500">
+                                  {record.leaveReason}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs text-gray-400">
+                          No record
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap gap-2 border-t pt-4">
+                <Badge className="bg-green-500 text-white">Present</Badge>
+                <Badge className="bg-red-500 text-white">Absent</Badge>
+                <Badge className="bg-yellow-500 text-white">Leave</Badge>
+                <Badge className="bg-gray-400 text-white">No Record</Badge>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ================= LEAVE REVIEW MODAL ================= */}
+
+      <Dialog open={leaveModalOpen} onOpenChange={setLeaveModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave Request</DialogTitle>
+          </DialogHeader>
+
+          {selectedLeave && (
+            <div className="space-y-4">
+              <p>
+                <b>User:</b> {getUserName(selectedLeave.user)}
+              </p>
+
+              <p>
+                <b>Date:</b>{" "}
+                {new Date(selectedLeave.date).toDateString()}
+              </p>
+
+              <p>
+                <b>Status:</b>{" "}
+                <Badge className="bg-yellow-500 text-white">Pending</Badge>
+              </p>
+
+              <div className="rounded-md bg-gray-100 p-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Leave Reason:
+                </p>
+
+                <p className="mt-1 text-sm text-gray-600">
+                  {selectedLeave.leaveReason || "No Reason Provided"}
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => handleLeaveAction("approved")}
+                >
+                  Accept
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  onClick={() => handleLeaveAction("rejected")}
+                >
+                  Reject
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setLeaveModalOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
 export default All;

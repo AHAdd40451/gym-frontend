@@ -161,6 +161,11 @@ export const adminNavItems: NavGroup[] = [
         href: "/dashboard/admin/attendance",
         icon: UsersIcon
       },
+      {
+        title: "Add Admin / Staff",
+        href: "/dashboard/admin/staff/add",
+        icon: UsersIcon
+      },
       // {
       //   title: "All Plan's",
       //   href: "/dashboard/admin/plans",
