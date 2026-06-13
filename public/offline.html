@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Gym Management Suite</title>
+
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, sans-serif;
+        background: #f8fafc;
+        color: #111827;
+      }
+
+      .card {
+        max-width: 420px;
+        padding: 32px;
+        margin: 20px;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+
+      p {
+        color: #6b7280;
+        line-height: 1.6;
+      }
+
+      button {
+        margin-top: 20px;
+        border: 0;
+        border-radius: 10px;
+        padding: 12px 18px;
+        background: #111827;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h1>You are offline</h1>
+
+      <p>
+        Internet connection is not available right now. Please reconnect and try
+        again.
+      </p>
+
+      <button onclick="window.location.reload()">Retry</button>
+    </div>
+  </body>
+</html>
