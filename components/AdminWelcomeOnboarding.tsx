@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usersApi } from "@/lib/api/services/users/users";
+import { useAuth } from "@/lib/api/services/auth/context";
 
 const features = [
   {
@@ -47,8 +49,10 @@ const getStoredUser = () => {
 
     try {
       const parsed = JSON.parse(value);
+
       if (parsed?.user) return parsed.user;
       if (parsed?.state?.user) return parsed.state.user;
+
       return parsed;
     } catch {
       continue;
@@ -68,51 +72,134 @@ const getGymId = (user: any) => {
   );
 };
 
+const getUserId = (user: any) => {
+  return user?._id || user?.id || user?.userId || null;
+};
+
+const updateUserInLocalStorage = (updatedUser: any) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+    const accountsStr = localStorage.getItem("accounts");
+
+    if (accountsStr) {
+      const accounts = JSON.parse(accountsStr);
+      const updatedUserId = getUserId(updatedUser);
+
+      const updatedAccounts = accounts.map((acc: any) => {
+        const accId = getUserId(acc);
+
+        if (String(accId) === String(updatedUserId)) {
+          return {
+            ...acc,
+            ...updatedUser,
+          };
+        }
+
+        return acc;
+      });
+
+      localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
+    }
+
+    window.dispatchEvent(new Event("userUpdated"));
+  } catch (error) {
+    console.error("Failed to update user in localStorage:", error);
+  }
+};
+
 export default function AdminWelcomeOnboarding({ user }: { user?: any }) {
+  const { user: authUser, setUser } = useAuth();
+
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [gymId, setGymId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [resolvedUser, setResolvedUser] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const storedUser = getStoredUser();
-    const resolvedUser = user || storedUser;
-    const resolvedGymId = getGymId(resolvedUser);
+    const finalUser = user || authUser || storedUser;
 
-    if (!resolvedGymId) {
+    if (!finalUser) return;
+
+    const resolvedGymId = getGymId(finalUser);
+    const resolvedUserId = getUserId(finalUser);
+
+    if (!resolvedGymId || !resolvedUserId) return;
+
+    setResolvedUser(finalUser);
+    setGymId(String(resolvedGymId));
+    setUserId(String(resolvedUserId));
+
+    const storageKey = `admin_onboarding_seen_${resolvedGymId}`;
+
+    const alreadySeenInDatabase =
+      finalUser?.hasSeenAdminWelcome === true ||
+      finalUser?.hasSeenAdminWelcome === "true";
+
+    if (alreadySeenInDatabase) {
+      localStorage.setItem(storageKey, "true");
+      setOpen(false);
       return;
     }
 
-    const finalGymId = String(resolvedGymId);
-    setGymId(finalGymId);
+    const alreadySeenInLocalStorage = localStorage.getItem(storageKey);
 
-    const storageKey = `admin_onboarding_seen_${finalGymId}`;
-    const alreadySeen = localStorage.getItem(storageKey);
-
-    if (!alreadySeen) {
+    if (!alreadySeenInLocalStorage) {
       setOpen(true);
     }
-  }, [user]);
+  }, [user, authUser]);
 
-  const handleFinish = () => {
-    if (gymId) {
-      localStorage.setItem(`admin_onboarding_seen_${gymId}`, "true");
+  const handleFinish = async () => {
+    if (!gymId || !userId) {
+      setOpen(false);
+      return;
     }
 
-    setOpen(false);
+    try {
+      setSaving(true);
+
+      const storageKey = `admin_onboarding_seen_${gymId}`;
+
+      localStorage.setItem(storageKey, "true");
+
+      const updatedUser = {
+        ...resolvedUser,
+        hasSeenAdminWelcome: true,
+      };
+
+      setUser(updatedUser);
+      updateUserInLocalStorage(updatedUser);
+
+      setOpen(false);
+
+      await usersApi.update(String(userId), {
+        hasSeenAdminWelcome: true,
+      });
+    } catch (error) {
+      console.error("Failed to save admin welcome status:", error);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-background p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 px-3 py-4 sm:px-4">
+      <div className="max-h-[88svh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-background p-4 shadow-2xl sm:p-6">
         {step === 1 ? (
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground sm:h-16 sm:w-16 sm:text-3xl">
               👋
             </div>
 
-            <h2 className="text-2xl font-bold text-foreground">
+            <h2 className="text-xl font-bold text-foreground sm:text-2xl">
               Welcome to your Gym Dashboard
             </h2>
 
@@ -124,7 +211,7 @@ export default function AdminWelcomeOnboarding({ user }: { user?: any }) {
 
             <button
               onClick={() => setStep(2)}
-              className="mt-6 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="mt-6 w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
             >
               Next
             </button>
@@ -135,7 +222,7 @@ export default function AdminWelcomeOnboarding({ user }: { user?: any }) {
               Quick Guide
             </p>
 
-            <h2 className="mt-1 text-2xl font-bold text-foreground">
+            <h2 className="mt-1 text-xl font-bold text-foreground sm:text-2xl">
               What you can do here
             </h2>
 
@@ -148,13 +235,13 @@ export default function AdminWelcomeOnboarding({ user }: { user?: any }) {
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-xl border border-border bg-muted/40 p-4"
+                  className="rounded-xl border border-border bg-muted/40 p-3 sm:p-4"
                 >
                   <h3 className="text-sm font-semibold text-foreground">
                     {feature.title}
                   </h3>
 
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
                     {feature.description}
                   </p>
                 </div>
@@ -164,16 +251,18 @@ export default function AdminWelcomeOnboarding({ user }: { user?: any }) {
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 onClick={() => setStep(1)}
-                className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                disabled={saving}
+                className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted disabled:opacity-60"
               >
                 Back
               </button>
 
               <button
                 onClick={handleFinish}
-                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                disabled={saving}
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                Start Using Dashboard
+                {saving ? "Saving..." : "Start Using Dashboard"}
               </button>
             </div>
           </div>
