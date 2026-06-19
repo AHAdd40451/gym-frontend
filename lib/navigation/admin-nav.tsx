@@ -142,6 +142,11 @@ export const adminNavItems: NavGroup[] = [
         icon: Podcast
       },
       {
+        title: "Card Design",
+        href: "/dashboard/admin/card-template",
+        icon: CreditCardIcon
+      },
+      {
         title: "AI Chat",
         href: "/dashboard/admin/ai-chat-v2",
         icon: AxeIcon
