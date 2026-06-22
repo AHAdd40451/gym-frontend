@@ -167,15 +167,20 @@ export const adminNavItems: NavGroup[] = [
         icon: UsersIcon
       },
       {
+        title: "Card Scan",
+        href: "/dashboard/admin/card-scan",
+        icon: FingerprintIcon,
+      },
+      {
         title: "Add Admin / Staff",
         href: "/dashboard/admin/staff/add",
         icon: UsersIcon
       },
-      // {
-      //   title: "All Plan's",
-      //   href: "/dashboard/admin/plans",
-      //   icon: DollarSign
-      // }
+      {
+        title: "All Plan's",
+        href: "/dashboard/admin/plans",
+        icon: DollarSign
+      }
       // {
       //   title: "Staff Management",
       //   href: "/dashboard/admin/staff",
