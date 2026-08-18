@@ -155,20 +155,80 @@ export async function getTrainerSubscriptionStatus(
 }
 
 // Fetch user with subscriptions and transactions (for details UI)
+function getAuthTokenFromStorage(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+
+  return (
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken") ||
+    undefined
+  );
+}
+
+function extractSubscriptionDetailsPayload(responseData: unknown) {
+  const raw = responseData as Record<string, unknown> | null;
+  const payload = (raw?.data as Record<string, unknown> | undefined) || raw;
+
+  return {
+    user: payload?.user,
+    subscriptions: Array.isArray(payload?.subscriptions) ? payload.subscriptions : [],
+    transactions: Array.isArray(payload?.transactions) ? payload.transactions : [],
+  };
+}
+
+async function fetchUserSubscriptionPayload(userId: string) {
+  const token = getAuthTokenFromStorage();
+
+  const detailsResponse = await serverFetch(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/${userId}/details`,
+    { method: "GET" },
+    token
+  );
+
+  if (!detailsResponse.error && detailsResponse.data) {
+    const payload = extractSubscriptionDetailsPayload(detailsResponse.data);
+    if (payload.user || payload.subscriptions.length > 0) {
+      return payload;
+    }
+  }
+
+  const response = await serverFetch(
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${userId}`,
+    { method: "GET" },
+    token
+  );
+
+  if (response.error) {
+    throw new Error(response.error);
+  }
+
+  const apiData = (response?.data as any)?.data || response?.data || [];
+
+  return {
+    user: null,
+    subscriptions: Array.isArray(apiData) ? apiData : [],
+    transactions: [],
+  };
+}
+
 export async function getUserWithSubscriptionsDetails(userId: string, token?: string | null) {
+  const resolvedToken = token ?? getAuthTokenFromStorage();
   const response = await serverFetch(
     `${API_ENDPOINTS.SUBSCRIPTIONS.BASE}/${userId}/details`,
-    {},
-    token ?? undefined
+    { method: "GET" },
+    resolvedToken
   );
   if (response?.error) {
     throw new Error(response.error);
   }
-  const data = response?.data ?? response;
-  if (!data || !data.user) {
-    throw new Error('Failed to fetch user subscription details');
+
+  const payload = extractSubscriptionDetailsPayload(response?.data ?? response);
+  if (!payload.user && payload.subscriptions.length === 0) {
+    throw new Error("Failed to fetch user subscription details");
   }
-  return data;
+
+  return payload;
 }
 
 
@@ -294,10 +354,8 @@ export async function getMySubscriptions(userId?: string) {
     throw new Error("No user ID found. Please provide userId or ensure user is logged in.");
   }
 
-  const response = await serverFetch(`${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${resolvedUserId}`);
-
-  // ✅ Handle double-layer data structure
-  const apiData = response?.data?.data || response?.data || [];
+  const payload = await fetchUserSubscriptionPayload(resolvedUserId);
+  const apiData = payload.subscriptions;
 
   if (!Array.isArray(apiData)) {
     throw new Error("Invalid subscriptions data format from API");
@@ -397,25 +455,54 @@ export async function getMyTransactions(userId?: string) {
     throw new Error("No user ID found. Please provide userId or ensure user is logged in.");
   }
 
+  const payload = await fetchUserSubscriptionPayload(resolvedUserId);
+
+  const topLevelTransactions = payload.transactions;
+  if (topLevelTransactions.length > 0) {
+    return topLevelTransactions.map((item: any) => ({
+      ...item,
+      amount: Number(item.amount || 0),
+      createdAt: item.createdAt || new Date().toISOString(),
+    }));
+  }
+
+  const subscriptionTransactions = payload.subscriptions.flatMap((sub: any) => {
+    const subTransactions = Array.isArray(sub.transactions) ? sub.transactions : [];
+
+    return subTransactions.map((item: any, index: number) => ({
+      ...item,
+      _id: item._id || `${sub._id}-trx-${index}`,
+      amount: Number(item.amount || 0),
+      createdAt: item.createdAt || item.date || sub.createdAt || new Date().toISOString(),
+    }));
+  });
+
+  if (subscriptionTransactions.length > 0) {
+    return subscriptionTransactions;
+  }
+
   const response = await serverFetch(
-    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${resolvedUserId}/transactions`
+    `${API_ENDPOINTS.SUBSCRIPTIONS.BY_USER}/${resolvedUserId}/transactions`,
+    { method: "GET" },
+    getAuthTokenFromStorage()
   );
 
   const apiData =
-    response?.data?.transactions || response?.transactions || response?.data || [];
+    (response?.data as any)?.transactions ||
+    (response?.data as any)?.data?.transactions ||
+    (response?.data as any)?.data ||
+    response?.data ||
+    [];
 
   if (!Array.isArray(apiData)) {
     throw new Error("Invalid transactions data format from API");
   }
 
-  // ⭐ Ensure NON-BREAKING FORMAT
-  const normalizedData = apiData.map((item) => ({
+  return apiData.map((item: any) => ({
     ...item,
-    amount: Number(item.amount || 0), // <-- Safely convert amount
-    createdAt: item.createdAt || new Date().toISOString() // fallback
+    amount: Number(item.amount || 0),
+    createdAt: item.createdAt || new Date().toISOString(),
   }));
-
-  return normalizedData;
 }
 
 export function useSubscribedUsers(token: string) {

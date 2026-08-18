@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { toPng } from "html-to-image";
 import { getSubscriptionPlans } from "@/lib/api/services/subcription/subcription";
 import type { PlanOption } from "@/lib/api/services/subcription/subcription";
-import MembershipCard from "@/components/membership/MembershipCard";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -19,31 +17,6 @@ type Credentials = {
   role?: string;
 };
 
-type CardTemplate = {
-  cardTitle?: string;
-  gymName?: string;
-  logoUrl?: string;
-  footerText?: string;
-
-  layout?: string;
-
-  primaryColor?: string;
-  secondaryColor?: string;
-  textColor?: string;
-
-  backgroundType?: "color" | "image";
-  backgroundColor?: string;
-  backgroundImageUrl?: string;
-
-  showMemberName?: boolean;
-  showPlanName?: boolean;
-  showPhone?: boolean;
-  showEmail?: boolean;
-  showCardNumber?: boolean;
-  showQrCode?: boolean;
-  showBarcode?: boolean;
-};
-
 type CreatedMemberCard = {
   memberName?: string;
   planName?: string;
@@ -52,41 +25,11 @@ type CreatedMemberCard = {
   cardNumber?: string;
 };
 
-const defaultCardTemplate: CardTemplate = {
-  cardTitle: "Membership Card",
-  gymName: "Your Gym Name",
-  logoUrl: "",
-  footerText: "Valid only for registered member",
-
-  layout: "classic",
-
-  primaryColor: "#111827",
-  secondaryColor: "#f59e0b",
-  textColor: "#ffffff",
-
-  backgroundType: "color",
-  backgroundColor: "#111827",
-  backgroundImageUrl: "",
-
-  showMemberName: true,
-  showPlanName: true,
-  showPhone: true,
-  showEmail: true,
-  showCardNumber: true,
-  showQrCode: true,
-  showBarcode: false,
-};
-
 export default function AddSubscriptionPage() {
   const router = useRouter();
 
-  const membershipCardRef = useRef<HTMLDivElement | null>(null);
-
   const [plans, setPlans] = useState<PlanOption[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
-
-  const [cardTemplate, setCardTemplate] =
-    useState<CardTemplate>(defaultCardTemplate);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -102,7 +45,6 @@ export default function AddSubscriptionPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [cardActionLoading, setCardActionLoading] = useState(false);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [createdMessage, setCreatedMessage] = useState("");
   const [createdMemberCard, setCreatedMemberCard] =
@@ -136,34 +78,8 @@ export default function AddSubscriptionPage() {
     }
   };
 
-  const fetchCardTemplate = async () => {
-    try {
-      const token = getToken();
-
-      if (!token) return;
-
-      const response = await fetch(`${API_BASE_URL}/card-template`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const res = await response.json();
-
-      if (response.ok && res?.success && res?.data) {
-        setCardTemplate({
-          ...defaultCardTemplate,
-          ...res.data,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching card template:", error);
-    }
-  };
-
   useEffect(() => {
     fetchPlans();
-    fetchCardTemplate();
   }, []);
 
   const handleChange = (
@@ -236,121 +152,6 @@ export default function AddSubscriptionPage() {
     const selectedPlan = plans.find((plan) => (plan._id || plan.id) === planId);
 
     return selectedPlan?.name || "Membership Plan";
-  };
-
-  const getSafeFileName = (name?: string) => {
-    return (name || "membership")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
-
-  const captureMembershipCard = async () => {
-    if (!membershipCardRef.current) {
-      alert("Membership card not found.");
-      return null;
-    }
-
-    const imageUrl = await toPng(membershipCardRef.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "transparent",
-    });
-
-    return imageUrl;
-  };
-
-  const downloadMembershipCard = async () => {
-    try {
-      setCardActionLoading(true);
-
-      const imageUrl = await captureMembershipCard();
-
-      if (!imageUrl) return;
-
-      const link = document.createElement("a");
-      link.href = imageUrl;
-      link.download = `${getSafeFileName(
-        createdMemberCard?.memberName
-      )}-card.png`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Download card error:", error);
-      alert("Card download failed.");
-    } finally {
-      setCardActionLoading(false);
-    }
-  };
-
-  const printMembershipCard = async () => {
-    try {
-      setCardActionLoading(true);
-
-      const imageUrl = await captureMembershipCard();
-
-      if (!imageUrl) return;
-
-      const printWindow = window.open("", "_blank");
-
-      if (!printWindow) {
-        alert("Please allow popups to print the card.");
-        return;
-      }
-
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Print Membership Card</title>
-            <style>
-              body {
-                margin: 0;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: #ffffff;
-                font-family: Arial, sans-serif;
-              }
-
-              img {
-                max-width: 420px;
-                width: 100%;
-                height: auto;
-              }
-
-              @media print {
-                body {
-                  margin: 0;
-                }
-
-                img {
-                  max-width: 420px;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${imageUrl}" />
-            <script>
-              window.onload = function () {
-                window.focus();
-                window.print();
-              };
-            </script>
-          </body>
-        </html>
-      `);
-
-      printWindow.document.close();
-    } catch (error) {
-      console.error("Print card error:", error);
-      alert("Card print failed.");
-    } finally {
-      setCardActionLoading(false);
-    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -797,93 +598,52 @@ Card Number: ${createdMemberCard?.cardNumber || ""}`;
               </p>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">
-                  Login Credentials
-                </h3>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Login Credentials
+              </h3>
 
-                <div className="mt-4 space-y-3 rounded-xl border border-border bg-muted/40 p-4">
-                  <p className="break-all text-sm">
-                    <strong>Email:</strong> {credentials.email}
-                  </p>
-
-                  <p className="text-sm">
-                    <strong>Password:</strong> {credentials.password}
-                  </p>
-
-                  <p className="text-sm capitalize">
-                    <strong>Role:</strong> {credentials.role || "user"}
-                  </p>
-
-                  <p className="break-all text-sm">
-                    <strong>Card Number:</strong>{" "}
-                    {createdMemberCard?.cardNumber || "Not available"}
-                  </p>
-                </div>
-
-                <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                  Copy these credentials and share them with the member. After
-                  closing this modal, you will be redirected back to all
-                  subscriptions.
+              <div className="mt-4 space-y-3 rounded-xl border border-border bg-muted/40 p-4">
+                <p className="break-all text-sm">
+                  <strong>Email:</strong> {credentials.email}
                 </p>
 
-                <div className="mt-6 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={copyCredentials}
-                    className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                  >
-                    Copy Credentials
-                  </button>
+                <p className="text-sm">
+                  <strong>Password:</strong> {credentials.password}
+                </p>
 
-                  <button
-                    type="button"
-                    onClick={closeCredentialsModal}
-                    className="flex-1 rounded-lg bg-muted px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/80"
-                  >
-                    Close
-                  </button>
-                </div>
+                <p className="text-sm capitalize">
+                  <strong>Role:</strong> {credentials.role || "user"}
+                </p>
+
+                <p className="break-all text-sm">
+                  <strong>Card Number:</strong>{" "}
+                  {createdMemberCard?.cardNumber || "Not available"}
+                </p>
               </div>
 
-              <div>
-                <h3 className="mb-4 text-lg font-semibold text-foreground">
-                  Membership Card
-                </h3>
+              <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                Copy these credentials and share them with the member. After
+                closing this modal, you will be redirected back to all
+                subscriptions.
+              </p>
 
-                <div ref={membershipCardRef}>
-                  <MembershipCard
-                    template={cardTemplate}
-                    member={{
-                      memberName: createdMemberCard?.memberName,
-                      planName: createdMemberCard?.planName,
-                      phone: createdMemberCard?.phone,
-                      email: createdMemberCard?.email,
-                      cardNumber: createdMemberCard?.cardNumber,
-                    }}
-                  />
-                </div>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={copyCredentials}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Copy Credentials
+                </button>
 
-                <div className="mt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={printMembershipCard}
-                    disabled={cardActionLoading}
-                    className="flex-1 rounded-lg bg-muted px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/80 disabled:opacity-60"
-                  >
-                    {cardActionLoading ? "Please wait..." : "Print Card"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={downloadMembershipCard}
-                    disabled={cardActionLoading}
-                    className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                  >
-                    {cardActionLoading ? "Please wait..." : "Download Card"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={closeCredentialsModal}
+                  className="flex-1 rounded-lg bg-muted px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/80"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

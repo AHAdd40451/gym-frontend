@@ -1,6 +1,7 @@
 import { getUserWithSubscriptions } from "@/lib/api/services/users/users";
 import { getServerAuth } from "@/lib/api/services/auth/server";
 import { ProfileCard } from "./profile-card";
+import { BiometricIdField } from "./biometric-id-field";
 import Link from "next/link";
 
 import {
@@ -223,6 +224,8 @@ const UserDetailPage = async ({ params }: PageProps) => {
                   <p className="font-medium">{formatDate(getUser.createdAt)}</p>
                 </div>
               </div>
+
+              <BiometricIdField userId={id} initialValue={getUser.biometricId} />
             </CardContent>
           </Card>
         </div>
@@ -240,13 +243,20 @@ const UserDetailPage = async ({ params }: PageProps) => {
             <CardContent>
               {subscriptions.length > 0 ? (
                 <div className="space-y-4">
-                  {subscriptions.map((sub: any) => {
+                  {subscriptions.map((sub: any, index: number) => {
                     const plan = sub.plan || {};
                     const latestTransaction = sub.transactions?.[0];
 
+                    const subscriptionKey =
+                      sub._id ||
+                      sub.id ||
+                      sub.subscriptionId ||
+                      sub.stripeSubscriptionId ||
+                      `${plan._id || plan.id || "subscription"}-${index}`;
+
                     return (
                       <div
-                        key={sub._id}
+                        key={subscriptionKey}
                         className="rounded-xl border p-4 transition hover:bg-muted/40"
                       >
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -262,9 +272,7 @@ const UserDetailPage = async ({ params }: PageProps) => {
 
                           <Badge
                             variant="outline"
-                            className={`w-fit capitalize ${getStatusClass(
-                              sub.status
-                            )}`}
+                            className={`w-fit capitalize ${getStatusClass(sub.status)}`}
                           >
                             {sub.status || "unknown"}
                           </Badge>
@@ -274,9 +282,7 @@ const UserDetailPage = async ({ params }: PageProps) => {
                           <div>
                             <p className="text-muted-foreground">Start Date</p>
                             <p className="font-medium">
-                              {formatDate(
-                                sub.currentPeriodStart || sub.startDate
-                              )}
+                              {formatDate(sub.currentPeriodStart || sub.startDate)}
                             </p>
                           </div>
 
@@ -292,16 +298,14 @@ const UserDetailPage = async ({ params }: PageProps) => {
                             <p className="font-medium">
                               {latestTransaction
                                 ? formatAmount(
-                                    latestTransaction.amount,
-                                    latestTransaction.currency ||
-                                      plan.currency ||
-                                      "USD"
-                                  )
+                                  latestTransaction.amount,
+                                  latestTransaction.currency || plan.currency || "USD"
+                                )
                                 : plan.priceCents
                                   ? formatAmount(
-                                      Number(plan.priceCents) / 100,
-                                      plan.currency || "USD"
-                                    )
+                                    Number(plan.priceCents) / 100,
+                                    plan.currency || "USD"
+                                  )
                                   : "N/A"}
                             </p>
                           </div>

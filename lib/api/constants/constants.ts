@@ -102,6 +102,12 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/plans/${id}`
   },
 
+  BIOMETRIC_DEVICES: {
+    BASE: "/biometric-devices",
+    BY_ID: (id: string) => `/biometric-devices/${id}`,
+    SYNC: (id: string) => `/biometric-devices/${id}/sync`
+  },
+
   CONTECTS: {
     BASE: "/contect"
   },

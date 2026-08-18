@@ -44,6 +44,18 @@ function GetAll() {
         description: "",
     });
 
+    const getToken = () => {
+        if (typeof window === "undefined") return "";
+
+        return (
+            localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            localStorage.getItem("authToken") ||
+            localStorage.getItem("adminToken") ||
+            ""
+        );
+    };
+
     const openDeleteModal = (id: string) => {
         setDeletePlanId(id);
     };
@@ -53,7 +65,7 @@ function GetAll() {
         try {
             setDeleting(true);
 
-            await deletePlan(deletePlanId);
+            await deletePlan(deletePlanId, getToken());
 
             toast.success("Plan deleted successfully 🗑️");
 
@@ -72,7 +84,7 @@ function GetAll() {
         try {
             setLoading(true);
 
-            const res = await getAllPlans();
+            const res = await getAllPlans({}, getToken());
             const plansArray = res?.data?.data?.plans;
 
             if (!Array.isArray(plansArray)) {
@@ -111,11 +123,15 @@ function GetAll() {
         try {
             setUpdating(true);
 
-            await updatePlan(selectedPlan.id, {
-                name: form.name,
-                priceCents: form.priceCents,
-                description: form.description,
-            });
+            await updatePlan(
+                selectedPlan.id,
+                {
+                    name: form.name,
+                    priceCents: form.priceCents,
+                    description: form.description,
+                },
+                getToken()
+            );
 
             toast.success("Plan updated successfully 🎉");
 
@@ -135,7 +151,7 @@ function GetAll() {
         try {
             setDeletingId(id);
 
-            await deletePlan(id);
+            await deletePlan(id, getToken());
 
             toast.success("Plan deleted successfully 🗑️");
 

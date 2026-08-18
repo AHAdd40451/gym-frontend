@@ -23,8 +23,6 @@ import {
   ChevronRight,
   ClipboardCheckIcon,
   ComponentIcon,
-  CreditCardIcon,
-  FingerprintIcon,
   FolderIcon,
   GaugeIcon,
   GraduationCapIcon,
@@ -142,11 +140,6 @@ export const adminNavItems: NavGroup[] = [
         icon: Podcast
       },
       {
-        title: "Card Design",
-        href: "/dashboard/admin/card-template",
-        icon: CreditCardIcon
-      },
-      {
         title: "AI Chat",
         href: "/dashboard/admin/ai-chat-v2",
         icon: AxeIcon
@@ -165,11 +158,6 @@ export const adminNavItems: NavGroup[] = [
         title: "All Attendance",
         href: "/dashboard/admin/attendance",
         icon: UsersIcon
-      },
-      {
-        title: "Card Scan",
-        href: "/dashboard/admin/card-scan",
-        icon: FingerprintIcon,
       },
       {
         title: "Add Admin / Staff",

@@ -42,6 +42,7 @@ import { cookies } from "next/headers";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/layout/header";
 import { ConditionalSidebar } from "./social-media/ConditionalSidebar";
+import { LiveAttendanceNotifier } from "@/components/dashboard/LiveAttendanceNotifier";
 
 export default async function AuthLayout({
   children
@@ -65,6 +66,8 @@ export default async function AuthLayout({
     >
       {/* ConditionalSidebar hi use karo */}
       <ConditionalSidebar />
+
+      <LiveAttendanceNotifier />
 
       <SidebarInset>
         <SiteHeader />

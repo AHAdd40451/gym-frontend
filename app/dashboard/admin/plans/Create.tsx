@@ -48,12 +48,24 @@ function Create() {
     });
   };
 
+  const getToken = () => {
+    if (typeof window === "undefined") return "";
+
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("adminToken") ||
+      ""
+    );
+  };
+
   // ================= SUBMIT =================
   const handleSubmit = async () => {
     try {
       setLoading(true);
 
-      await createPlan(form);
+      await createPlan(form, getToken());
 
       toast.success("Plan created successfully 🎉");
 

@@ -7,6 +7,7 @@ import {
   BellIcon,
   ContrastIcon,
   CreditCardIcon,
+  FingerprintIcon,
   PaletteIcon,
   ShieldIcon,
   UserIcon
@@ -40,6 +41,11 @@ const sidebarNavItems = [
     title: "Notifications",
     href: "/dashboard/admin/settings/notifications",
     icon: BellIcon
+  },
+  {
+    title: "Devices",
+    href: "/dashboard/admin/settings/devices",
+    icon: FingerprintIcon
   },
   // {
   //   title: "Display",

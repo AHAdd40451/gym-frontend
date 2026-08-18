@@ -31,6 +31,8 @@ type AuthUser = {
   avatar?: string;
   name?: string;
   role?: string;
+  _id?: string;
+  id?: string;
 };
 
 const DEFAULT_AVATAR = "/images/avatars/01.png";
@@ -82,17 +84,20 @@ export function NavUser() {
     return `${first}${last}`;
   }, [authUser]);
 
-  // Get profile page URL based on user role
   const getProfileUrl = () => {
     const role = authUser?.role;
     switch (role) {
-      case 'admin':
-        return '/dashboard/user/profile';
-      case 'staff':
-        return '/dashboard/user/profile';
-      case 'user':
+      case "admin":
+        return "/dashboard/admin/profile";
+      case "staff": {
+        const staffId = authUser?._id ?? authUser?.id;
+        return staffId
+          ? `/dashboard/staff/profile/${staffId}`
+          : "/dashboard/staff/profile";
+      }
+      case "user":
       default:
-        return '/dashboard/user/profile';
+        return "/dashboard/user/profile";
     }
   };
 

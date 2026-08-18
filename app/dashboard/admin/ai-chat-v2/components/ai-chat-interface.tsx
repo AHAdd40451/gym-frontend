@@ -1,465 +1,651 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Lottie from "lottie-react";
-import aiSphereAnimation from "../ai-sphere-animation.json";
 import Fuse from "fuse.js";
 import { ArrowUpIcon, SquareIcon } from "lucide-react";
-import { usersApi } from "@/lib/api/services/users/users";
+import aiSphereAnimation from "../ai-sphere-animation.json";
+
 import {
   Input,
   PromptInputActions,
   PromptInputTextarea
 } from "@/components/ui/custom/prompt/input";
-
 import { Button } from "@/components/ui/button";
-import { ChatContainer } from "@/components/ui/custom/prompt/chat-container";
-import {
-  Message,
-  MessageContent
-} from "@/components/ui/custom/prompt/message";
 import { PromptLoader } from "@/components/ui/custom/prompt/loader";
 
 // APIs
 import { getAllUsers } from "@/lib/api/services/users/users";
 import { getAllSubscriptions } from "@/lib/api/services/subcription/subcription";
-import { getAllProducts } from "@/lib/api/services/product/product";
 import { getAttendanceByUserId } from "@/lib/api/services/attendence/attendence";
+
+type ChatMessage = {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  routes?: string[];
+};
+
+type QueryResult = {
+  text: string;
+  routes: string[];
+};
+
+const ROUTES = {
+  overview: "/dashboard/admin",
+  allUsers: "/dashboard/admin/all-users",
+  allSubscriptions: "/dashboard/admin/all-sub",
+  attendance: "/dashboard/admin/attendance",
+  plans: "/dashboard/admin/plans",
+  notifications: "/dashboard/admin/notifications"
+};
+
+const SUGGESTIONS = [
+  "Show member summary",
+  "Show active subscriptions",
+  "Show membership plans",
+  "Show renewals due",
+  "Was Ahmed present on 20/04/2026?"
+];
+
+function getToken() {
+  if (typeof window === "undefined") return "";
+
+  return (
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken") ||
+    ""
+  );
+}
+
+function extractName(text: string) {
+  return text
+    .toLowerCase()
+    .replace(
+      /search|find|show|open|get|member|members|user|users|profile|details|detail|data|information|info|with|by|email|phone|please|for|of|the/gi,
+      ""
+    )
+    .replace(/[?.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractAttendanceQuery(text: string) {
+  const dateMatch = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+
+  let cleanText = text.replace(dateMatch?.[0] || "");
+
+  cleanText = cleanText
+    .replace(
+      /attendance|present|absent|was|is|marked|check|status|member|user|date|on|for|please|did|come|visited|visit|today/gi,
+      ""
+    )
+    .replace(/[?.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    name: cleanText,
+    date: dateMatch ? dateMatch[0] : ""
+  };
+}
+
+function normalizeSubscriptionsResponse(res: any) {
+  const payload = res?.data;
+
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.subscriptions)) return payload.subscriptions;
+  if (Array.isArray(payload?.data?.subscriptions)) {
+    return payload.data.subscriptions;
+  }
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+
+  return [];
+}
+
+function getPlanNameFromSubscription(sub: any) {
+  return (
+    sub?.plan?.name ||
+    sub?.plan?.title ||
+    sub?.planName ||
+    "Membership Plan"
+  );
+}
+
+function formatDate(value: string | Date) {
+  if (!value) return "-";
+
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function detectIntent(text: string) {
+  const t = text.toLowerCase();
+
+  const hasDate =
+    /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(t) ||
+    /\d{1,2}\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/.test(t);
+
+  if (
+    t.includes("renew") ||
+    t.includes("renewal") ||
+    t.includes("due") ||
+    t.includes("expire") ||
+    t.includes("expired") ||
+    t.includes("expiring")
+  ) {
+    return "renewals";
+  }
+
+  if (
+    t.includes("attendance") ||
+    t.includes("present") ||
+    t.includes("absent") ||
+    t.includes("visited") ||
+    t.includes("check in") ||
+    t.includes("check-in") ||
+    hasDate
+  ) {
+    return "attendance";
+  }
+
+  if (
+    t.includes("search") ||
+    t.includes("find") ||
+    t.includes("profile") ||
+    t.includes("detail") ||
+    t.includes("details") ||
+    t.includes("data")
+  ) {
+    return "user_search";
+  }
+
+  if (
+    t.includes("plan") ||
+    t.includes("plans") ||
+    t.includes("package") ||
+    t.includes("packages") ||
+    t.includes("pricing")
+  ) {
+    return "plans";
+  }
+
+  if (
+    t.includes("subscription") ||
+    t.includes("subscriptions") ||
+    t.includes("membership") ||
+    t.includes("memberships") ||
+    t.includes("active subscription")
+  ) {
+    return "subscriptions";
+  }
+
+  if (
+    t.includes("user") ||
+    t.includes("users") ||
+    t.includes("member") ||
+    t.includes("members") ||
+    t.includes("admin") ||
+    t.includes("staff")
+  ) {
+    return "users";
+  }
+
+  if (
+    t.includes("revenue") ||
+    t.includes("report") ||
+    t.includes("reports") ||
+    t.includes("dashboard") ||
+    t.includes("overview")
+  ) {
+    return "reports";
+  }
+
+  return null;
+}
 
 export default function AIChatInterface() {
   const [prompt, setPrompt] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const [messages, setMessages] = useState<
-    { id: number; role: string; content: string; routes?: string[] }[]
-  >([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // ================= TOKEN =================
-  const getToken = () => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("authToken") || localStorage.getItem("token") || "";
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }
+
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end"
+      });
+    }, 50);
   };
 
-  const extractName = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(
-        /search|find|user|data|ka|ki|ke|nikaal|nikal|nikalo|do|de|please|batao/gi,
-        ""
-      )
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-  // ================= CLEAN PARSER =================
-  const extractAttendanceQuery = (text: string) => {
-    // 1. extract date first
-    const dateMatch = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
-
-    // 2. remove date from text
-    let cleanText = text.replace(dateMatch?.[0] || "", "");
-
-    // 3. remove keywords
-    cleanText = cleanText
-      .replace(/attendance|present|absent|tha|thi|kya|check|batao|ko aya tha|ko aya|hai/gi, "")
-      .replace(/\/+/g, " ")     // remove //
-      .replace(/\s+/g, " ")     // multiple spaces fix
-      .trim();
-
-    return {
-      name: cleanText,
-      date: dateMatch ? dateMatch[0] : ""
+  useEffect(() => {
+    return () => {
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current);
+      }
     };
-  };
-  // ================= INTENT =================
-  const detectIntent = (text: string) => {
-    const t = text.toLowerCase();
+  }, []);
 
-    const hasDate =
-      /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(t) ||
-      /\d{1,2}\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/.test(t);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
 
-    if (
-      t.includes("attendance") ||
-      t.includes("present") ||
-      t.includes("absent") ||
-      t.includes("aya") ||
-      t.includes("gaya") ||
-      hasDate
-    ) {
-      return "attendance";
-    }
-
-    if (t.includes("user") || t.includes("admin") || t.includes("staff"))
-      return "users";
-
-    if (t.includes("subscription") || t.includes("plan"))
-      return "subscriptions";
-
-    if (t.includes("product") || t.includes("shop"))
-      return "products";
-
-    if (
-      t.includes("search") ||
-      t.includes("find") ||
-      t.includes("data") ||
-      t.includes("user")
-    ) {
-      return "user_search";
-    }
-    return null;
+  const getUsersList = async (token: string) => {
+    const res = await getAllUsers({ page: 1, limit: 100 }, token);
+    return res?.data?.data?.users || res?.data?.users || [];
   };
 
-  // ================= API =================
-  const runQuery = async (intent: string | null, rawPrompt: string) => {
+  const getSubscriptionsList = async (token: string) => {
+    const res = await getAllSubscriptions({}, token);
+    return normalizeSubscriptionsResponse(res);
+  };
+
+  const runQuery = async (
+    intent: string | null,
+    rawPrompt: string
+  ): Promise<QueryResult> => {
     const token = getToken();
-    if (!token) return { text: "❌ Token missing", routes: [] };
+
+    if (!token) {
+      return {
+        text: "Authentication token is missing. Please log in again.",
+        routes: []
+      };
+    }
 
     try {
       switch (intent) {
-
-        // ---------- USERS ----------
         case "users": {
-          const res = await getAllUsers({ page: 1, limit: 100 }, token);
-          const users = res?.data?.data?.users || [];
+          const users = await getUsersList(token);
 
-          const admin = users.filter((u: any) => u.role === "admin").length;
+          const admins = users.filter((u: any) => u.role === "admin").length;
           const staff = users.filter((u: any) => u.role === "staff").length;
-          const normal = users.filter((u: any) => u.role === "user").length;
-
-          return {
-            text: `👥 Users\nAdmin: ${admin}\nStaff: ${staff}\nUsers: ${normal}`,
-            routes: ["/dashboard/admin/all-users"]
-          };
-        }
-
-        // ---------- SUBS ----------
-        case "subscriptions": {
-          const res = await getAllSubscriptions({}, token);
-          const subs = res?.data?.data || res?.data || [];
-
-          const active = subs.filter(
-            (s: any) => s.status?.toLowerCase() === "active"
+          const members = users.filter((u: any) => u.role === "user").length;
+          const activeUsers = users.filter(
+            (u: any) => String(u.status || "").toLowerCase() === "active"
           ).length;
 
           return {
-            text: `💳 Active Subscriptions: ${active}`,
-            routes: ["/dashboard/admin/all-sub"]
+            text: `Member Summary
+
+Admins: ${admins}
+Staff: ${staff}
+Members: ${members}
+Active Users: ${activeUsers}
+Total Users: ${users.length}`,
+            routes: [ROUTES.allUsers]
           };
         }
 
-        // ---------- PRODUCTS ----------
-        case "products": {
-          const res = await getAllProducts({}, token);
-          const products = res?.data?.products || [];
+        case "subscriptions": {
+          const subscriptions = await getSubscriptionsList(token);
+
+          const active = subscriptions.filter((s: any) =>
+            ["active", "trialing"].includes(
+              String(s.status || "").toLowerCase()
+            )
+          ).length;
+
+          const pending = subscriptions.filter(
+            (s: any) => String(s.status || "").toLowerCase() === "pending"
+          ).length;
+
+          const canceled = subscriptions.filter(
+            (s: any) => String(s.status || "").toLowerCase() === "canceled"
+          ).length;
+
+          const pastDue = subscriptions.filter((s: any) =>
+            ["past_due", "unpaid"].includes(
+              String(s.status || "").toLowerCase()
+            )
+          ).length;
 
           return {
-            text: `🛒 Products: ${products.length}`,
-            routes: ["/dashboard/admin/product-list"]
+            text: `Subscription Summary
+
+Active: ${active}
+Pending: ${pending}
+Canceled: ${canceled}
+Past Due / Unpaid: ${pastDue}
+Total Subscriptions: ${subscriptions.length}`,
+            routes: [ROUTES.allSubscriptions]
           };
         }
 
-        // ---------- ATTENDANCE (FIXED) ----------
-        case "attendance": {
-          const token = getToken();
+        case "plans": {
+          const subscriptions = await getSubscriptionsList(token);
 
-          const { name, date } = extractAttendanceQuery(prompt);
+          const planMap = new Map<string, number>();
+
+          subscriptions.forEach((sub: any) => {
+            const planName = getPlanNameFromSubscription(sub);
+            planMap.set(planName, (planMap.get(planName) || 0) + 1);
+          });
+
+          if (!planMap.size) {
+            return {
+              text: "No plan data found from current subscriptions. Open the plans page to manage membership plans.",
+              routes: [ROUTES.plans]
+            };
+          }
+
+          const planLines = Array.from(planMap.entries())
+            .map(
+              ([planName, count], index) =>
+                `${index + 1}. ${planName}: ${count}`
+            )
+            .join("\n");
+
+          return {
+            text: `Membership Plans
+
+${planLines}`,
+            routes: [ROUTES.plans, ROUTES.allSubscriptions]
+          };
+        }
+
+        case "renewals": {
+          const subscriptions = await getSubscriptionsList(token);
+
+          const now = new Date();
+          const sevenDaysFromNow = new Date();
+          sevenDaysFromNow.setDate(now.getDate() + 7);
+
+          const dueSoon = subscriptions.filter((sub: any) => {
+            if (!sub.currentPeriodEnd) return false;
+
+            const endDate = new Date(sub.currentPeriodEnd);
+            return endDate >= now && endDate <= sevenDaysFromNow;
+          });
+
+          const expired = subscriptions.filter((sub: any) => {
+            if (!sub.currentPeriodEnd) return false;
+
+            const endDate = new Date(sub.currentPeriodEnd);
+            return endDate < now;
+          });
+
+          const dueSoonList = dueSoon
+            .slice(0, 5)
+            .map((sub: any, index: number) => {
+              const memberName =
+                `${sub.user?.firstName || ""} ${
+                  sub.user?.lastName || ""
+                }`.trim() ||
+                sub.memberName ||
+                "Member";
+
+              return `${index + 1}. ${memberName} - ${getPlanNameFromSubscription(
+                sub
+              )} - expires ${formatDate(sub.currentPeriodEnd)}`;
+            })
+            .join("\n");
+
+          return {
+            text: `Renewal Summary
+
+Due in next 7 days: ${dueSoon.length}
+Expired: ${expired.length}
+
+${dueSoonList || "No renewals due in the next 7 days."}`,
+            routes: [ROUTES.overview, ROUTES.allSubscriptions]
+          };
+        }
+
+        case "attendance": {
+          const { name, date } = extractAttendanceQuery(rawPrompt);
 
           if (!name || !date) {
             return {
-              text: "❌ Please write like: 'babar 20/04/2026' or 'babar 20-04-2026'",
-              routes: []
+              text: `Please include member name and date.
+
+Example:
+Was Ahmed present on 20/04/2026?`,
+              routes: [ROUTES.attendance]
             };
           }
 
-          // =========================
-          // 1. GET USERS
-          // =========================
-          const usersRes = await getAllUsers({ page: 1, limit: 100 }, token);
-          const users = usersRes?.data?.data?.users || [];
+          const users = await getUsersList(token);
 
-          // const user = users.find((u: any) => {
-          //   const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
-          //   return fullName.includes(name.toLowerCase());
-          // });
-const fuse = new Fuse(users, {
-  keys: ["firstName", "lastName", "email"],
-  threshold: 0.4,
-  ignoreLocation: true
-});
+          const fuse = new Fuse(users, {
+            keys: ["firstName", "lastName", "email", "phone"],
+            threshold: 0.4,
+            ignoreLocation: true
+          });
 
-const results = fuse.search(name);
+          const results = fuse.search(name);
 
-if (!results.length) {
-  return {
-    text: `❌ No user found for "${name}"`,
-    routes: ["/dashboard/users"]
-  };
-}
-
-if (results.length > 1) {
-  return {
-    text:
-      `🔍 Found ${results.length} similar users:\n\n` +
-      results
-        .slice(0, 5)
-        .map(
-          (r: any, i: number) =>
-            `${i + 1}. ${r.item.firstName} ${r.item.lastName} (${r.item.email})`
-        )
-        .join("\n"),
-    routes: ["/dashboard/admin/all-users"]
-  };
-}
-
-const user = results[0].item;
-          if (!user) {
+          if (!results.length) {
             return {
-              text: `❌ User "${name}" not found`,
-              routes: ["/dashboard/users"]
+              text: `No member found for "${name}".`,
+              routes: [ROUTES.allUsers]
             };
           }
 
-          // =========================
-          // 2. GET ATTENDANCE
-          // =========================
-          const res = await getAttendanceByUserId(user._id, token);
+          if (results.length > 1) {
+            return {
+              text:
+                `Found ${results.length} similar members:\n\n` +
+                results
+                  .slice(0, 5)
+                  .map(
+                    (r: any, i: number) =>
+                      `${i + 1}. ${r.item.firstName} ${r.item.lastName} (${r.item.email})`
+                  )
+                  .join("\n"),
+              routes: [ROUTES.allUsers]
+            };
+          }
+
+          const user = results[0].item;
+
+          const attendanceRes = await getAttendanceByUserId(users._id, token);
 
           const attendanceRecords =
-            res?.data?.attendance || res?.data?.data?.attendance || [];
+            attendanceRes?.data?.attendance ||
+            attendanceRes?.data?.data?.attendance ||
+            [];
 
-          // =========================
-          // 3. FIXED DATE PARSER (IMPORTANT)
-          // =========================
-          const inputMatch = date.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+          const inputMatch = date.match(
+            /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/
+          );
 
           if (!inputMatch) {
             return {
-              text: "❌ Invalid date format. Use like 20/04/2026",
-              routes: []
+              text: "Invalid date format. Please use a format like 20/04/2026.",
+              routes: [ROUTES.attendance]
             };
           }
 
           const inputDay = Number(inputMatch[1]);
           const inputMonth = Number(inputMatch[2]);
-          const inputYear = Number(inputMatch[3]);
+          const inputYear =
+            inputMatch[3].length === 2
+              ? Number(`20${inputMatch[3]}`)
+              : Number(inputMatch[3]);
 
           const record = attendanceRecords.find((r: any) => {
             const d = new Date(r.date);
 
-            const dbDay = d.getDate();
-            const dbMonth = d.getMonth() + 1;
-            const dbYear = d.getFullYear();
-
             return (
-              dbDay === inputDay &&
-              dbMonth === inputMonth &&
-              dbYear === inputYear
+              d.getDate() === inputDay &&
+              d.getMonth() + 1 === inputMonth &&
+              d.getFullYear() === inputYear
             );
           });
 
-          // =========================
-          // 4. RESPONSE
-          // =========================
-          const formattedDate = `${inputDay.toString().padStart(2, "0")}/${inputMonth
+          const formattedDate = `${inputDay
+            .toString()
+            .padStart(2, "0")}/${inputMonth
             .toString()
             .padStart(2, "0")}/${inputYear}`;
 
+          const fullName =
+            `${users.firstName || ""} ${users.lastName || ""}`.trim() ||
+            "Member";
+
           if (!record) {
             return {
-              text: `❌ ${user.firstName} was NOT marked on ${formattedDate}`,
-              routes: ["/dashboard/attendance"]
+              text: `${fullName} was not marked on ${formattedDate}.`,
+              routes: [ROUTES.attendance, `${ROUTES.allUsers}/${users._id}`]
             };
           }
 
           return {
-            text: `✅ ${user.firstName} was ${record.status} on ${formattedDate}`,
-            routes: [
-              "/dashboard/attendance",
-              `/dashboard/users/${user._id}`
-            ]
+            text: `${fullName} was marked as ${record.status} on ${formattedDate}.`,
+            routes: [ROUTES.attendance, `${ROUTES.allUsers}/${users._id}`]
           };
         }
+
         case "user_search": {
-          try {
-            console.log("🟡 RAW PROMPT:", rawPrompt);
+          const name = extractName(rawPrompt);
 
-            const name = extractName(rawPrompt);
-            console.log("🟢 EXTRACTED NAME:", name);
-
-            if (!name) {
-              return {
-                text: "❌ Please write user name. Example: 'babar ka data nikal do'",
-                routes: []
-              };
-            }
-
-            const res = await usersApi.searchByName(name);
-
-            console.log("🟣 API RESPONSE:", res);
-
-            if (!res?.success) {
-              console.log("🔴 API FAILED:", res);
-              return {
-                text: `❌ ${res?.message || "No users found"}`,
-                routes: []
-              };
-            }
-
-            // ✅ FIXED HERE
-            const users = res?.data?.users || [];
-
-            console.log("🔵 FINAL USERS ARRAY:", users);
-
-            if (!users.length) {
-              console.log("🔴 NO USERS FOUND AFTER PARSING");
-              return {
-                text: `❌ No user found for "${name}"`,
-                routes: []
-              };
-            }
-
-            if (users.length > 1) {
-              return {
-                text:
-                  `🔍 Found ${users.length} users:\n\n` +
-                  users
-                    .map(
-                      (u: any, i: number) =>
-                        `${i + 1}. ${u.firstName} ${u.lastName} (${u.email})`
-                    )
-                    .join("\n"),
-                routes: ["/dashboard/admin/all-users"]
-              };
-            }
-
-            const user = users[0];
-
+          if (!name) {
             return {
-              text: `👤 User Found
+              text: `Please write a member name.
 
-🧑 Name: ${user.firstName} ${user.lastName}
-📧 Email: ${user.email}
-📱 Phone: ${user.phone || "N/A"}
-🎭 Role: ${user.role}
-📌 Status: ${user.status}
-
-💳 Subscription:
-Type: ${user.subscription?.type || "N/A"}
-Status: ${user.subscription?.status || "N/A"}
-Plan: ${user.subscription?.plan?.name || "N/A"}
-Price: ${user.subscription?.plan?.priceCents || 0} ${user.subscription?.plan?.currency || ""}`,
-
-              routes: [`/dashboard/users/${user._id}`]
-            };
-
-          } catch (err: any) {
-            console.log("❌ SEARCH ERROR:", err);
-
-            return {
-              text: err?.message || "⚠️ Search failed",
-              routes: []
+Example:
+Find Ahmed`,
+              routes: [ROUTES.allUsers]
             };
           }
+
+          const users = await getUsersList(token);
+
+          const fuse = new Fuse(users, {
+            keys: ["firstName", "lastName", "email", "phone"],
+            threshold: 0.4,
+            ignoreLocation: true
+          });
+
+          const results = fuse.search(name);
+
+          if (!results.length) {
+            return {
+              text: `No member found for "${name}".`,
+              routes: [ROUTES.allUsers]
+            };
+          }
+
+          if (results.length > 1) {
+            return {
+              text:
+                `Found ${results.length} matching members:\n\n` +
+                results
+                  .slice(0, 5)
+                  .map(
+                    (r: any, i: number) =>
+                      `${i + 1}. ${r.item.firstName} ${r.item.lastName} (${r.item.email})`
+                  )
+                  .join("\n"),
+              routes: [ROUTES.allUsers]
+            };
+          }
+
+          const user = results[0].item;
+
+          const fullName =
+            `${users.firstName || ""} ${users.lastName || ""}`.trim() ||
+            "Member";
+
+          return {
+            text: `Member Found
+
+Name: ${fullName}
+Email: ${users.email || "N/A"}
+Phone: ${users.phone || "N/A"}
+Role: ${users.role || "N/A"}
+Status: ${users.status || "N/A"}
+
+Subscription:
+Type: ${users.subscription?.type || "N/A"}
+Status: ${users.subscription?.status || "N/A"}
+Plan: ${users.subscription?.plan?.name || "N/A"}`,
+            routes: [`${ROUTES.allUsers}/${users._id}`]
+          };
         }
-        //         case "user_search": {
-        //   try {
-        //     const name = extractName(rawPrompt);
 
-        //     if (!name) {
-        //       return {
-        //         text: "❌ Please write user name. Example: 'babar ka data nikal do'",
-        //         routes: []
-        //       };
-        //     }
+        case "reports": {
+          return {
+            text: `Gym Reports
 
-        //     const res = await usersApi.searchByName(name);
+You can review:
+- Active members
+- Today's check-ins
+- Monthly revenue
+- Renewals due
+- Plan distribution
+- Attendance trends`,
+            routes: [ROUTES.overview]
+          };
+        }
 
-        //     // ✅ HANDLE API RESPONSE PROPERLY
-        //     if (!res?.success) {
-        //       return {
-        //         text: `❌ ${res?.message || "No users found"}`,
-        //         routes: []
-        //       };
-        //     }
-
-        //     const users = res?.data || [];
-
-        //     if (!users.length) {
-        //       return {
-        //         text: `❌ No user found for "${name}"`,
-        //         routes: []
-        //       };
-        //     }
-
-        //     // multiple users
-        //     if (users.length > 1) {
-        //       return {
-        //         text:
-        //           `🔍 Found ${users.length} users:\n\n` +
-        //           users
-        //             .map(
-        //               (u: any, i: number) =>
-        //                 `${i + 1}. ${u.firstName} ${u.lastName} (${u.email})`
-        //             )
-        //             .join("\n"),
-        //         routes: ["/dashboard/admin/all-users"]
-        //       };
-        //     }
-
-        //     // single user
-        //     const user = users[0];
-
-        //     return {
-        //       text: `👤 User Found:
-
-        // Name: ${user.firstName} ${user.lastName}
-        // Email: ${user.email}
-        // Role: ${user.role}
-        // Status: ${user.status}`,
-        //       routes: [`/dashboard/users/${user._id}`]
-        //     };
-        //   } catch (err: any) {
-        //     console.log("SEARCH ERROR:", err);
-
-        //     return {
-        //       text: err?.message || "⚠️ Search failed",
-        //       routes: []
-        //     };
-        //   }
-        // }
         default:
           return {
-            text: " Samaj nhi aya ❌ Ask Me About: users, subscriptions, products, attendance",
+            text: `I could not understand that request.
+
+You can ask me about:
+- Members
+- Subscriptions
+- Membership plans
+- Attendance
+- Card scans
+- Renewals
+- Gym reports`,
             routes: []
           };
       }
-    } catch (err) {
-      console.log(err);
-      return { text: "⚠️ Server error", routes: [] };
-    }
+    } catch (err: any) {
+      console.error("AI chat query error:", err);
 
+      return {
+        text: err?.message || "Server error. Please try again.",
+        routes: []
+      };
+    }
   };
 
-  // ================= STREAM =================
+  const stopStreaming = () => {
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    }
+
+    setIsStreaming(false);
+  };
+
   const streamResponse = async () => {
     if (isStreaming || !prompt.trim()) return;
 
     setIsStreaming(true);
 
+    const currentPrompt = prompt.trim();
     const userId = Date.now();
 
     setMessages((prev) => [
       ...prev,
-      { id: userId, role: "user", content: prompt }
+      { id: userId, role: "user", content: currentPrompt }
     ]);
 
-    const intent = detectIntent(prompt);
-    const result = await runQuery(intent, prompt);
-
     setPrompt("");
+
+    const intent = detectIntent(currentPrompt);
+    const result = await runQuery(intent, currentPrompt);
 
     const assistantId = userId + 1;
 
@@ -485,57 +671,86 @@ Price: ${user.subscription?.plan?.priceCents || 0} ${user.subscription?.plan?.cu
 
         i++;
       } else {
-        clearInterval(streamIntervalRef.current!);
-        setIsStreaming(false);
+        stopStreaming();
       }
     }, 10);
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-4xl flex-col items-center justify-center">
-
-      {/* EMPTY STATE */}
+    <div className="mx-auto flex h-[calc(100vh-140px)] w-full max-w-4xl flex-col">
       {messages.length === 0 && (
-        <div className="text-center mt-20">
-          <div className="w-72 mx-auto">
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="mx-auto w-56">
             <Lottie animationData={aiSphereAnimation} loop autoplay />
           </div>
-          <h1 className="text-2xl font-medium mt-4">
-            How can I assist you today?
+
+          <h1 className="mt-4 text-2xl font-medium">
+            How can I assist with your gym today?
           </h1>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ask about members, subscriptions, plans, attendance,
+            renewals, and reports.
+          </p>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {SUGGESTIONS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setPrompt(item)}
+                className="rounded-full border px-4 py-2 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* CHAT */}
-      <ChatContainer className="w-full flex-1 space-y-4">
+      {messages.length > 0 && (
+        <div
+          ref={messagesContainerRef}
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4"
+        >
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex w-full ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-xl p-3 text-sm ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                <pre className="whitespace-pre-wrap font-sans text-sm">
+                  {msg.content}
+                </pre>
 
-        {messages.map((msg) => (
-          <Message
-            key={msg.id}
-            className={msg.role === "user" ? "justify-end" : "justify-start"}
-          >
-            <MessageContent className="p-3 rounded-xl bg-muted">
-              <pre className="whitespace-pre-wrap">{msg.content}</pre>
+               
+              </div>
+            </div>
+          ))}
 
-              {msg.routes?.map((r, i) => (
-                <Link key={i} href={r} className="text-blue-500 underline block mt-2">
-                  Open →
-                </Link>
-              ))}
-            </MessageContent>
-          </Message>
-        ))}
+          {isStreaming && <PromptLoader />}
 
-        {isStreaming && <PromptLoader />}
-      </ChatContainer>
+          <div ref={messagesEndRef} />
+        </div>
+      )}
 
-      {/* INPUT */}
-      <div className="w-full p-3">
+      <div className="shrink-0 border-t bg-background p-3">
         <Input value={prompt} onValueChange={setPrompt} onSubmit={streamResponse}>
-          <PromptInputTextarea placeholder="Ask anything..." />
+          <PromptInputTextarea placeholder="Ask about members, subscriptions, plans, attendance..." />
 
           <PromptInputActions>
-            <Button onClick={streamResponse}>
+            <Button
+              type="button"
+              onClick={isStreaming ? stopStreaming : streamResponse}
+            >
               {isStreaming ? <SquareIcon /> : <ArrowUpIcon />}
             </Button>
           </PromptInputActions>

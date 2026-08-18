@@ -43,6 +43,7 @@ export interface User extends BaseModel {
   };
   isEmailVerified?: boolean;
   lastLogin?: string;
+  biometricId?: string | null;
 }
 
 // Workout Model
