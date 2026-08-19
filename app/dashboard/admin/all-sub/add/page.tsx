@@ -23,6 +23,7 @@ type CreatedMemberCard = {
   phone?: string;
   email?: string;
   cardNumber?: string;
+  biometricId?: string;
 };
 
 export default function AddSubscriptionPage() {
@@ -148,6 +149,17 @@ export default function AddSubscriptionPage() {
     );
   };
 
+  const getBiometricIdFromResponse = (res: any) => {
+    return (
+      res?.biometricId ||
+      res?.data?.biometricId ||
+      res?.user?.biometricId ||
+      res?.data?.user?.biometricId ||
+      res?.data?.data?.user?.biometricId ||
+      ""
+    );
+  };
+
   const getSelectedPlanName = (planId: string) => {
     const selectedPlan = plans.find((plan) => (plan._id || plan.id) === planId);
 
@@ -257,6 +269,7 @@ export default function AddSubscriptionPage() {
 
       const newCredentials = getCredentialsFromResponse(res);
       const cardNumber = getCardNumberFromResponse(res);
+      const biometricId = getBiometricIdFromResponse(res);
 
       setCreatedMessage(
         res?.message ||
@@ -270,6 +283,7 @@ export default function AddSubscriptionPage() {
         phone: memberPhone,
         email: memberEmail,
         cardNumber: cardNumber || "Card number not returned",
+        biometricId: biometricId || undefined,
       });
 
       setFormData({
@@ -312,7 +326,8 @@ export default function AddSubscriptionPage() {
     const text = `Email: ${credentials.email}
 Password: ${credentials.password}
 Role: ${credentials.role || "user"}
-Card Number: ${createdMemberCard?.cardNumber || ""}`;
+Card Number: ${createdMemberCard?.cardNumber || ""}
+Biometric ID: ${createdMemberCard?.biometricId || ""}`;
 
     await navigator.clipboard.writeText(text);
     alert("Credentials copied.");
@@ -620,7 +635,17 @@ Card Number: ${createdMemberCard?.cardNumber || ""}`;
                   <strong>Card Number:</strong>{" "}
                   {createdMemberCard?.cardNumber || "Not available"}
                 </p>
+
+                <p className="break-all text-sm">
+                  <strong>Biometric ID:</strong>{" "}
+                  {createdMemberCard?.biometricId || "Not available"}
+                </p>
               </div>
+
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Use this Biometric ID as the PIN when enrolling this member's
+                fingerprint on the scanner.
+              </p>
 
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
                 Copy these credentials and share them with the member. After

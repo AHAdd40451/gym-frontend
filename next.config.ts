@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "gym-api.moduleminds.ltd",
+        hostname: "gym.coderivals.ltd",
       },
     ],
   },

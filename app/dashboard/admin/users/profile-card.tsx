@@ -11,7 +11,7 @@ import { usersApi } from "@/lib/api/services/users/users";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://gym-api.moduleminds.ltd/api";
+  "https://gym.coderivals.ltd/api";
 
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 

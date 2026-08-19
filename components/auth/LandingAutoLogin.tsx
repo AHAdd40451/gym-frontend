@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym-api.moduleminds.ltd/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym.coderivals.ltd/api";
 
 function decodeJwtPayload(token: string) {
   try {

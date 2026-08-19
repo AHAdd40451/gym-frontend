@@ -62,7 +62,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://gym-api.moduleminds.ltd/api";
+  "https://gym.coderivals.ltd/api";
 
 export type Order = {
   id: number;

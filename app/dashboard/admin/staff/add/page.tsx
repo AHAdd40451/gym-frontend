@@ -5,7 +5,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym-api.moduleminds.ltd/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym.coderivals.ltd/api";
 
 type Credentials = {
   email: string;

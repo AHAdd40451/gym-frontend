@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym-api.moduleminds.ltd/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym.coderivals.ltd/api";
 
 interface SubscriptionDetail {
   id?: string;
