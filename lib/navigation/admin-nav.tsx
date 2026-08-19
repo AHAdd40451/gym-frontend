@@ -142,7 +142,8 @@ export const adminNavItems: NavGroup[] = [
       {
         title: "AI Chat",
         href: "/dashboard/admin/ai-chat-v2",
-        icon: AxeIcon
+        icon: AxeIcon,
+        isComing: true
       }
     ]
   },
@@ -160,8 +161,8 @@ export const adminNavItems: NavGroup[] = [
         icon: UsersIcon
       },
       {
-        title: "Add Admin / Staff",
-        href: "/dashboard/admin/staff/add",
+        title: "Admin & Staff",
+        href: "/dashboard/admin/staff",
         icon: UsersIcon
       },
       {
@@ -342,6 +343,15 @@ export function AdminNavMain({ user }: any) {
                         </CollapsibleContent>
                       </Collapsible>
                     </>
+                  ) : item.isComing ? (
+                    <SidebarMenuButton
+                      className="cursor-not-allowed opacity-50 hover:bg-transparent active:bg-transparent"
+                      tooltip={`${item.title} — coming soon`}
+                      disabled
+                    >
+                      {item.icon && <item.icon />}
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
                   ) : (
                     <SidebarMenuButton
                       className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
@@ -357,7 +367,7 @@ export function AdminNavMain({ user }: any) {
                   )}
                   {!!item.isComing && (
                     <SidebarMenuBadge className="peer-hover/menu-button:text-foreground opacity-50">
-                      Coming
+                      Soon
                     </SidebarMenuBadge>
                   )}
                   {!!item.isNew && (

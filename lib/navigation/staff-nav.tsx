@@ -27,12 +27,10 @@ import {
   UserIcon,
   UsersIcon,
   type LucideIcon,
-  ClockIcon,
   DumbbellIcon,
   FileTextIcon,
   BellIcon,
-  BarChart3Icon,
-  History
+  BarChart3Icon
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -89,11 +87,6 @@ export const staffNavItems: NavGroup[] = [
         title: "Notifications",
         href: "/dashboard/staff/notifications",
         icon: BellIcon
-      },
-      {
-        title: "Attendance",
-        href: "/dashboard/user/attendance",
-        icon: ClockIcon
       }
     ]
   },
@@ -135,12 +128,6 @@ export const staffNavItems: NavGroup[] = [
         href: "/dashboard/staff/exercises",
         icon: DumbbellIcon
       },
-      {
-        title: "User Workout History",
-        href: "/dashboard/staff/user-workout-history",
-        icon: History
-      },
-      
       // {
       //   title: "Personal Training",
       //   href: "/dashboard/staff/training",

@@ -2,6 +2,7 @@ import { getUserWithSubscriptions } from "@/lib/api/services/users/users";
 import { getServerAuth } from "@/lib/api/services/auth/server";
 import { ProfileCard } from "./profile-card";
 import { BiometricIdField } from "./biometric-id-field";
+import { RenewSubscriptionButton } from "./renew-subscription-button";
 import Link from "next/link";
 
 import {
@@ -37,7 +38,7 @@ const formatDate = (date?: string) => {
   });
 };
 
-const formatAmount = (amount?: number, currency = "USD") => {
+const formatAmount = (amount?: number, currency = "PKR") => {
   if (amount === undefined || amount === null) return "N/A";
 
   return `${amount} ${currency}`;
@@ -127,7 +128,7 @@ const UserDetailPage = async ({ params }: PageProps) => {
       subscriptionStatus: sub.status,
       createdAt: trx.createdAt || trx.date || sub.createdAt,
       date: trx.date || trx.createdAt || sub.createdAt,
-      currency: trx.currency || sub.plan?.currency || "USD",
+      currency: trx.currency || sub.plan?.currency || "PKR",
       paymentMethod: trx.paymentMethod || "Manual",
     }));
   });
@@ -270,12 +271,23 @@ const UserDetailPage = async ({ params }: PageProps) => {
                             </p>
                           </div>
 
-                          <Badge
-                            variant="outline"
-                            className={`w-fit capitalize ${getStatusClass(sub.status)}`}
-                          >
-                            {sub.status || "unknown"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={`w-fit capitalize ${getStatusClass(sub.status)}`}
+                            >
+                              {sub.status || "unknown"}
+                            </Badge>
+
+                            <RenewSubscriptionButton
+                              subscriptionId={subscriptionKey}
+                              planName={plan.name}
+                              defaultAmount={
+                                latestTransaction?.amount ??
+                                (plan.priceCents ? Number(plan.priceCents) / 100 : undefined)
+                              }
+                            />
+                          </div>
                         </div>
 
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
@@ -299,12 +311,12 @@ const UserDetailPage = async ({ params }: PageProps) => {
                               {latestTransaction
                                 ? formatAmount(
                                   latestTransaction.amount,
-                                  latestTransaction.currency || plan.currency || "USD"
+                                  latestTransaction.currency || plan.currency || "PKR"
                                 )
                                 : plan.priceCents
                                   ? formatAmount(
                                     Number(plan.priceCents) / 100,
-                                    plan.currency || "USD"
+                                    plan.currency || "PKR"
                                   )
                                   : "N/A"}
                             </p>
@@ -363,7 +375,7 @@ const UserDetailPage = async ({ params }: PageProps) => {
                           </td>
 
                           <td className="py-3 pr-4 font-medium">
-                            {formatAmount(trx.amount, trx.currency || "USD")}
+                            {formatAmount(trx.amount, trx.currency || "PKR")}
                           </td>
 
                           <td className="py-3 pr-4">

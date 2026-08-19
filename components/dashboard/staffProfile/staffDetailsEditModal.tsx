@@ -198,7 +198,7 @@ export function StaffDetailsEditModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-subscriptionFees">Subscription fees (USD)</Label>
+            <Label htmlFor="edit-subscriptionFees">Subscription fees (PKR)</Label>
             <Input
               id="edit-subscriptionFees"
               type="number"

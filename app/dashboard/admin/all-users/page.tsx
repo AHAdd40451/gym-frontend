@@ -68,7 +68,8 @@ const UsersPage = async () => {
 
   const res = await getAllUsers({}, token || "");
 
-  const users = res?.data?.data?.users || [];
+  const allUsers = res?.data?.data?.users || [];
+  const users = allUsers.filter((u: any) => u.role === "user");
 
   return <UsersListClient users={users} />;
 };

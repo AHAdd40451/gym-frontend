@@ -6,7 +6,6 @@ import {
   CalendarClock,
   CheckCircle2,
   DollarSign,
-  FileText,
   Plus,
   Users,
   X
@@ -102,7 +101,7 @@ function getAuthToken() {
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "PKR",
     maximumFractionDigits: 0
   }).format(value || 0);
 }
@@ -355,7 +354,7 @@ export default function GymOverview() {
           body: JSON.stringify({
             planId: getPlanId(selectedPlan),
             amount: planAmount,
-            currency: selectedPlan.currency || "USD",
+            currency: selectedPlan.currency || "PKR",
             months: selectedMonthsNumber
           })
         }
@@ -416,7 +415,7 @@ export default function GymOverview() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Total Active Members"
             value={data.activeMembers}
@@ -429,13 +428,6 @@ export default function GymOverview() {
             value={data.todayCheckIns}
             subtitle="Members visited today"
             icon={CheckCircle2}
-          />
-
-          <StatCard
-            title="Walk-in Subscriptions"
-            value={data.walkInSubscriptionsThisMonth}
-            subtitle="Created this month"
-            icon={FileText}
           />
 
           <StatCard

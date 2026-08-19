@@ -28,9 +28,9 @@ import {
   Mail,
   Search,
 } from "lucide-react";
-import { useGetTrainerSubscribedUsers } from "@/lib/api/services/subcription/subcription";
+import { useGetGymSubscribedUsers } from "@/lib/api/services/subcription/subcription";
 import { useDebounce } from "@/hooks/useDebounce";
-import { applyLeave, checkTodayAttendance, createAttendance, getAttendanceByUserId } from "@/lib/api/services/attendence/attendence"
+import { applyLeave, getAttendanceByUserId } from "@/lib/api/services/attendence/attendence"
 import { toast } from "sonner"; // 👈 notification
 const PAGE_SIZE = 10;
 const STATUS_OPTIONS = [
@@ -61,6 +61,7 @@ type TrainerSubscriptionItem = {
   startDate?: string;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
+  plan?: { name?: string };
   metadata?: { trainerPlanName?: string; durationInDays?: number };
   createdAt?: string;
 };
@@ -102,20 +103,39 @@ const MembersPage = () => {
 
   const debouncedMemberName = useDebounce(memberNameInput, 400);
 
-  const { data: apiResponse, isLoading, error } = useGetTrainerSubscribedUsers({
-    page,
-    limit: PAGE_SIZE,
-    memberName: debouncedMemberName || undefined,
-    status: statusFilter === "all" ? undefined : statusFilter,
-  });
+  const { data: apiResponse, isLoading, error } = useGetGymSubscribedUsers();
 
-  const subs: TrainerSubscriptionItem[] = useMemo(
-    () => (apiResponse?.data && Array.isArray(apiResponse.data) ? apiResponse.data : []),
-    [apiResponse?.data],
+  const allSubs: TrainerSubscriptionItem[] = useMemo(
+    () => (apiResponse?.users && Array.isArray(apiResponse.users) ? apiResponse.users : []),
+    [apiResponse?.users],
   );
 
-  const total = apiResponse?.total ?? 0;
-  const totalPages = apiResponse?.totalPages ?? 0;
+  // This endpoint returns every member in the gym at once (no server-side
+  // search/pagination), so both are applied here on the client.
+  const filteredSubs = useMemo(() => {
+    const query = debouncedMemberName.trim().toLowerCase();
+
+    return allSubs.filter((sub) => {
+      if (statusFilter !== "all" && (sub.status || "").toLowerCase() !== statusFilter) {
+        return false;
+      }
+
+      if (!query) return true;
+
+      const name = fullName(sub.user).toLowerCase();
+      const email = (sub.user?.email || "").toLowerCase();
+
+      return name.includes(query) || email.includes(query);
+    });
+  }, [allSubs, debouncedMemberName, statusFilter]);
+
+  const total = filteredSubs.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const subs = useMemo(
+    () => filteredSubs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredSubs, page],
+  );
   const activeCount = useMemo(
     () => subs.filter((s) => ["active", "trialing"].includes((s?.status || "").toLowerCase())).length,
     [subs],
@@ -180,35 +200,6 @@ const MembersPage = () => {
 
     fetchAttendance();
   }, [userId]);
-  const handleMarkAttendance = async () => {
-    try {
-      setLoadingAction(true);
-
-      const res = await createAttendance(
-        userId,
-        new Date().toISOString(),
-        "present"
-      );
-
-      const data = res?.data || res;
-
-      if (data?.success) {
-        setAlreadyMarked(true); // instant disable
-        toast.success(data?.message || "Attendance marked successfully");
-
-      } else {
-        toast.error(data?.message || "Could not mark attendance");
-      }
-
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to mark attendance");
-    } finally {
-      setLoadingAction(false);
-    }
-  };
-
-
-
   const handleApplyLeave = async () => {
     if (!leaveReason) {
       toast.error("Please enter a reason");
@@ -253,13 +244,6 @@ const MembersPage = () => {
 
       </header>
  <div className="flex gap-3">
-          <Button
-            onClick={handleMarkAttendance}
-            disabled={isDisabled}
-          >
-            Mark Attendance
-          </Button>
-
           <Button
             variant="outline"
             onClick={() => setShowLeaveModal(true)}
@@ -395,7 +379,7 @@ const MembersPage = () => {
                   const userId = sub.user?._id ?? "";
                   const userName = fullName(sub.user);
                   const email = sub.user?.email || "-";
-                  const planName = sub.metadata?.trainerPlanName || "-";
+                  const planName = sub.plan?.name || sub.metadata?.trainerPlanName || "-";
                   const periodLabel = formatRange(sub.currentPeriodStart, sub.currentPeriodEnd);
 
                   return (

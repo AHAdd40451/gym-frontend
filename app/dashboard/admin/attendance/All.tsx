@@ -390,7 +390,7 @@ function All() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search user by name or email..."
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-black focus:ring-2 focus:ring-black/10"
+            className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
           />
         </div>
       </div>

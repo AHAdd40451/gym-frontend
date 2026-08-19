@@ -220,7 +220,7 @@ export default function MemberDetailPage() {
           product: sub?.plan?.name || "Subscription",
           status: tx.status || "pending",
           date: safeDate(tx.createdAt),
-          amount: `${tx.amount ?? 0} ${tx.currency || "USD"}`,
+          amount: `${tx.amount ?? 0} ${tx.currency || "PKR"}`,
           paymentMethod: tx.paymentMethod || "N/A",
         })),
       ),

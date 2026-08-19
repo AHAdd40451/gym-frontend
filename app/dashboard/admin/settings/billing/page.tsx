@@ -176,8 +176,8 @@ export default function Page() {
   };
 
   // Format currency
-  const formatCurrency = (amount: number | null, currency: string = "USD") => {
-    if (!amount) return "$0.00";
+  const formatCurrency = (amount: number | null, currency: string = "PKR") => {
+    if (!amount) return "PKR 0.00";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency

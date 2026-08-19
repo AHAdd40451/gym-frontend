@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 
 const QUERY_KEYS = {
   TRAINER_SUBSCRIBED_USERS: 'trainerSubscribedUsers',
+  GYM_SUBSCRIBED_USERS: 'gymSubscribedUsers',
 };
 
 export interface SubscribedUser {
@@ -115,6 +116,13 @@ export interface TrainerSubscribedUsersResponse {
   totalPages: number;
 }
 
+/** Response from GET /subscriptions/subscribed-users (gym-wide, not paginated) */
+export interface GymSubscribedUsersResponse {
+  success: boolean;
+  total: number;
+  users: any[];
+}
+
 const subscriptionApi = {
   getTrainerSubscribedUsers: async (params?: TrainerSubscribedUsersParams) => {
     const queryParams: Record<string, string | number> = {};
@@ -125,6 +133,11 @@ const subscriptionApi = {
     const response = await apiClient.get("subscriptions/trainer/me", { params: queryParams });
     return response?.data as TrainerSubscribedUsersResponse;
   },
+
+  getGymSubscribedUsers: async () => {
+    const response = await apiClient.get("subscriptions/subscribed-users");
+    return response?.data as GymSubscribedUsersResponse;
+  },
 };
 
 
@@ -132,6 +145,18 @@ export const useGetTrainerSubscribedUsers = (params?: TrainerSubscribedUsersPara
   return useQuery({
     queryKey: [QUERY_KEYS.TRAINER_SUBSCRIBED_USERS, params?.page, params?.limit, params?.memberName, params?.status],
     queryFn: () => subscriptionApi.getTrainerSubscribedUsers(params),
+  });
+};
+
+/**
+ * All of the gym's subscribed members (not scoped to a single trainer) —
+ * used by the staff "All Members" directory, since members are onboarded
+ * as walk-in "platform" subscriptions, not per-trainer subscriptions.
+ */
+export const useGetGymSubscribedUsers = () => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GYM_SUBSCRIBED_USERS],
+    queryFn: () => subscriptionApi.getGymSubscribedUsers(),
   });
 };
 

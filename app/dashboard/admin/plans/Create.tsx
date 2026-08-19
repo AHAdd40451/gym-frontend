@@ -16,7 +16,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-function Create() {
+type CreateProps = {
+  onCreated?: () => void;
+};
+
+function Create({ onCreated }: CreateProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +28,7 @@ function Create() {
     name: "",
     description: "",
     priceCents: 0,
-    currency: "USD",
+    currency: "PKR",
     billingInterval: "month",
     intervalCount: 1,
     maxCheckInsPerDay: 1,
@@ -65,18 +69,22 @@ function Create() {
     try {
       setLoading(true);
 
-      await createPlan(form, getToken());
+      await createPlan(
+        { ...form, priceCents: Math.round(form.priceCents * 100) },
+        getToken()
+      );
 
       toast.success("Plan created successfully 🎉");
 
       setOpen(false); // 👈 close modal
+      onCreated?.();
 
       // reset form
       setForm({
         name: "",
         description: "",
         priceCents: 0,
-        currency: "USD",
+        currency: "PKR",
         billingInterval: "month",
         intervalCount: 1,
         maxCheckInsPerDay: 1,
@@ -118,7 +126,7 @@ function Create() {
               name="priceCents"
               value={form.priceCents}
               onChange={handleChange}
-              placeholder="Price (cents)"
+              placeholder="Price (PKR)"
             />
 
             <Input

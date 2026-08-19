@@ -75,6 +75,22 @@ export default function AddAdminStaffPage() {
     });
   };
 
+  const generatePassword = () => {
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+    let password = "";
+
+    for (let i = 0; i < 12; i++) {
+      password += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    return password;
+  };
+
+  const handleGeneratePassword = () => {
+    setFormData((prev) => ({ ...prev, password: generatePassword() }));
+  };
+
   const getCredentialsFromResponse = (res: any): Credentials | null => {
     const possible =
       res?.data?.credentials ||
@@ -185,7 +201,7 @@ Role: ${credentials.role}`;
 
   const closeModal = () => {
     setCredentials(null);
-    router.push("/dashboard/admin/all-users");
+    router.push("/dashboard/admin/staff");
     router.refresh();
   };
 
@@ -216,7 +232,7 @@ Role: ${credentials.role}`;
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.push("/dashboard/admin/all-users")}
+              onClick={() => router.push("/dashboard/admin/staff")}
               className="rounded-lg bg-muted px-5 py-3 text-sm font-medium text-foreground hover:bg-muted/80"
             >
               Discard
@@ -296,15 +312,25 @@ Role: ${credentials.role}`;
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className={labelClass}>Password</label>
-                  <input
-                    type="text"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Enter login password"
-                    className={inputClass}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Enter or auto-generate a password"
+                      className={inputClass}
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="shrink-0 rounded-lg bg-muted px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/80"
+                    >
+                      Auto Generate
+                    </button>
+                  </div>
                   <p className={helpTextClass}>
                     Admin will share this password with the account owner.
                   </p>

@@ -73,7 +73,7 @@ const formatDateTime = (value?: string) => {
 };
 
 const formatPrice = (sub?: Subscription) => {
-  if (!sub) return "$0";
+  if (!sub) return "Rs0";
   const fromPlanPrice = typeof sub.plan?.price === "number" ? sub.plan.price : undefined;
   const fromPlanCents =
     typeof sub.plan?.priceCents === "number" ? sub.plan.priceCents / 100 : undefined;
@@ -88,7 +88,7 @@ const formatPrice = (sub?: Subscription) => {
     (sub.transactions && sub.transactions.length > 0
       ? sub.transactions[sub.transactions.length - 1]?.currency
       : undefined) ||
-    "USD";
+    "PKR";
 
   const symbol = currency.toUpperCase() === "PKR" ? "Rs" : "$";
   return `${symbol}${Number(amount).toLocaleString()}`;
@@ -294,7 +294,7 @@ export default function MembershipPage() {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <CreditCard className="size-4" />
-                    Currency: {(latestTxn?.currency || activeSub?.plan?.currency || "USD").toUpperCase()}
+                    Currency: {(latestTxn?.currency || activeSub?.plan?.currency || "PKR").toUpperCase()}
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <ShieldCheck className="size-4" />
@@ -357,7 +357,7 @@ export default function MembershipPage() {
           <CardContent className="space-y-3">
             {allTransactions.length > 0 ? (
               allTransactions.map((txn, idx) => {
-                const currency = (txn.currency || "USD").toUpperCase();
+                const currency = (txn.currency || "PKR").toUpperCase();
                 const symbol = currency === "PKR" ? "Rs" : "$";
                 return (
                   <div key={`${txn.createdAt || "txn"}-${idx}`} className="rounded-md border p-3">

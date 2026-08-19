@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowRight, Mail, Search, ShieldCheck, UserCog, Users } from "lucide-react";
+import { ArrowRight, Mail, Plus, Search, ShieldCheck, UserCog, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -20,6 +20,10 @@ type UserItem = {
 
 type UsersListClientProps = {
   users: UserItem[];
+  title?: string;
+  description?: string;
+  createHref?: string;
+  createLabel?: string;
 };
 
 const getFullName = (user: UserItem) => {
@@ -62,7 +66,13 @@ const getRoleIcon = (user: UserItem) => {
   return <Users className="size-3.5" />;
 };
 
-export default function UsersListClient({ users }: UsersListClientProps) {
+export default function UsersListClient({
+  users,
+  title = "All Users",
+  description = "Search users and quickly identify admin, staff, and members.",
+  createHref,
+  createLabel = "Create",
+}: UsersListClientProps) {
   const [search, setSearch] = useState("");
 
   const filteredUsers = useMemo(() => {
@@ -104,22 +114,33 @@ export default function UsersListClient({ users }: UsersListClientProps) {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            All Users
+            {title}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Search users and quickly identify admin, staff, and members.
+            {description}
           </p>
         </div>
 
-        <div className="relative w-full md:w-[380px]">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+          <div className="relative w-full md:w-[380px]">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, or role..."
-            className="w-full rounded-lg border border-input bg-background py-3 pl-10 pr-4 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
-          />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, email, or role..."
+              className="w-full rounded-lg border border-input bg-background py-3 pl-10 pr-4 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
+            />
+          </div>
+
+          {createHref && (
+            <Button asChild className="shrink-0">
+              <Link href={createHref}>
+                <Plus className="size-4" />
+                {createLabel}
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

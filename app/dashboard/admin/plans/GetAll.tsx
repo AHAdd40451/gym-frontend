@@ -27,7 +27,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-function GetAll() {
+type GetAllProps = {
+    refreshKey?: number;
+};
+
+function GetAll({ refreshKey }: GetAllProps) {
     const [plans, setPlans] = useState<UIPlan[]>([]);
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
@@ -103,7 +107,7 @@ function GetAll() {
 
     useEffect(() => {
         fetchPlans();
-    }, []);
+    }, [refreshKey]);
 
     // ================= EDIT =================
     const handleEdit = (plan: UIPlan) => {
@@ -111,7 +115,7 @@ function GetAll() {
 
         setForm({
             name: plan.name,
-            priceCents: Number(plan.price.replace(/[^0-9]/g, "")),
+            priceCents: parseFloat(plan.price) || 0,
             description: plan.description || "",
         });
     };
@@ -127,7 +131,7 @@ function GetAll() {
                 selectedPlan.id,
                 {
                     name: form.name,
-                    priceCents: form.priceCents,
+                    priceCents: Math.round(form.priceCents * 100),
                     description: form.description,
                 },
                 getToken()
@@ -170,11 +174,6 @@ function GetAll() {
             {/* ================= HEADER ================= */}
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">All Plans</h2>
-
-                {/* 🔄 REFRESH BUTTON */}
-                <Button onClick={fetchPlans} variant="outline">
-                    Refresh
-                </Button>
             </div>
 
             {/* ================= LOADING ================= */}
@@ -243,7 +242,7 @@ function GetAll() {
                             onChange={(e) =>
                                 setForm({ ...form, priceCents: Number(e.target.value) })
                             }
-                            placeholder="Price in cents"
+                            placeholder="Price (PKR)"
                         />
 
                         <Input

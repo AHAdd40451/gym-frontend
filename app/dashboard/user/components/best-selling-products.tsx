@@ -149,7 +149,7 @@ export const columns: ColumnDef<Product>[] = [
       // Format the amount as a dollar amount
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "USD"
+        currency: "PKR"
       }).format(amount);
 
       return <div className="font-medium">{formatted}</div>;

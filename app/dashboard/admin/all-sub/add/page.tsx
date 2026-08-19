@@ -26,6 +26,15 @@ type CreatedMemberCard = {
   biometricId?: string;
 };
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 export default function AddSubscriptionPage() {
   const router = useRouter();
 
@@ -40,10 +49,13 @@ export default function AddSubscriptionPage() {
     password: "",
     planId: "",
     amount: "",
-    startDate: "",
-    endDate: "",
+    registrationCharges: "",
+    startDate: getTodayDateString(),
     paymentStatus: "paid",
   });
+
+  const totalAmount =
+    (Number(formData.amount) || 0) + (Number(formData.registrationCharges) || 0);
 
   const [loading, setLoading] = useState(false);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
@@ -61,6 +73,22 @@ export default function AddSubscriptionPage() {
       localStorage.getItem("adminToken") ||
       ""
     );
+  };
+
+  const generatePassword = () => {
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+    let password = "";
+
+    for (let i = 0; i < 12; i++) {
+      password += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    return password;
+  };
+
+  const handleGeneratePassword = () => {
+    setFormData((prev) => ({ ...prev, password: generatePassword() }));
   };
 
   const fetchPlans = async () => {
@@ -199,23 +227,13 @@ export default function AddSubscriptionPage() {
       return;
     }
 
-    if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("Please enter a valid amount.");
+    if (totalAmount <= 0) {
+      alert("Please enter a valid plan or registration amount.");
       return;
     }
 
     if (!formData.startDate) {
       alert("Start date is required.");
-      return;
-    }
-
-    if (!formData.endDate) {
-      alert("End date is required.");
-      return;
-    }
-
-    if (new Date(formData.endDate) < new Date(formData.startDate)) {
-      alert("End date cannot be before the start date.");
       return;
     }
 
@@ -250,10 +268,10 @@ export default function AddSubscriptionPage() {
           email: memberEmail,
           password: formData.password.trim(),
           planId: formData.planId,
-          amount: Number(formData.amount),
-          currency: "USD",
+          amount: totalAmount,
+          registrationCharges: Number(formData.registrationCharges) || 0,
+          currency: "PKR",
           startDate: convertDateToLocalNoonISO(formData.startDate),
-          endDate: convertDateToLocalNoonISO(formData.endDate),
           paymentStatus: formData.paymentStatus as "paid" | "pending",
         }),
       });
@@ -294,8 +312,8 @@ export default function AddSubscriptionPage() {
         password: "",
         planId: "",
         amount: "",
-        startDate: "",
-        endDate: "",
+        registrationCharges: "",
+        startDate: getTodayDateString(),
         paymentStatus: "paid",
       });
 
@@ -446,15 +464,25 @@ Biometric ID: ${createdMemberCard?.biometricId || ""}`;
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className={labelClass}>Login Password</label>
-                  <input
-                    type="text"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Enter member login password"
-                    className={inputClass}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Enter or auto-generate a password"
+                      className={inputClass}
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="shrink-0 rounded-lg bg-muted px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/80"
+                    >
+                      Auto Generate
+                    </button>
+                  </div>
 
                   <p className={helpTextClass}>
                     Admin will share this password with the member.
@@ -497,40 +525,21 @@ Biometric ID: ${createdMemberCard?.biometricId || ""}`;
                 )}
               </div>
 
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className={labelClass}>Start Date</label>
+              <div className="space-y-2">
+                <label className={labelClass}>Start Date</label>
 
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    className={inputClass}
-                    required
-                  />
+                <input
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
 
-                  <p className={helpTextClass}>
-                    Select the date when the subscription should start.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className={labelClass}>End Date</label>
-
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    className={inputClass}
-                    required
-                  />
-
-                  <p className={helpTextClass}>
-                    Select the date when the subscription should expire.
-                  </p>
-                </div>
+                <p className={helpTextClass}>
+                  Defaults to today. Change it if the subscription should start later.
+                </p>
               </div>
             </div>
           </div>
@@ -543,7 +552,7 @@ Biometric ID: ${createdMemberCard?.biometricId || ""}`;
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className={labelClass}>Amount</label>
+                  <label className={labelClass}>Plan Charges</label>
 
                   <input
                     type="number"
@@ -556,8 +565,35 @@ Biometric ID: ${createdMemberCard?.biometricId || ""}`;
                   />
 
                   <p className={helpTextClass}>
-                    This amount will be saved with the subscription payment.
+                    Auto-filled from the selected plan. You can adjust it if needed.
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className={labelClass}>Registration Charges</label>
+
+                  <input
+                    type="number"
+                    name="registrationCharges"
+                    value={formData.registrationCharges}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className={inputClass}
+                  />
+
+                  <p className={helpTextClass}>
+                    Optional one-time charge added on top of the plan price.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border pt-5">
+                  <span className="text-sm font-medium text-foreground">
+                    Total Amount
+                  </span>
+
+                  <span className="text-lg font-semibold text-foreground">
+                    {totalAmount.toLocaleString()} PKR
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 border-t border-border pt-5">
