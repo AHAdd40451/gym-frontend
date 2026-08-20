@@ -41,6 +41,19 @@ export interface MealPlanDocument extends MealPlanPayload {
   updatedAt?: string;
 }
 
+export async function updateMealPlan(id: string, payload: MealPlanPayload, token?: string) {
+  return serverFetch(
+    `${API_ENDPOINTS.MEALS.BASE}/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
 export async function getUserMeals(
   userId: string,
   params: { date?: string } = {},

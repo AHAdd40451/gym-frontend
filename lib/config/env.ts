@@ -1,7 +1,7 @@
 // Environment configuration
 export const env = {
   // API Configuration
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api',
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5003/api',
   API_VERSION: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
   
   // App Configuration

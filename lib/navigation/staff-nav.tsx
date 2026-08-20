@@ -84,6 +84,11 @@ export const staffNavItems: NavGroup[] = [
     title: "Communication",
     items: [
       {
+        title: "Messages",
+        href: "/dashboard/staff/messages",
+        icon: MessageSquareIcon
+      },
+      {
         title: "Notifications",
         href: "/dashboard/staff/notifications",
         icon: BellIcon

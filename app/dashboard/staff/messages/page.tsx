@@ -1,9 +1,13 @@
-import React from 'react'
+import { ChatContent } from "../../user/chats/components/chat-content";
+import { ChatSidebar } from "../../user/chats/components";
 
-const page = () => {
+export default function StaffMessagesPage() {
   return (
-    <div>this is messages page </div>
-  )
+    <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full">
+      <ChatSidebar />
+      <div className="grow">
+        <ChatContent />
+      </div>
+    </div>
+  );
 }
-
-export default page

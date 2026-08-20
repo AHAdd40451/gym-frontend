@@ -151,16 +151,11 @@ function useCurrentUserRole() {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
   const role = useCurrentUserRole();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -169,8 +164,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   useEffect(() => {
     setOpen(!isTablet);
   }, [isTablet]);
-
-  if (!mounted) return null;
 
   // Redirect based on role
   const handleHomeClick = () => {

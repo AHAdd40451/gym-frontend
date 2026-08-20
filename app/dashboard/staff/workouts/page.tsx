@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   ListChecks,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -38,6 +39,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -51,8 +53,10 @@ import {
   createWorkout,
   deleteWorkout,
   fetchWorkouts,
-  updateWorkout
+  updateWorkout,
+  assignWorkout
 } from "@/lib/api/services/workouts/workouts";
+import { useGetGymSubscribedUsers } from "@/lib/api/services/subcription/subcription";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 type WorkoutType = "Strength" | "Cardio" | "Weight Loss";
@@ -148,6 +152,44 @@ export default function WorkoutsPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exerciseLibraryPage, setExerciseLibraryPage] = useState(1);
+
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assigningPlan, setAssigningPlan] = useState<WorkoutPlan | null>(null);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [assignSaving, setAssignSaving] = useState(false);
+
+  const { data: membersResponse, isLoading: membersLoading } = useGetGymSubscribedUsers();
+
+  const gymMembers = useMemo(() => {
+    const rows = Array.isArray(membersResponse?.users) ? membersResponse.users : [];
+    const seen = new Set<string>();
+    const members: { _id: string; name: string; email: string }[] = [];
+
+    rows.forEach((row: any) => {
+      const u = row?.user;
+      const id = u?._id;
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+
+      members.push({
+        _id: id,
+        name: `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || u?.email || "Unknown member",
+        email: u?.email || ""
+      });
+    });
+
+    return members;
+  }, [membersResponse]);
+
+  const filteredMembers = useMemo(() => {
+    const query = memberSearch.trim().toLowerCase();
+    if (!query) return gymMembers;
+
+    return gymMembers.filter(
+      (m) => m.name.toLowerCase().includes(query) || m.email.toLowerCase().includes(query)
+    );
+  }, [gymMembers, memberSearch]);
 
   const EXERCISES_PER_PAGE = 4;
   const exerciseLibraryTotalPages = Math.max(1, Math.ceil(exerciseLibrary.length / EXERCISES_PER_PAGE));
@@ -517,6 +559,52 @@ export default function WorkoutsPage() {
       toast.error("Delete failed", { description: error?.message || "Check API/token." });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openAssignModal = (plan: WorkoutPlan) => {
+    setAssigningPlan(plan);
+    setSelectedMemberIds([]);
+    setMemberSearch("");
+    setAssignOpen(true);
+  };
+
+  const toggleMember = (memberId: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    );
+  };
+
+  const handleAssign = async () => {
+    if (!assigningPlan) return;
+
+    if (selectedMemberIds.length === 0) {
+      toast.error("Select at least one member to assign this workout to.");
+      return;
+    }
+
+    try {
+      setAssignSaving(true);
+
+      const res = await assignWorkout(assigningPlan._id, selectedMemberIds);
+
+      if (!res?.success) {
+        throw new Error(res?.message || "Failed to assign workout");
+      }
+
+      toast.success("Workout assigned", {
+        description: `Assigned to ${selectedMemberIds.length} member${selectedMemberIds.length > 1 ? "s" : ""}.`
+      });
+
+      setAssignOpen(false);
+      setAssigningPlan(null);
+      setSelectedMemberIds([]);
+    } catch (error: any) {
+      toast.error("Could not assign workout", {
+        description: error?.message || "Check API / token."
+      });
+    } finally {
+      setAssignSaving(false);
     }
   };
 
@@ -915,7 +1003,8 @@ export default function WorkoutsPage() {
               openEditModal,
               loadAsTemplate,
               handleDeleteWorkout,
-              deletingId
+              deletingId,
+              openAssignModal
             )}
           </CardContent>
         </Card>
@@ -1183,6 +1272,68 @@ export default function WorkoutsPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={assignOpen}
+        onOpenChange={(open) => {
+          setAssignOpen(open);
+          if (!open) setAssigningPlan(null);
+        }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="size-5 text-primary" />
+              Assign "{assigningPlan?.title}"
+            </DialogTitle>
+            <DialogDescription>
+              Pick the members who should receive this workout plan.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Input
+            placeholder="Search members..."
+            value={memberSearch}
+            onChange={(e) => setMemberSearch(e.target.value)}
+          />
+
+          <div className="max-h-72 space-y-1 overflow-y-auto rounded-md border border-border/70 p-2">
+            {membersLoading ? (
+              <p className="p-2 text-sm text-muted-foreground">Loading members...</p>
+            ) : filteredMembers.length === 0 ? (
+              <p className="p-2 text-sm text-muted-foreground">No members found.</p>
+            ) : (
+              filteredMembers.map((member) => (
+                <label
+                  key={member._id}
+                  className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/60">
+                  <Checkbox
+                    checked={selectedMemberIds.includes(member._id)}
+                    onCheckedChange={() => toggleMember(member._id)}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{member.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+                  </div>
+                </label>
+              ))
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <p className="text-xs text-muted-foreground">
+              {selectedMemberIds.length} member{selectedMemberIds.length !== 1 ? "s" : ""} selected
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setAssignOpen(false)} disabled={assignSaving}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssign} disabled={assignSaving}>
+                {assignSaving ? "Assigning..." : "Assign"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
@@ -1196,7 +1347,8 @@ function renderWorkoutGrid(
   openEdit: (plan: WorkoutPlan) => void,
   loadAsTemplate: (plan: WorkoutPlan) => void,
   deletePlan: (id: string) => void,
-  deletingId: string | null
+  deletingId: string | null,
+  openAssign: (plan: WorkoutPlan) => void
 ) {
   if (!plans.length) {
     return (
@@ -1269,6 +1421,10 @@ function renderWorkoutGrid(
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => openPreview(plan)}>
                   Preview
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => openAssign(plan)}>
+                  <UserPlus className="size-3.5" />
+                  Assign
                 </Button>
                 <Button
                   size="sm"

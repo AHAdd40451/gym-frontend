@@ -4,8 +4,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { serverFetch } from "../../api-actions/server";
 import { API_ENDPOINTS } from "../../constants/constants";
+import { env } from "@/lib/config/env";
 
-const API_BASE = "http://localhost:5003/api";
+const API_BASE = env.API_BASE_URL;
+const SOCKET_URL = API_BASE.replace(/\/api\/?$/, "");
 
 type ChatMessage = {
   _id?: string;
@@ -32,7 +34,7 @@ function ChatHook(userId?: string, receiverId?: string) {
 
     // ✅ prevent multiple connections
     if (!socket) {
-      socket = io("http://localhost:5003", {
+      socket = io(SOCKET_URL, {
         transports: ["websocket"],
       });
     }

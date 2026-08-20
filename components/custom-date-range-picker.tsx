@@ -44,7 +44,17 @@ const dateFilterPresets = [
 export default function CalendarDateRangePicker({
   className
 }: React.HTMLAttributes<HTMLDivElement>) {
-  const isMobile = useIsMobile();
+  const detectedMobile = useIsMobile();
+
+  // useIsMobile() only knows the real screen width after mounting on the
+  // client, so treating its value as "unknown" until then keeps the very
+  // first client render identical to the server-rendered HTML — otherwise
+  // the mobile/desktop branches below (different Radix component trees)
+  // can flip right after hydration and trigger a hydration mismatch.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isMobile = mounted && detectedMobile;
+
   const today = new Date();
   const twentyEightDaysAgo = startOfDay(subDays(today, 27));
 

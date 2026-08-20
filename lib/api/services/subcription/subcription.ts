@@ -55,7 +55,10 @@ export interface SubscriptionUser {
 }
 
 export interface Subscription {
-  _id: string;
+  _id?: string;
+  // The /subscriptions/:id/details endpoint formats each subscription with
+  // `id` instead of `_id` — both are optional here so callers must check both.
+  id?: string;
   user: string | SubscriptionUser;
   plan: string | SubscriptionPlan;
   status: SubscriptionStatus;
@@ -451,7 +454,8 @@ export function transformSubscriptionToUI(sub: Subscription, index?: number): UI
   const userImage = `/images/avatars/${Math.abs(userName.split("").reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0)) % 10}.png`;
   const planName = typeof sub.plan === "object" && sub.plan?.name ? sub.plan.name : "Unnamed Plan";
   const planPrice = typeof sub.plan === "object" && sub.plan?.priceCents ? sub.plan.priceCents / 100 : undefined;
-  const numericId = parseInt(sub._id.slice(-8), 16) || (index !== undefined ? index + 3000 : 0);
+  const rawId = sub._id || sub.id || "";
+  const numericId = parseInt(rawId.slice(-8), 16) || (index !== undefined ? index + 3000 : 0);
   const period = `${new Date(sub.currentPeriodStart).toLocaleDateString()} → ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`;
   return { id: numericId, user: { name: userName, image: userImage }, plan: { name: planName, price: planPrice }, status: sub.status, period };
 }

@@ -303,7 +303,7 @@ export function LatestActivity({ user: propUser }: LatestActivityProps) {
             const isLatest = i === 0;
 
             return (
-              <li key={s._id} className="ms-6 mb-10 space-y-2 last:mb-0">
+              <li key={s._id || s.id || i} className="ms-6 mb-10 space-y-2 last:mb-0">
                 <span className="bg-muted absolute -start-3 flex h-6 w-6 items-center justify-center rounded-full border">
                   {s.status === "active"
                     ? <BadgeCheckIcon className="text-primary size-3" />

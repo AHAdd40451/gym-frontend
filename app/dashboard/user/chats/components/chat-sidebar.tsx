@@ -20,6 +20,9 @@ import {
 
 import { ActionDropdown } from "@/app/dashboard/(auth)/apps/chat/components/action-dropdown";
 import { usersApi } from "@/lib/api/services/users/users";
+import { env } from "@/lib/config/env";
+
+const SOCKET_URL = env.API_BASE_URL.replace(/\/api\/?$/, "");
 
 export function ChatSidebar() {
   const { selectedChat } = useChatStore();
@@ -39,7 +42,7 @@ export function ChatSidebar() {
 
     if (!currentUser?.id) return;
 
-    const socket = io("http://localhost:5003", {
+    const socket = io(SOCKET_URL, {
       transports: ["websocket"],
     });
 

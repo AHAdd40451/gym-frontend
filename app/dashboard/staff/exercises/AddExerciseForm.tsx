@@ -23,7 +23,11 @@ const defaultState = {
   difficulty: "Beginner"
 };
 
-export default function AddExerciseForm() {
+type AddExerciseFormProps = {
+  onSaved?: () => void;
+};
+
+export default function AddExerciseForm({ onSaved }: AddExerciseFormProps) {
   const [form, setForm] = useState(defaultState);
   const [saving, setSaving] = useState(false);
 
@@ -60,6 +64,7 @@ export default function AddExerciseForm() {
       if (res?.data?.success) {
         toast.success("Exercise created");
         setForm(defaultState);
+        onSaved?.();
       } else {
         throw new Error(res?.data?.message || "Failed to create exercise");
       }
