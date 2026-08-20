@@ -83,9 +83,13 @@ export default function UserMenu() {
       // Redirect to appropriate dashboard based on role
       let dashboardUrl = `/dashboard/${acc.role || 'user'}`;
       if (acc.role === 'admin') {
-        dashboardUrl = '/dashboard/admin/ecommerce';
+        dashboardUrl = acc.isSuperAdmin
+          ? '/dashboard/super-admin'
+          : '/dashboard/admin/ecommerce';
       } else if (acc.role === 'staff') {
-        dashboardUrl = '/dashboard/staff/members';
+        dashboardUrl = acc.staffType === 'operator'
+          ? '/dashboard/admin/ecommerce'
+          : '/dashboard/staff/workouts';
       }
       window.location.href = dashboardUrl;
     } catch (error) {

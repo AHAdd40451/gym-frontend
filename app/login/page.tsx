@@ -60,7 +60,16 @@ export default function LoginPage() {
 
         // 🔹 Redirect to dashboard (staff → /dashboard/staff/members)
         const role = result.user.role;
-        const dashboardUrl = role === 'admin' ? '/dashboard/admin/ecommerce' : role === 'staff' ? '/dashboard/staff/members' : `/dashboard/${role}`;
+        const dashboardUrl =
+          role === 'admin'
+            ? result.user?.isSuperAdmin
+              ? '/dashboard/super-admin'
+              : '/dashboard/admin/ecommerce'
+            : role === 'staff'
+              ? result.user?.staffType === 'operator'
+                ? '/dashboard/admin/ecommerce'
+                : '/dashboard/staff/workouts'
+              : `/dashboard/${role}`;
         window.location.href = dashboardUrl;
       } else {
         setError(result?.message || "Login failed");

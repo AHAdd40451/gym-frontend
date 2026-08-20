@@ -12,6 +12,7 @@ export interface User {
   email?: string;
   role?: UserRole;
   status?: UserStatus;
+  staffType?: "trainer" | "operator" | null;
   createdAt?: string;
   updatedAt?: string;
   lastLogin?: string;
@@ -153,6 +154,25 @@ export async function getUsersByRole(
       },
     }
   );
+}
+
+export async function getTrainerUsers(token?: string) {
+  const authToken = token || localStorage.getItem("authToken");
+  if (!authToken) {
+    throw new Error("Access denied. No token provided.");
+  }
+
+  return serverFetch<{
+    trainer?: User;
+    trainers?: User[];
+    count?: number;
+  }>(API_ENDPOINTS.USERS.TRAINER, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+  });
 }
 
 // ===== 8) Buy Trainer =====

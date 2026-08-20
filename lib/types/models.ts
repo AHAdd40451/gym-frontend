@@ -14,6 +14,13 @@ export interface User extends BaseModel {
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
   role: 'admin' | 'staff' | 'user';
+  staffType?: 'trainer' | 'operator' | null;
+  isSuperAdmin?: boolean;
+  gymId?: string | null;
+  hasSeenAdminWelcome?: boolean;
+  name?: string;
+  avatar?: string;
+  _id?: string;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
   profileImage?: string;
   coverImage?: string;
@@ -253,6 +260,7 @@ export interface FilterOptions {
 export interface LoginCredentials {
   email: string;
   password: string;
+  role?: 'admin' | 'staff' | 'user';
 }
 
 export interface RegisterData {

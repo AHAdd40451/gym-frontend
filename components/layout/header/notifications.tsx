@@ -46,7 +46,9 @@ const Notifications = () => {
     currentUser?.role === "user"
       ? "/dashboard/user/notifications"
       : currentUser?.role === "staff"
-        ? "/dashboard/staff/notifications"
+        ? currentUser?.staffType === "operator"
+          ? "/dashboard/admin/notifications"
+          : "/dashboard/staff/notifications"
         : currentUser?.role === "admin"
           ? "/dashboard/admin/notifications"
           : "#";

@@ -1,15 +1,18 @@
 import { cookies } from 'next/headers';
-import { NextRequest } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export interface AuthUser {
   id: string;
+  _id?: string;
   email: string;
   firstName: string;
   lastName: string;
+  name?: string;
+  avatar?: string;
   role: 'user' | 'staff' | 'admin';
+  staffType?: 'trainer' | 'operator' | null;
+  isSuperAdmin?: boolean;
+  gymId?: string | null;
+  hasSeenAdminWelcome?: boolean;
   profileImage?: string;
   isAuthenticated: boolean;
 }
@@ -18,6 +21,8 @@ export interface AuthToken {
   userId: string;
   email: string;
   role: 'user' | 'staff' | 'admin';
+  staffType?: 'trainer' | 'operator' | null;
+  isSuperAdmin?: boolean;
   iat: number;
   exp: number;
 }
@@ -38,10 +43,17 @@ export async function getServerAuth(): Promise<{ user: AuthUser | null; token: s
     
     const user: AuthUser = {
       id: userData.id,
+      _id: userData._id || userData.id,
       email: userData.email,
       firstName: userData.firstName,
       lastName: userData.lastName,
+      name: userData.name,
+      avatar: userData.avatar,
       role: userData.role,
+      staffType: userData.staffType || null,
+      isSuperAdmin: Boolean(userData.isSuperAdmin),
+      gymId: userData.gymId || null,
+      hasSeenAdminWelcome: Boolean(userData.hasSeenAdminWelcome),
       profileImage: userData.profileImage,
       isAuthenticated: true,
     };
@@ -51,42 +63,6 @@ export async function getServerAuth(): Promise<{ user: AuthUser | null; token: s
     console.error('Auth verification failed:', error);
     return { user: null, token: null, isAuthenticated: false };
   }
-}
-
-// Fetch user data from your backend API
-async function fetchUserFromAPI(token: string): Promise<AuthUser | null> {
-  try {
-    const apiBaseUrl = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${apiBaseUrl}/auth/profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.user || data;
-  } catch (error) {
-    console.error('Failed to fetch user from API:', error);
-    return null;
-  }
-}
-
-// Create JWT token
-export function createAuthToken(user: AuthUser): string {
-  const payload: AuthToken = {
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
-  };
-
-  return jwt.sign(payload, JWT_SECRET);
 }
 
 // Set auth data (user + token) in cookies
@@ -129,6 +105,11 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function getUserRole(): Promise<'user' | 'staff' | 'admin' | null> {
   const { user } = await getServerAuth();
   return user?.role || null;
+}
+
+export async function isSuperAdminUser(): Promise<boolean> {
+  const { user } = await getServerAuth();
+  return Boolean(user?.isSuperAdmin);
 }
 
 // Check if user has specific role

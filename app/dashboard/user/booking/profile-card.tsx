@@ -13,7 +13,7 @@ import {
   DrawerProfileAbout,
   DrawerProfileGallery,
 } from "@/app/dashboard/user/booking/drawer-profile";
-import { getUsersByRole } from "@/lib/api/services/getstaff/staff";
+import { getTrainerUsers } from "@/lib/api/services/getstaff/staff";
 import { getTrainerSubscriptionStatus } from "@/lib/api/services/subcription/subcription";
 import { useAuth } from "@/lib/api/services/auth/context";
 import {
@@ -34,6 +34,7 @@ type StaffUser = {
   lastName?: string;
   email?: string;
   role?: string;
+  staffType?: "trainer" | "operator" | null;
   status?: string;
   profileImage?: string;
   bio?: string;
@@ -58,9 +59,12 @@ type StaffUser = {
 const extractStaff = (res: any): StaffUser[] => {
   const candidates = [
     res?.data?.data?.users,
+    res?.data?.data?.trainers,
     res?.data?.users,
+    res?.data?.trainers,
     res?.data?.data,
     res?.data,
+    res?.trainers,
     res?.users,
   ];
 
@@ -69,6 +73,13 @@ const extractStaff = (res: any): StaffUser[] => {
   }
   return [];
 };
+
+const isTrainerUser = (user: StaffUser) =>
+  String(user.role || "").toLowerCase() === "staff" &&
+  (
+    user.staffType == null ||
+    String(user.staffType || "").toLowerCase() === "trainer"
+  );
 
 const getInitials = (user: StaffUser) => {
   const first = user.firstName?.[0] || "";
@@ -172,12 +183,12 @@ const BookingUsers = () => {
     const fetchStaff = async () => {
       try {
         const token = localStorage.getItem("authToken") || "";
-        const res = await getUsersByRole("staff" as any, { page: 1, limit: 50 }, token);
-        const users = extractStaff(res);
+        const res = await getTrainerUsers(token);
+        const users = extractStaff(res).filter(isTrainerUser);
         setStaff(users);
       } catch (err) {
         console.error("Error fetching staff:", err);
-        setError("Failed to fetch staff");
+        setError("Failed to fetch trainers");
       } finally {
         setLoading(false);
       }
@@ -196,8 +207,9 @@ const BookingUsers = () => {
 
   const filteredStaff = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return staff;
-    return staff.filter((user) => {
+    const trainersOnly = staff.filter(isTrainerUser);
+    if (!q) return trainersOnly;
+    return trainersOnly.filter((user) => {
       const name = fullName(user).toLowerCase();
       const email = (user.email || "").toLowerCase();
       const qualities = (user.trainerProfile?.qualities || []).join(" ").toLowerCase();
@@ -339,7 +351,7 @@ const BookingUsers = () => {
       ) : (
         <Card className="mt-6 border border-dashed border-border/80">
           <CardContent className="py-12 text-center text-muted-foreground">
-            No staff users found.
+            No trainers found.
           </CardContent>
         </Card>
       )}

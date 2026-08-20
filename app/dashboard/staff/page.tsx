@@ -1,10 +1,9 @@
 'use client';
 
-import { AuthGuard } from '@/lib/middleware/auth-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Activity, Calendar, Clock, Dumbbell, MessageSquare, Bell } from 'lucide-react';
+import { Users, Activity, Calendar, Clock, Dumbbell, MessageSquare, Bell } from 'lucide-react';
 import { useAuth } from '@/lib/api/services/auth/context';
 
 function StaffDashboardContent() {

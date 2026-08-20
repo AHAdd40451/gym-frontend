@@ -53,6 +53,8 @@ export function middleware(request: NextRequest) {
 
   const isAuthenticated = Boolean(token && userCookie);
   let userRole: string | null = null;
+  let isSuperAdmin = false;
+  let staffType: string | null = null;
 
   if (isAuthenticated && userCookie) {
     const userData = safeParseUserCookie(userCookie);
@@ -65,6 +67,8 @@ export function middleware(request: NextRequest) {
     }
 
     userRole = userData.role || null;
+    isSuperAdmin = Boolean(userData.isSuperAdmin);
+    staffType = userData.staffType || null;
   }
 
   // Protected route without login
@@ -82,13 +86,13 @@ export function middleware(request: NextRequest) {
     pathname !== "/" &&
     pathname !== "/landing-login"
   ) {
-    const dashboardUrl = getDashboardUrl(userRole);
+    const dashboardUrl = getDashboardUrl(userRole, isSuperAdmin, staffType);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
   // /dashboard should go to role dashboard
   if (pathname === "/dashboard" && isAuthenticated) {
-    const dashboardUrl = getDashboardUrl(userRole);
+    const dashboardUrl = getDashboardUrl(userRole, isSuperAdmin, staffType);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
@@ -99,7 +103,18 @@ export function middleware(request: NextRequest) {
     userRole === "staff"
   ) {
     return NextResponse.redirect(
-      new URL("/dashboard/staff/members", request.url)
+      new URL(getStaffDashboardUrl(staffType), request.url)
+    );
+  }
+
+  if (
+    pathname === "/dashboard/admin" &&
+    isAuthenticated &&
+    userRole === "staff" &&
+    staffType === "operator"
+  ) {
+    return NextResponse.redirect(
+      new URL("/dashboard/admin/ecommerce", request.url)
     );
   }
 
@@ -107,6 +122,7 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute && isAuthenticated) {
     const roleBasedRoutes: Record<string, string> = {
       "/dashboard/admin": "admin",
+      "/dashboard/super-admin": "admin",
       "/dashboard/staff": "staff",
       "/dashboard/user": "user",
     };
@@ -118,22 +134,71 @@ export function middleware(request: NextRequest) {
     if (matchedRoute) {
       const requiredRole = roleBasedRoutes[matchedRoute];
 
-      if (userRole !== requiredRole) {
-        const dashboardUrl = getDashboardUrl(userRole);
+      const canUseAdminDashboard =
+        matchedRoute === "/dashboard/admin" &&
+        userRole === "staff" &&
+        staffType === "operator";
+
+      if (
+        (!canUseAdminDashboard && userRole !== requiredRole) ||
+        (matchedRoute === "/dashboard/super-admin" && !isSuperAdmin)
+      ) {
+        const dashboardUrl = getDashboardUrl(userRole, isSuperAdmin, staffType);
         return NextResponse.redirect(new URL(dashboardUrl, request.url));
       }
+    }
+  }
+
+  if (isProtectedRoute && isAuthenticated && userRole === "staff") {
+    const normalizedStaffType = staffType === "operator" ? "operator" : "trainer";
+
+    if (
+      normalizedStaffType === "trainer" &&
+      [
+        "/dashboard/staff/checkins",
+        "/dashboard/staff/attendence",
+      ].some((route) => pathname.startsWith(route))
+    ) {
+      return NextResponse.redirect(
+        new URL(getStaffDashboardUrl(normalizedStaffType), request.url)
+      );
+    }
+
+    if (
+      normalizedStaffType === "operator" &&
+      [
+        "/dashboard/staff/workouts",
+        "/dashboard/staff/exercises",
+        "/dashboard/staff/diet-calendar",
+        "/dashboard/staff/training",
+        "/dashboard/staff/booking",
+      ].some((route) => pathname.startsWith(route))
+    ) {
+      return NextResponse.redirect(
+        new URL(getStaffDashboardUrl(normalizedStaffType), request.url)
+      );
     }
   }
 
   return NextResponse.next();
 }
 
-function getDashboardUrl(role: string | null): string {
+function getStaffDashboardUrl(staffType: string | null = null): string {
+  return staffType === "operator"
+    ? "/dashboard/admin/ecommerce"
+    : "/dashboard/staff/workouts";
+}
+
+function getDashboardUrl(
+  role: string | null,
+  isSuperAdmin = false,
+  staffType: string | null = null
+): string {
   switch (role) {
     case "admin":
-      return "/dashboard/admin/ecommerce";
+      return isSuperAdmin ? "/dashboard/super-admin" : "/dashboard/admin/ecommerce";
     case "staff":
-      return "/dashboard/staff/members";
+      return getStaffDashboardUrl(staffType);
     case "user":
       return "/dashboard/user";
     default:

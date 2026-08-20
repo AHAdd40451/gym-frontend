@@ -88,7 +88,9 @@ const emptyData: OverviewData = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5003/api";
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:5003/api"
+    : "https://gym.coderivals.ltd/api");
 
 function getAuthToken() {
   return (

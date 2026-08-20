@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://gym.coderivals.ltd/api";
@@ -11,23 +11,15 @@ type Credentials = {
   email: string;
   password: string;
   role: string;
+  staffType?: string | null;
 };
+
+type AccountType = "operator" | "trainer" | "admin";
 
 export default function AddAdminStaffPage() {
   const router = useRouter();
-
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [credentials, setCredentials] = useState<Credentials | null>(null);
-
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-    role: "staff",
-  });
+  const searchParams = useSearchParams();
+  const forcedTrainerOnly = searchParams.get("mode") === "trainer-only";
 
   const getToken = () => {
     if (typeof window === "undefined") return "";
@@ -62,9 +54,68 @@ export default function AddAdminStaffPage() {
     return null;
   };
 
+  const [currentUser, setCurrentUser] = useState<any>(() => getStoredUser());
+  const [isResolvingUser, setIsResolvingUser] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [credentials, setCredentials] = useState<Credentials | null>(null);
+  const [formData, setFormData] = useState(() => {
+    const storedUser = getStoredUser();
+    const isOperatorStaff =
+      forcedTrainerOnly ||
+      (storedUser?.role === "staff" && storedUser?.staffType === "operator");
+
+    return {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      password: "",
+      accountType: (isOperatorStaff ? "trainer" : "operator") as AccountType,
+    };
+  });
+
   useEffect(() => {
-    setCurrentUser(getStoredUser());
-  }, []);
+    const syncCurrentUser = async () => {
+      const storedUser = getStoredUser();
+      setCurrentUser(storedUser);
+
+      const token = getToken();
+      if (!token) {
+        setIsResolvingUser(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+        const profileUser = result?.data?.user || result?.user || null;
+
+        if (response.ok && profileUser) {
+          setCurrentUser(profileUser);
+          localStorage.setItem("currentUser", JSON.stringify(profileUser));
+
+          if (
+            forcedTrainerOnly ||
+            (profileUser.role === "staff" && profileUser.staffType === "operator")
+          ) {
+            setFormData((prev) => ({ ...prev, accountType: "trainer" }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to sync current user for add-team page:", error);
+      } finally {
+        setIsResolvingUser(false);
+      }
+    };
+
+    syncCurrentUser();
+  }, [forcedTrainerOnly]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -150,7 +201,9 @@ export default function AddAdminStaffPage() {
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           password: formData.password.trim(),
-          role: formData.role,
+          role: formData.accountType === "admin" ? "admin" : "staff",
+          staffType:
+            formData.accountType === "admin" ? undefined : formData.accountType,
         }),
       });
 
@@ -171,7 +224,7 @@ export default function AddAdminStaffPage() {
         email: "",
         phone: "",
         password: "",
-        role: "staff",
+        accountType: isOperatorStaff ? "trainer" : "operator",
       });
 
       if (newCredentials) {
@@ -193,7 +246,8 @@ export default function AddAdminStaffPage() {
 
     const text = `Email: ${credentials.email}
 Password: ${credentials.password}
-Role: ${credentials.role}`;
+Role: ${credentials.role}
+Type: ${credentials.staffType || "-"}`;
 
     await navigator.clipboard.writeText(text);
     alert("Credentials copied.");
@@ -206,6 +260,18 @@ Role: ${credentials.role}`;
   };
 
   const isSuperAdmin = Boolean(currentUser?.isSuperAdmin);
+  const isOperatorStaff =
+    forcedTrainerOnly ||
+    (currentUser?.role === "staff" && currentUser?.staffType === "operator");
+  const canCreateAdmin = currentUser?.role === "admin" && isSuperAdmin;
+  const availableAccountTypes: Array<{ value: AccountType; label: string }> =
+    isOperatorStaff
+      ? [{ value: "trainer", label: "Trainer" }]
+      : [
+          { value: "operator", label: "Staff" },
+          { value: "trainer", label: "Trainer" },
+          ...(canCreateAdmin ? [{ value: "admin" as const, label: "Admin" }] : []),
+        ];
 
   const cardClass =
     "rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm";
@@ -216,17 +282,29 @@ Role: ${credentials.role}`;
   const labelClass = "text-sm font-medium text-foreground";
   const helpTextClass = "text-sm leading-6 text-muted-foreground";
 
+  if (isResolvingUser) {
+    return (
+      <div className="w-full px-5 py-6 lg:px-8">
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">
+          Loading account permissions...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full px-5 py-6 lg:px-8">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-foreground">
-              Add Admin / Staff
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create login credentials for gym admins or staff.
-            </p>
+              <h1 className="text-3xl font-semibold text-foreground">
+               Add Team Member
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+               {isOperatorStaff
+                 ? "Create login credentials for a trainer."
+                 : "Create login credentials for gym admins, staff operators, or trainers."}
+              </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -337,18 +415,23 @@ Role: ${credentials.role}`;
                 </div>
 
                 <div className="space-y-2">
-                  <label className={labelClass}>Role</label>
+                  <label className={labelClass}>Account Type</label>
                   <select
-                    name="role"
-                    value={formData.role}
+                    name="accountType"
+                    value={formData.accountType}
                     onChange={handleChange}
                     className={inputClass}
                   >
-                    <option value="staff">Staff</option>
-                    {isSuperAdmin && <option value="admin">Admin</option>}
+                    {availableAccountTypes.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                   <p className={helpTextClass}>
-                    Only super admin can create another admin.
+                    {isOperatorStaff
+                      ? "Staff can only create trainer accounts."
+                      : "Staff handles dashboard operations. Trainer gets the trainer-side tools."}
                   </p>
                 </div>
               </div>
@@ -362,8 +445,8 @@ Role: ${credentials.role}`;
 
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>Super Admin can create admin and staff accounts.</p>
-              <p>Normal Admin can create staff accounts only.</p>
-              <p>Staff cannot create users or admins.</p>
+              <p>Normal Admin can create staff operators and trainers.</p>
+              <p>Staff can create trainers only.</p>
               <p>All created accounts are attached to the same gym.</p>
             </div>
           </div>
@@ -391,8 +474,16 @@ Role: ${credentials.role}`;
               </p>
 
               <p className="text-sm capitalize">
-                <strong>Role:</strong> {credentials.role}
+                <strong>Role:</strong>{" "}
+                {credentials.role === "staff" && credentials.staffType
+                  ? `${credentials.role} (${credentials.staffType})`
+                  : credentials.role}
               </p>
+              {credentials.staffType && (
+                <p className="text-sm capitalize">
+                  <strong>Type:</strong> {credentials.staffType}
+                </p>
+              )}
             </div>
 
             <div className="mt-6 flex gap-3">

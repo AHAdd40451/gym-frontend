@@ -26,7 +26,12 @@ export interface ServerFetchResult<T> extends ServerFetchState<T> {
 }
 
 // Base URL for your API - adjust this to match your backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:5000/api"
+    : "https://gym.coderivals.ltd/api");
 
 /**
  * Custom hook for server-side data fetching using Next.js fetch

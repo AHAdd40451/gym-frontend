@@ -1,7 +1,11 @@
 // Environment configuration
 export const env = {
   // API Configuration
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5003/api',
+  API_BASE_URL:
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:5003/api'
+      : 'https://gym.coderivals.ltd/api'),
   API_VERSION: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
   
   // App Configuration
@@ -10,7 +14,6 @@ export const env = {
   APP_ENVIRONMENT: process.env.NEXT_PUBLIC_APP_ENVIRONMENT || 'development',
   
   // Authentication
-  JWT_SECRET: process.env.NEXT_PUBLIC_JWT_SECRET || 'your-jwt-secret-key',
   TOKEN_STORAGE_KEY: process.env.NEXT_PUBLIC_TOKEN_STORAGE_KEY || 'gym_auth_token',
   REFRESH_TOKEN_KEY: process.env.NEXT_PUBLIC_REFRESH_TOKEN_KEY || 'gym_refresh_token',
   

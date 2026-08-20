@@ -64,7 +64,11 @@
 // Server-side API functions for Next.js App Router
 // These functions run on the server and can be used in Server Components
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:5000/api"
+    : "https://gym.coderivals.ltd/api");
 
 // Generic server-side fetch function
 // export async function serverFetch<T>(

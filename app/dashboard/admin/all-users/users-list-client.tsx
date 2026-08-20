@@ -14,6 +14,7 @@ type UserItem = {
   lastName?: string;
   email?: string;
   role?: "admin" | "staff" | "user" | string;
+  staffType?: "trainer" | "operator" | null | string;
   status?: string;
   isSuperAdmin?: boolean;
 };
@@ -40,7 +41,11 @@ const getInitials = (user: UserItem) => {
 const getRoleLabel = (user: UserItem) => {
   if (user.isSuperAdmin) return "Super Admin";
   if (user.role === "admin") return "Admin";
-  if (user.role === "staff") return "Staff";
+  if (user.role === "staff") {
+    if (user.staffType === "operator") return "Operator";
+    if (user.staffType === "trainer") return "Trainer";
+    return "Staff";
+  }
   return "Member";
 };
 

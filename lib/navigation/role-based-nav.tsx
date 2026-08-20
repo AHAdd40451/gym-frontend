@@ -2,6 +2,7 @@
 
 import { useAuth } from '../api/services/auth/context';
 import { AdminNavMain } from './admin-nav';
+import { SuperAdminNavMain } from './super-admin-nav';
 import { StaffNavMain } from './staff-nav';
 import { UserNavMain } from './user-nav';
 import { Loader2 } from 'lucide-react';
@@ -19,8 +20,14 @@ export function RoleBasedNavMain() {
 
   switch (user?.role) {
     case 'admin':
+      if ((user as any)?.isSuperAdmin) {
+        return <SuperAdminNavMain />;
+      }
       return <AdminNavMain user={user}/>;
     case 'staff':
+      if ((user as any)?.staffType === 'operator') {
+        return <AdminNavMain user={user} />;
+      }
       return <StaffNavMain user={user}/>;
     case 'user':
       return <UserNavMain user={user}/>;

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { getUsersByRole, User } from "../../../../lib/api/services/getstaff/staff";
 import { runDailyAttendanceJob } from "@/lib/api/services/attendence/attendence";
 
-const page = () => {
+const Page = () => {
   const [staffUsers, setStaffUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -78,4 +78,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

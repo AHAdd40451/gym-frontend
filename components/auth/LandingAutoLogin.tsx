@@ -120,11 +120,12 @@ export default function LandingAutoLogin() {
             "",
           role: profileUser.role || payload?.role || "admin",
           gymId: profileUser.gymId || payload?.gymId || null,
+          isSuperAdmin: Boolean(profileUser.isSuperAdmin || payload?.isSuperAdmin),
         };
 
         saveAuthData(token, user);
 
-        window.location.replace("/dashboard/admin/ecommerce");
+        window.location.replace(user.isSuperAdmin ? "/dashboard/super-admin" : "/dashboard/admin/ecommerce");
       } catch (error) {
         console.error("Landing auto login error:", error);
 
@@ -144,11 +145,12 @@ export default function LandingAutoLogin() {
           name: payload.name || "",
           role: payload.role || "admin",
           gymId: payload.gymId || null,
+          isSuperAdmin: Boolean(payload.isSuperAdmin),
         };
 
         saveAuthData(token, fallbackUser);
 
-        window.location.replace("/dashboard/admin/ecommerce");
+        window.location.replace(fallbackUser.isSuperAdmin ? "/dashboard/super-admin" : "/dashboard/admin/ecommerce");
       }
     };
 

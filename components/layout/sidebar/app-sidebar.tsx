@@ -136,18 +136,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/layout/logo";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { RoleBasedNavMain } from "@/lib/navigation/role-based-nav";
-import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
 // Fake function to get current user role — replace with your auth logic
 function useCurrentUserRole() {
   // Example: 'admin', 'staff', 'user'
   const [role, setRole] = useState<"admin" | "staff" | "user">("user");
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [staffType, setStaffType] = useState<"trainer" | "operator" | null>(null);
   useEffect(() => {
-    // Fetch role from session or API here
-    const storedRole = localStorage.getItem("role") as "admin" | "staff" | "user";
-    if (storedRole) setRole(storedRole);
+    const rawUser = localStorage.getItem("currentUser");
+    if (!rawUser) return;
+    try {
+      const user = JSON.parse(rawUser);
+      if (user?.role) setRole(user.role);
+      setIsSuperAdmin(Boolean(user?.isSuperAdmin));
+      setStaffType(user?.staffType || null);
+    } catch {}
   }, []);
-  return role;
+  return { role, isSuperAdmin, staffType };
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -155,7 +161,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter();
   const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const isTablet = useIsTablet();
-  const role = useCurrentUserRole();
+  const { role, isSuperAdmin, staffType } = useCurrentUserRole();
 
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
@@ -167,8 +173,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Redirect based on role
   const handleHomeClick = () => {
-    if (role === "admin") router.push("/dashboard/admin/ecommerce");
-    else if (role === "staff") router.push("/staff/home");
+    if (role === "admin") router.push(isSuperAdmin ? "/dashboard/super-admin" : "/dashboard/admin/ecommerce");
+    else if (role === "staff") router.push(staffType === "operator" ? "/dashboard/admin/ecommerce" : "/dashboard/staff/workouts");
     else router.push("/dashboard/user");
   };
 
@@ -182,48 +188,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="hover:text-foreground cursor-pointer h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5"
             >
               <span className="font-semibold">GYM MANAGEMENT</span>
-              {/* <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
+              <ChevronsUpDown className="ml-auto opacity-0 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0! hover:bg-[var(--primary)]/5">
-                  
-                  {/* <span className="font-semibold">GYM MANAGEMENT</span> */}
-                  {/*   <ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" /> */}
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              {/* <DropdownMenuContent
-                className="mt-4 w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align="end"
-                sideOffset={4}>
-                <DropdownMenuLabel>Projects</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-md border">
-                    <ShoppingBagIcon className="text-muted-foreground size-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">E-commerce</span>
-                    <span className="text-xs text-green-700">Active</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-md border">
-                    <UserCircle2Icon className="text-muted-foreground size-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">Blog Platform</span>
-                    <span className="text-muted-foreground text-xs">Inactive</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <Button className="w-full">
-                  <PlusIcon />
-                  New Project
-                </Button>
-              </DropdownMenuContent> */}
-            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
